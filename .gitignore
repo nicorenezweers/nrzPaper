@@ -1,0 +1,6 @@
+/target
+/data
+.DS_Store
+*.db
+*.db-*
+nrzpaper.key

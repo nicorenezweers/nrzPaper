@@ -1,0 +1,15 @@
+# Standardwerte – jede Einstellung lässt sich mit NRZPAPER_<NAME> überschreiben,
+# z. B. NRZPAPER_PORT=9000 oder NRZPAPER_DB_KEY=… (siehe src/config.rs).
+[default]
+address = "0.0.0.0"
+port = 8320
+ident = "nrzPaper"
+data_dir = "./data"
+# Uploads bis 200 MiB
+limits = { file = "200MiB", data-form = "210MiB", form = "64KiB", json = "1MiB" }
+
+[debug]
+log_level = "normal"
+
+[release]
+log_level = "critical"

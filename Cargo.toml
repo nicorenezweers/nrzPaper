@@ -1,0 +1,52 @@
+[package]
+name = "nrzpaper"
+version = "0.1.0"
+edition = "2021"
+description = "nrzPaper – selbst gehostete Dokumentenverwaltung in Rust (Rocket, SQLCipher, Tesseract)"
+license = "AGPL-3.0-or-later"
+rust-version = "1.80"
+
+[dependencies]
+# Web
+rocket = { version = "=0.5.1", features = ["secrets", "json"] }
+# Rocket 0.5.1 verlangt nur "^0.5.1" für diese beiden – ohne feste Version zieht
+# Cargo 0.5.2 (hyper 1.x), und Rocket 0.5.1 lässt sich nicht mehr übersetzen.
+rocket_http = "=0.5.1"
+rocket_codegen = "=0.5.1"
+askama = "0.16"
+
+# Datenbank: eine einzige SQLite-Datei, komplett mit SQLCipher verschlüsselt.
+# libsqlite3-sys wird hier nur aufgeführt, um für sqlx die SQLCipher-Variante
+# (inkl. FTS5) einzuschalten – Cargo vereinigt die Features beider Abhängigkeiten.
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "sqlite", "macros", "migrate", "time", "uuid"] }
+libsqlite3-sys = { version = "0.37", features = ["bundled-sqlcipher-vendored-openssl"] }
+
+# Laufzeit & Hilfen
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "process", "sync", "time", "io-util"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+time = { version = "0.3", features = ["serde", "formatting", "parsing", "macros"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Sicherheit
+argon2 = "0.5"
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+base64 = "0.22"
+
+# Dateien
+notify = "8"
+infer = "0.19"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true

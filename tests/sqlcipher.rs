@@ -57,3 +57,13 @@ async fn encrypted_database_with_fts5() {
     let data: Vec<u8> = sqlx::query_scalar("SELECT data FROM blobs").fetch_one(&pool).await.unwrap();
     assert_eq!(data, b"%PDF-1.4 geheimes Dokument");
 }
+
+#[tokio::test]
+async fn sqlite_version_supports_strict_tables() {
+    let dir = tempfile::tempdir().unwrap();
+    let pool = open(&dir.path().join("v.db"), "x").await.unwrap();
+    let v: String = sqlx::query_scalar("SELECT sqlite_version()").fetch_one(&pool).await.unwrap();
+    println!("SQLite {v}");
+    sqlx::query("CREATE TABLE s (a INTEGER NOT NULL) STRICT").execute(&pool).await.unwrap();
+    assert!(sqlx::query("INSERT INTO s VALUES ('kein Integer')").execute(&pool).await.is_err());
+}

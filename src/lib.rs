@@ -18,7 +18,7 @@ use rocket::{Build, Rocket};
 pub async fn build() -> Result<Rocket<Build>, error::AppError> {
     let figment = config::figment();
     let config: config::Config = figment.extract().map_err(|e| error::AppError::Config(e.to_string()))?;
-    let pool = db::open(&config).await?;
+    let pool = db::connect(&config).await?;
 
     Ok(rocket::custom(figment)
         .manage(pool)

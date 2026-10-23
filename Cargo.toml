@@ -18,7 +18,7 @@ askama = "0.16"
 # Datenbank: eine einzige SQLite-Datei, komplett mit SQLCipher verschlüsselt.
 # libsqlite3-sys wird hier nur aufgeführt, um für sqlx die SQLCipher-Variante
 # (inkl. FTS5) einzuschalten – Cargo vereinigt die Features beider Abhängigkeiten.
-sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "sqlite", "macros", "migrate", "time", "uuid"] }
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "sqlite", "macros", "migrate", "json"] }
 libsqlite3-sys = { version = "0.37", features = ["bundled-sqlcipher-vendored-openssl"] }
 
 # Laufzeit & Hilfen

@@ -18,6 +18,30 @@ Daten liegen in **einer einzigen, vollständig verschlüsselten SQLite-Datenbank
 | PDF-Vorschau | PDF.js im Browser, Daten per Range-Anfrage aus der verschlüsselten DB | Browser führen kein Rust aus; die Vorschau (Miniaturen, Zoom, Drehen, Suche im PDF, Text-Ebene) ist der einzige Teil mit JavaScript. Alles andere rendert der Server. |
 | Hintergrund | Tokio-Aufgaben, gestartet in einem Liftoff-Fairing | OCR-Warteschlange, Eingangsordner-Beobachter (`notify`), Papierkorb-Leerung, Webhook-Zustellung. |
 
+## Datenbank-Schema
+
+`migrations/0001_init.sql`, beim Start automatisch angewendet (eingebettet mit `sqlx::migrate!`).
+
+| Bereich | Tabellen |
+|---------|----------|
+| Anmeldung | `users`, `sessions` (nur Token-Hash), `api_keys` (nur Key-Hash, Berechtigungen als JSON) |
+| Organisationen | `organizations`, `organization_members` (owner/admin/member), `organization_invitations` |
+| Dokumente | `documents`, `document_chunks` (Inhalt, 1 MiB je Block), `documents_fts` (FTS5), `document_activity` |
+| Ordnung | `tags`, `document_tags`, `tagging_rules`, `tagging_rule_conditions`, `tagging_rule_actions` |
+| Eigenschaften | `custom_property_definitions`, `custom_property_options`, `document_property_values` |
+| Teilen & Anbindung | `share_links`, `webhooks`, `webhook_events`, `webhook_deliveries` |
+| Instanz | `app_settings` |
+
+Regeln, die im Schema stecken:
+
+- **STRICT-Tabellen** (SQLite 3.50): falsche Typen werden abgewiesen. Aufzählungen sind TEXT mit `CHECK`, passend zu den Rust-Enums.
+- **IDs** sind UUIDv7, **Zeitpunkte** Unix-Sekunden. `documents.num` ist eine feste Zeilennummer nur für den Volltextindex – ohne sie könnte `VACUUM` die interne rowid neu vergeben und `documents_fts` zeigte ins Leere.
+- **Volltextindex** als External-Content-FTS5, nachgeführt über Trigger bei Anlegen, Ändern von Name/Inhalt und Löschen.
+- **Duplikate**: `UNIQUE (organization_id, sha256)` – auch für Dokumente im Papierkorb (ein erneuter Upload holt sie zurück).
+- **Löschketten**: Organisation löschen entfernt Dokumente, Blöcke, Tags, Regeln usw.; Benutzer löschen lässt Dokumente stehen (`created_by` wird leer).
+- **Eigenschaftswerte**: genau eine Wert-Spalte je Zeile (`CHECK`), Mehrfachwerte als mehrere Zeilen.
+- **Abfragen zur Laufzeit** (`query_as` + `FromRow`): die `query!`-Makros bräuchten beim Übersetzen eine unverschlüsselte Datenbank. Dynamisches SQL muss in sqlx 0.9 ausdrücklich als `AssertSqlSafe` markiert werden – nur für feste Bausteine, Werte immer über `bind`.
+
 ## Datenfluss
 
 ```
@@ -73,7 +97,7 @@ nrzPaper/
 ## Umsetzung in Schritten
 
 1. **Architektur & Projektstruktur** – diese Datei, `Cargo.toml`, Modulgerüst, SQLCipher-Test. ✅
-2. Datenbank-Schema & Migrationen (`sqlx`), Modelle, Schlüsselverwaltung.
+2. **Datenbank-Schema & Migrationen** – `migrations/0001_init.sql`, Modelle in `src/db/models.rs`, Tests in `tests/schema.rs`. ✅
 3. Rocket-Server: Konfiguration, Fairings, Request Guards, Routing, Fehlerbehandlung.
 4. Upload-, Speicher- und OCR-Pipeline, Eingangsordner.
 5. SSR-Oberfläche (Askama + Tailwind, Grautöne), PDF-Vorschau.

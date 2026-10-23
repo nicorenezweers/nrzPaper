@@ -3,7 +3,7 @@
 Selbst gehostete Dokumentenverwaltung im Funktionsumfang von [Papra](https://papra.app) – komplett in Rust.
 Alle Daten, auch die Dokumente selbst, liegen in **einer einzigen, mit SQLCipher verschlüsselten SQLite-Datei**.
 
-> Stand: Schritt 1 von 7 – Architektur, Abhängigkeiten, Projektgerüst. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
+> Stand: Schritt 2 von 7 – Architektur, Projektgerüst, Datenbank-Schema mit Migrationen. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Starten (Entwicklung)
 
@@ -31,5 +31,5 @@ Beim ersten Start entsteht `data/nrzpaper.db` (verschlüsselt) und `data/nrzpape
 cargo test
 ```
 
-`tests/sqlcipher.rs` prüft die Grundannahme: verschlüsselte Datei ohne lesbaren Inhalt, FTS5-Volltextsuche
-mit Umlaut-Normalisierung, falscher Schlüssel wird abgewiesen.
+- `tests/sqlcipher.rs` – Grundannahme: verschlüsselte Datei ohne lesbaren Inhalt, FTS5 mit Umlauten, falscher Schlüssel wird abgewiesen.
+- `tests/schema.rs` – Migrationen, Volltextindex (auch nach `VACUUM`), Löschketten, Eindeutigkeit, Prüfbedingungen, Modelle, verschlüsselte Dokument-Blöcke.

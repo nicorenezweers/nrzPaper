@@ -138,10 +138,14 @@ nicht immer ankommen.
 **Papierkorb**: `DELETE` legt Dokumente in den Papierkorb; erneuter Upload oder `restore` holt sie zurück; endgültig
 löschen nur aus dem Papierkorb. Ein Hintergrund-Job leert ihn täglich nach `trash_retention_days`.
 
-**Sauberes Herunterfahren**: `CloseDatabase` schliesst beim Shutdown den Pool. Sonst schliesst ein sqlx-Thread
-seine Verbindung erst, während der Prozess endet, und SQLCipher gibt dabei ungültigen Speicher frei
-(SIGSEGV in `sqlcipher_free`, gefunden über den macOS-Absturzbericht). Aus demselben Grund schliessen die Tests
-ihre Datenbank bzw. beenden den Test-Server mit `terminate()`.
+**Pools immer schliessen, nie fallen lassen**: SQLCipher räumt beim Prozessende mit einem eigenen
+`atexit`-Handler (`sqlcipher_atexit`) auf. Wird ein sqlx-Pool nur fallen gelassen, schliessen seine
+Worker-Threads die Verbindungen nebenher – fällt das mit dem Prozessende zusammen, stürzt `sqlcipher_free`
+ab (SIGSEGV, gefunden über die macOS-Absturzberichte). Deshalb:
+
+- `CloseDatabase` schliesst den Pool beim Herunterfahren des Servers,
+- `db::open`/`db::connect` schliessen den Pool, bevor sie einen Fehler zurückgeben (falscher Schlüssel, Migration),
+- Tests schliessen ihre Datenbank bzw. beenden den Test-Server mit `terminate()`.
 
 **Neue Routen**
 

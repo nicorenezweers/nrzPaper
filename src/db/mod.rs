@@ -110,15 +110,18 @@ pub async fn open(config: &Config) -> Result<SqlitePool, AppError> {
         .acquire_timeout(Duration::from_secs(15))
         .connect_with(options)
         .await?;
-    // Ein falscher Schlüssel zeigt sich erst beim ersten Lesen.
-    sqlx::query("SELECT count(*) FROM sqlite_master")
+    // Ein falscher Schlüssel zeigt sich erst beim ersten Lesen. Den Pool dann ausdrücklich
+    // schliessen, statt ihn fallen zu lassen (siehe fairings::close_database).
+    if sqlx::query("SELECT count(*) FROM sqlite_master")
         .fetch_one(&pool)
         .await
-        .map_err(|_| {
-            AppError::Config(
-                "Datenbank lässt sich nicht entschlüsseln – falscher Schlüssel?".into(),
-            )
-        })?;
+        .is_err()
+    {
+        pool.close().await;
+        return Err(AppError::Config(
+            "Datenbank lässt sich nicht entschlüsseln – falscher Schlüssel?".into(),
+        ));
+    }
     Ok(pool)
 }
 
@@ -134,7 +137,10 @@ pub async fn migrate(pool: &SqlitePool) -> Result<(), AppError> {
 /// Öffnen und migrieren in einem Schritt.
 pub async fn connect(config: &Config) -> Result<SqlitePool, AppError> {
     let pool = open(config).await?;
-    migrate(&pool).await?;
+    if let Err(e) = migrate(&pool).await {
+        pool.close().await;
+        return Err(e);
+    }
     Ok(pool)
 }
 

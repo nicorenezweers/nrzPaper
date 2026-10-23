@@ -16,10 +16,14 @@ async fn open(path: &Path, passphrase: &str) -> Result<SqlitePool, sqlx::Error> 
         .max_connections(4)
         .connect_with(options)
         .await?;
-    // Ein falscher Schlüssel fällt erst beim ersten Lesen auf.
-    sqlx::query("SELECT count(*) FROM sqlite_master")
+    // Ein falscher Schlüssel fällt erst beim ersten Lesen auf – Pool dann schliessen, nicht fallen lassen.
+    if let Err(e) = sqlx::query("SELECT count(*) FROM sqlite_master")
         .fetch_one(&pool)
-        .await?;
+        .await
+    {
+        pool.close().await;
+        return Err(e);
+    }
     Ok(pool)
 }
 

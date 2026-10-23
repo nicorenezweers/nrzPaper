@@ -107,8 +107,7 @@ async fn migrations_create_schema_and_are_idempotent() {
         db_key: Some("test".into()),
         ..Config::default()
     };
-    db::connect(&config).await.unwrap();
-    pool.close().await;
+    db::connect(&config).await.unwrap().close().await;
 }
 
 #[tokio::test]

@@ -23,16 +23,27 @@ pub fn routes() -> Vec<Route> {
 #[get("/")]
 async fn index(user: MaybeUser, pool: &State<SqlitePool>) -> AppResult<Redirect> {
     let Some(user) = user.0 else {
-        return Ok(Redirect::to(if users::count(pool).await? == 0 { "/register" } else { "/login" }));
+        return Ok(Redirect::to(if users::count(pool).await? == 0 {
+            "/register"
+        } else {
+            "/login"
+        }));
     };
-    Ok(match organizations::list_for_user(pool, &user.id).await?.first() {
-        Some((org, _)) => Redirect::to(format!("/organizations/{}", org.id)),
-        None => Redirect::to("/organizations/new"),
-    })
+    Ok(
+        match organizations::list_for_user(pool, &user.id).await?.first() {
+            Some((org, _)) => Redirect::to(format!("/organizations/{}", org.id)),
+            None => Redirect::to("/organizations/new"),
+        },
+    )
 }
 
 #[get("/login?<next>")]
-async fn login_page(user: MaybeUser, next: Option<&str>, pool: &State<SqlitePool>, config: &State<Config>) -> AppResult<Page> {
+async fn login_page(
+    user: MaybeUser,
+    next: Option<&str>,
+    pool: &State<SqlitePool>,
+    config: &State<Config>,
+) -> AppResult<Page> {
     if user.0.is_some() {
         return Ok(Page::Redirect(Redirect::to(safe_next(next))));
     }
@@ -95,14 +106,24 @@ async fn logout(cookies: &CookieJar<'_>, pool: &State<SqlitePool>) -> AppResult<
 }
 
 #[get("/register")]
-async fn register_page(user: MaybeUser, pool: &State<SqlitePool>, config: &State<Config>) -> AppResult<Page> {
+async fn register_page(
+    user: MaybeUser,
+    pool: &State<SqlitePool>,
+    config: &State<Config>,
+) -> AppResult<Page> {
     if user.0.is_some() {
         return Ok(Page::Redirect(Redirect::to("/")));
     }
     if !users::registration_allowed(pool, config).await? {
-        return Err(AppError::forbidden("Die Registrierung ist geschlossen – ein Administrator muss dein Konto anlegen."));
+        return Err(AppError::forbidden(
+            "Die Registrierung ist geschlossen – ein Administrator muss dein Konto anlegen.",
+        ));
     }
-    let page = RegisterPage { error: None, username: String::new(), first_user: users::count(pool).await? == 0 };
+    let page = RegisterPage {
+        error: None,
+        username: String::new(),
+        first_user: users::count(pool).await? == 0,
+    };
     Ok(Page::Html(render(&page)?))
 }
 

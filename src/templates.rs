@@ -20,7 +20,12 @@ pub struct Shell {
 
 impl Shell {
     pub fn org_initial(&self) -> String {
-        self.org.name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_default()
+        self.org
+            .name
+            .chars()
+            .next()
+            .map(|c| c.to_uppercase().to_string())
+            .unwrap_or_default()
     }
 
     pub fn role_label(&self) -> &'static str {

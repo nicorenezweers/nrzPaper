@@ -23,6 +23,8 @@ pub struct Config {
     pub registration_open: bool,
     /// Cookies nur über HTTPS senden – einschalten, sobald nrzPaper hinter HTTPS läuft.
     pub cookie_secure: bool,
+    /// Hintergrundarbeiten (OCR, Eingangsordner, Aufräumen) starten. Tests schalten sie aus.
+    pub background: bool,
 }
 
 impl Default for Config {
@@ -35,6 +37,7 @@ impl Default for Config {
             ocr_workers: 2,
             registration_open: false,
             cookie_secure: false,
+            background: true,
         }
     }
 }
@@ -58,5 +61,8 @@ pub fn figment() -> Figment {
     Figment::from(rocket::Config::default())
         .merge(Toml::file(Env::var_or("NRZPAPER_CONFIG", "Rocket.toml")).nested())
         .merge(Env::prefixed("NRZPAPER_").ignore(&["PROFILE"]).global())
-        .select(rocket::figment::Profile::from_env_or("NRZPAPER_PROFILE", rocket::Config::DEFAULT_PROFILE))
+        .select(rocket::figment::Profile::from_env_or(
+            "NRZPAPER_PROFILE",
+            rocket::Config::DEFAULT_PROFILE,
+        ))
 }

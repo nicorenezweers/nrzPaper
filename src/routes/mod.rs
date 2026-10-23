@@ -3,4 +3,5 @@
 
 pub mod api;
 pub mod catchers;
+pub mod upload;
 pub mod web;

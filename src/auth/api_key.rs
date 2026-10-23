@@ -14,7 +14,8 @@ pub fn hash_key(key: &str) -> String {
 }
 
 fn generate() -> String {
-    let random = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(rand::random::<[u8; 30]>());
+    let random =
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(rand::random::<[u8; 30]>());
     format!("{PREFIX}{random}")
 }
 
@@ -46,7 +47,10 @@ pub async fn create(
         .bind(expires_at)
         .execute(pool)
         .await?;
-    let record = sqlx::query_as("SELECT * FROM api_keys WHERE id = ?").bind(&id).fetch_one(pool).await?;
+    let record = sqlx::query_as("SELECT * FROM api_keys WHERE id = ?")
+        .bind(&id)
+        .fetch_one(pool)
+        .await?;
     Ok((record, key))
 }
 
@@ -56,23 +60,39 @@ pub async fn lookup(pool: &SqlitePool, key: &str) -> AppResult<Option<ApiKey>> {
         return Ok(None);
     }
     let ts = now();
-    let record: Option<ApiKey> = sqlx::query_as("SELECT * FROM api_keys WHERE key_hash = ? AND (expires_at IS NULL OR expires_at > ?)")
-        .bind(hash_key(key))
-        .bind(ts)
-        .fetch_optional(pool)
-        .await?;
+    let record: Option<ApiKey> = sqlx::query_as(
+        "SELECT * FROM api_keys WHERE key_hash = ? AND (expires_at IS NULL OR expires_at > ?)",
+    )
+    .bind(hash_key(key))
+    .bind(ts)
+    .fetch_optional(pool)
+    .await?;
     if let Some(k) = &record {
-        sqlx::query("UPDATE api_keys SET last_used_at = ? WHERE id = ?").bind(ts).bind(&k.id).execute(pool).await?;
+        sqlx::query("UPDATE api_keys SET last_used_at = ? WHERE id = ?")
+            .bind(ts)
+            .bind(&k.id)
+            .execute(pool)
+            .await?;
     }
     Ok(record)
 }
 
 pub async fn list(pool: &SqlitePool, user_id: &str) -> AppResult<Vec<ApiKey>> {
-    Ok(sqlx::query_as("SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at DESC").bind(user_id).fetch_all(pool).await?)
+    Ok(
+        sqlx::query_as("SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at DESC")
+            .bind(user_id)
+            .fetch_all(pool)
+            .await?,
+    )
 }
 
 pub async fn delete(pool: &SqlitePool, user_id: &str, id: &str) -> AppResult<()> {
-    let n = sqlx::query("DELETE FROM api_keys WHERE id = ? AND user_id = ?").bind(id).bind(user_id).execute(pool).await?.rows_affected();
+    let n = sqlx::query("DELETE FROM api_keys WHERE id = ? AND user_id = ?")
+        .bind(id)
+        .bind(user_id)
+        .execute(pool)
+        .await?
+        .rows_affected();
     if n == 0 {
         return Err(AppError::NotFound);
     }

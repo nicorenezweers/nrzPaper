@@ -33,11 +33,20 @@ pub async fn create(pool: &SqlitePool, owner_id: &str, name: &str) -> AppResult<
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
-    Ok(Organization { id, name, created_at: ts, updated_at: ts, deleted_at: None })
+    Ok(Organization {
+        id,
+        name,
+        created_at: ts,
+        updated_at: ts,
+        deleted_at: None,
+    })
 }
 
 /// Organisationen eines Benutzers (ohne gelöschte), nach Name.
-pub async fn list_for_user(pool: &SqlitePool, user_id: &str) -> AppResult<Vec<(Organization, Role)>> {
+pub async fn list_for_user(
+    pool: &SqlitePool,
+    user_id: &str,
+) -> AppResult<Vec<(Organization, Role)>> {
     let rows: Vec<(String, String, i64, i64, Option<i64>, Role)> = sqlx::query_as(
         "SELECT o.id, o.name, o.created_at, o.updated_at, o.deleted_at, m.role
          FROM organizations o JOIN organization_members m ON m.organization_id = o.id
@@ -49,13 +58,28 @@ pub async fn list_for_user(pool: &SqlitePool, user_id: &str) -> AppResult<Vec<(O
     .await?;
     Ok(rows
         .into_iter()
-        .map(|(id, name, created_at, updated_at, deleted_at, role)| (Organization { id, name, created_at, updated_at, deleted_at }, role))
+        .map(|(id, name, created_at, updated_at, deleted_at, role)| {
+            (
+                Organization {
+                    id,
+                    name,
+                    created_at,
+                    updated_at,
+                    deleted_at,
+                },
+                role,
+            )
+        })
         .collect())
 }
 
 /// Organisation samt Rolle des Benutzers – oder 404, wenn er kein Mitglied ist
 /// (fremde Organisationen sollen nicht einmal ihre Existenz verraten).
-pub async fn membership(pool: &SqlitePool, user_id: &str, org_id: &str) -> AppResult<(Organization, Role)> {
+pub async fn membership(
+    pool: &SqlitePool,
+    user_id: &str,
+    org_id: &str,
+) -> AppResult<(Organization, Role)> {
     let row: Option<(String, String, i64, i64, Option<i64>, Role)> = sqlx::query_as(
         "SELECT o.id, o.name, o.created_at, o.updated_at, o.deleted_at, m.role
          FROM organizations o JOIN organization_members m ON m.organization_id = o.id
@@ -66,5 +90,14 @@ pub async fn membership(pool: &SqlitePool, user_id: &str, org_id: &str) -> AppRe
     .fetch_optional(pool)
     .await?;
     let (id, name, created_at, updated_at, deleted_at, role) = row.ok_or(AppError::NotFound)?;
-    Ok((Organization { id, name, created_at, updated_at, deleted_at }, role))
+    Ok((
+        Organization {
+            id,
+            name,
+            created_at,
+            updated_at,
+            deleted_at,
+        },
+        role,
+    ))
 }

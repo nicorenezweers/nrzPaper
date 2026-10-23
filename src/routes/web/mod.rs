@@ -1,6 +1,9 @@
 //! Server-seitig gerenderte Seiten.
 
+pub use documents::{serve as serve_file, FileReply};
+
 mod auth;
+mod documents;
 mod organizations;
 
 use rocket::response::content::RawHtml;
@@ -11,6 +14,7 @@ use rocket::Route;
 pub fn routes() -> Vec<Route> {
     let mut r = auth::routes();
     r.extend(organizations::routes());
+    r.extend(documents::routes());
     r
 }
 
@@ -34,7 +38,10 @@ pub fn safe_next(next: Option<&str>) -> String {
 mod tests {
     #[test]
     fn next_only_local() {
-        assert_eq!(super::safe_next(Some("/organizations/x")), "/organizations/x");
+        assert_eq!(
+            super::safe_next(Some("/organizations/x")),
+            "/organizations/x"
+        );
         assert_eq!(super::safe_next(Some("//evil.example")), "/");
         assert_eq!(super::safe_next(Some("https://evil.example")), "/");
         assert_eq!(super::safe_next(Some("/\\evil")), "/");

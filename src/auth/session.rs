@@ -41,12 +41,15 @@ pub async fn create(pool: &SqlitePool, user_id: &str, user_agent: &str) -> AppRe
 pub async fn lookup(pool: &SqlitePool, token: &str) -> AppResult<Option<User>> {
     let hash = hash_token(token);
     let ts = now();
-    let row: Option<(i64,)> = sqlx::query_as("SELECT last_seen_at FROM sessions WHERE token_hash = ? AND expires_at > ?")
-        .bind(&hash)
-        .bind(ts)
-        .fetch_optional(pool)
-        .await?;
-    let Some((last_seen,)) = row else { return Ok(None) };
+    let row: Option<(i64,)> =
+        sqlx::query_as("SELECT last_seen_at FROM sessions WHERE token_hash = ? AND expires_at > ?")
+            .bind(&hash)
+            .bind(ts)
+            .fetch_optional(pool)
+            .await?;
+    let Some((last_seen,)) = row else {
+        return Ok(None);
+    };
     if ts - last_seen > REFRESH_AFTER_SECS {
         sqlx::query("UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE token_hash = ?")
             .bind(ts)
@@ -55,25 +58,37 @@ pub async fn lookup(pool: &SqlitePool, token: &str) -> AppResult<Option<User>> {
             .execute(pool)
             .await?;
     }
-    Ok(sqlx::query_as("SELECT u.* FROM users u JOIN sessions s ON s.user_id = u.id WHERE s.token_hash = ?")
-        .bind(&hash)
-        .fetch_optional(pool)
-        .await?)
+    Ok(sqlx::query_as(
+        "SELECT u.* FROM users u JOIN sessions s ON s.user_id = u.id WHERE s.token_hash = ?",
+    )
+    .bind(&hash)
+    .fetch_optional(pool)
+    .await?)
 }
 
 pub async fn destroy(pool: &SqlitePool, token: &str) -> AppResult<()> {
-    sqlx::query("DELETE FROM sessions WHERE token_hash = ?").bind(hash_token(token)).execute(pool).await?;
+    sqlx::query("DELETE FROM sessions WHERE token_hash = ?")
+        .bind(hash_token(token))
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
 /// Alle Sitzungen eines Benutzers beenden (z. B. nach Passwortänderung).
 pub async fn destroy_all(pool: &SqlitePool, user_id: &str) -> AppResult<()> {
-    sqlx::query("DELETE FROM sessions WHERE user_id = ?").bind(user_id).execute(pool).await?;
+    sqlx::query("DELETE FROM sessions WHERE user_id = ?")
+        .bind(user_id)
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
 pub async fn purge_expired(pool: &SqlitePool) -> AppResult<u64> {
-    Ok(sqlx::query("DELETE FROM sessions WHERE expires_at <= ?").bind(now()).execute(pool).await?.rows_affected())
+    Ok(sqlx::query("DELETE FROM sessions WHERE expires_at <= ?")
+        .bind(now())
+        .execute(pool)
+        .await?
+        .rows_affected())
 }
 
 /// Cookie setzen: privat (verschlüsselt + signiert), HttpOnly, SameSite=Lax.

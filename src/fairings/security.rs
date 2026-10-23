@@ -22,7 +22,10 @@ const CSP: &str = "default-src 'self'; \
 #[rocket::async_trait]
 impl Fairing for SecurityHeaders {
     fn info(&self) -> Info {
-        Info { name: "Sicherheits-Header", kind: Kind::Response }
+        Info {
+            name: "Sicherheits-Header",
+            kind: Kind::Response,
+        }
     }
 
     async fn on_response<'r>(&self, _req: &'r Request<'_>, res: &mut Response<'r>) {
@@ -31,7 +34,10 @@ impl Fairing for SecurityHeaders {
             ("X-Content-Type-Options", "nosniff"),
             ("X-Frame-Options", "DENY"),
             ("Referrer-Policy", "same-origin"),
-            ("Permissions-Policy", "camera=(), microphone=(), geolocation=()"),
+            (
+                "Permissions-Policy",
+                "camera=(), microphone=(), geolocation=()",
+            ),
             ("Cross-Origin-Opener-Policy", "same-origin"),
         ] {
             if !res.headers().contains(name) {

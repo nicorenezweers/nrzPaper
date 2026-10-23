@@ -93,6 +93,68 @@ nur „Interner Fehler“. Catcher: 401 leitet in der Oberfläche zur Anmeldung 
 | `GET /api/v1/api-keys/current` | eigener Key und Rechte |
 | `GET/POST /api/v1/organizations`, `GET /api/v1/organizations/<id>` | Organisationen |
 
+## Dokumente, Texterkennung, Eingangsordner (Schritt 4)
+
+**Aufnahme** (`services::documents::ingest`) – gleich für Web, API und Eingangsordner:
+
+1. Typ aus dem Inhalt (`infer`), nicht aus dem Dateinamen; Text erkennt man an gültigem UTF-8.
+2. SHA-256 → gibt es die Datei in der Organisation schon? Aktiv: Konflikt (409). Im Papierkorb: wird wiederhergestellt.
+3. Dokument und Blöcke in **einer Transaktion** schreiben, Verlauf „created“.
+4. PDF/Bild → `pending` und OCR-Worker wecken; Text-Datei → sofort durchsuchbar; andere Typen → `skipped`.
+
+**Upload ohne Klartext auf der Platte**: Rockets `TempFile` würde die Datei zuerst in ein temporäres
+Verzeichnis schreiben. `routes::upload::UploadedFile` liest das Formularfeld stattdessen in den Speicher
+(Grenze: `limits.file`, Standard 200 MiB).
+
+**Speicher** (`storage`): 1-MiB-Blöcke; `read_range` liest nur die Blöcke eines `Range`-Bereichs.
+`FileResponse` antwortet mit `206 Partial Content`, `Accept-Ranges`, `Content-Range`, `416` für unerfüllbare
+Bereiche, `Content-Disposition` inline oder als Anhang (UTF-8-Namen nach RFC 5987) und `Cache-Control: private, no-store`.
+
+**Texterkennung** (`ocr::engine`): beim Start wird geprüft, was installiert ist (`tesseract --list-langs`,
+`pdftotext`, `pdftocairo`); gewünschte, aber fehlende Sprachen werden gemeldet und weggelassen.
+
+| Datei | Weg (nur Pipes: stdin → stdout, `fd://0`) |
+|-------|------------------------------------------|
+| PDF mit Textebene | `pdfinfo` (Seitenzahl) → `pdftotext -layout` – genügt, wenn ≥ 25 Zeichen je Seite |
+| Gescanntes PDF | je Seite `pdftocairo -png -singlefile -r 300 -gray` → `tesseract stdin stdout` (höchstens 150 Seiten) |
+| Bild (PNG, JPEG, TIFF, WebP, BMP, GIF) | `tesseract stdin stdout` |
+
+Jeder Aufruf hat ein Zeitlimit von 5 Minuten; Schreiben nach stdin und Lesen von stdout laufen gleichzeitig,
+damit volle Pipes nicht blockieren.
+
+**Warteschlange** (`ocr::queue`): Zustand in der Datenbank. Ein Worker übernimmt das nächste Dokument mit
+*einer* Anweisung (`UPDATE … WHERE num = (SELECT … LIMIT 1) RETURNING id`), deshalb greifen mehrere Worker
+(`ocr_workers`, Standard 2) nie dasselbe. Ein `Notify` weckt sie bei neuen Dokumenten, sonst schauen sie alle
+30 s nach. Beim Start wird `processing` wieder zu `pending` (Absturz-Wiederaufnahme). Erkannter Text landet in
+`documents.content` und damit über die Trigger im Volltextindex.
+
+**Eingangsordner** (`ingestion`): `data/ingestion/<Organisations-ID>/`, für neue Organisationen sofort angelegt.
+Eine Datei wird übernommen, wenn sie zwei Runden lang unverändert und mindestens 2 s alt ist (also fertig
+geschrieben), danach **gelöscht**. Duplikate werden ebenfalls gelöscht, Fehlerhaftes landet in
+`<Organisation>/fehler/`. Versteckte und halbe Dateien (`.part`, `.tmp`, `.crdownload` …) bleiben liegen.
+`notify` meldet Änderungen sofort; zusätzlich alle 20 s eine Runde, weil Datei-Ereignisse in Docker-Bind-Mounts
+nicht immer ankommen.
+
+**Papierkorb**: `DELETE` legt Dokumente in den Papierkorb; erneuter Upload oder `restore` holt sie zurück; endgültig
+löschen nur aus dem Papierkorb. Ein Hintergrund-Job leert ihn täglich nach `trash_retention_days`.
+
+**Sauberes Herunterfahren**: `CloseDatabase` schliesst beim Shutdown den Pool. Sonst schliesst ein sqlx-Thread
+seine Verbindung erst, während der Prozess endet, und SQLCipher gibt dabei ungültigen Speicher frei
+(SIGSEGV in `sqlcipher_free`, gefunden über den macOS-Absturzbericht). Aus demselben Grund schliessen die Tests
+ihre Datenbank bzw. beenden den Test-Server mit `terminate()`.
+
+**Neue Routen**
+
+| Pfad | Zweck |
+|------|-------|
+| `POST /organizations/<org>/documents` | Upload aus der Oberfläche (mehrere Dateien, Antwort JSON je Datei) |
+| `GET /organizations/<org>/documents/<id>/file[?download=true]` | Datei für Vorschau/Download, mit Range |
+| `POST/GET /api/v1/organizations/<org>/documents` | Upload (multipart `file`) und Liste (`pageIndex`, `pageSize`) |
+| `GET /api/v1/organizations/<org>/documents/deleted` | Papierkorb |
+| `GET/PATCH/DELETE /api/v1/organizations/<org>/documents/<id>` | lesen, Name/Inhalt ändern, in den Papierkorb |
+| `GET /api/v1/organizations/<org>/documents/<id>/file` | Datei (Range) |
+| `POST /api/v1/organizations/<org>/documents/<id>/restore` · `/reprocess` | wiederherstellen, Texterkennung neu |
+
 ## Datenfluss
 
 ```
@@ -150,7 +212,7 @@ nrzPaper/
 1. **Architektur & Projektstruktur** – diese Datei, `Cargo.toml`, Modulgerüst, SQLCipher-Test. ✅
 2. **Datenbank-Schema & Migrationen** – `migrations/0001_init.sql`, Modelle in `src/db/models.rs`, Tests in `tests/schema.rs`. ✅
 3. **Rocket-Server** – Fairings, Request Guards, Anmeldung, Routing, Fehlerbehandlung, erste Seiten, `tests/web.rs`. ✅
-4. Upload-, Speicher- und OCR-Pipeline, Eingangsordner.
+4. **Upload, Speicher, OCR, Eingangsordner** – `storage`, `ocr`, `ingestion`, `services::documents`, `tests/documents.rs`. ✅
 5. SSR-Oberfläche (Askama + Tailwind, Grautöne), PDF-Vorschau.
 6. REST-API, Webhooks, Freigabelinks.
 7. Dockerfile (Multi-Stage, `debian:bookworm-slim` mit Tesseract und Poppler).

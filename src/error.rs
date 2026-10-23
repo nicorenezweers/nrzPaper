@@ -48,7 +48,10 @@ impl AppError {
             AppError::NotFound => Status::NotFound,
             AppError::Conflict(_) => Status::Conflict,
             AppError::Database(sqlx::Error::RowNotFound) => Status::NotFound,
-            AppError::Config(_) | AppError::Database(_) | AppError::Io(_) | AppError::Template(_) => Status::InternalServerError,
+            AppError::Config(_)
+            | AppError::Database(_)
+            | AppError::Io(_)
+            | AppError::Template(_) => Status::InternalServerError,
         }
     }
 
@@ -83,15 +86,32 @@ pub fn wants_json(req: &Request<'_>) -> bool {
 }
 
 /// Antwort für einen Status mit Meldung – genutzt vom Responder und von den Catchern.
-pub fn error_response(req: &Request<'_>, status: Status, message: &str) -> response::Result<'static> {
+pub fn error_response(
+    req: &Request<'_>,
+    status: Status,
+    message: &str,
+) -> response::Result<'static> {
     let (content_type, body) = if wants_json(req) {
-        (ContentType::JSON, serde_json::json!({ "error": { "code": code_for(status), "message": message } }).to_string())
+        (
+            ContentType::JSON,
+            serde_json::json!({ "error": { "code": code_for(status), "message": message } })
+                .to_string(),
+        )
     } else {
-        let page = crate::templates::ErrorPage { status: status.code, title: status.reason_lossy(), message };
-        let html = askama::Template::render(&page).unwrap_or_else(|_| format!("<h1>{}</h1><p>{}</p>", status.code, message));
+        let page = crate::templates::ErrorPage {
+            status: status.code,
+            title: status.reason_lossy(),
+            message,
+        };
+        let html = askama::Template::render(&page)
+            .unwrap_or_else(|_| format!("<h1>{}</h1><p>{}</p>", status.code, message));
         (ContentType::HTML, html)
     };
-    Response::build().status(status).header(content_type).sized_body(body.len(), Cursor::new(body)).ok()
+    Response::build()
+        .status(status)
+        .header(content_type)
+        .sized_body(body.len(), Cursor::new(body))
+        .ok()
 }
 
 /// Maschinenlesbarer Code zu einem HTTP-Status.

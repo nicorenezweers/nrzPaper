@@ -11,7 +11,10 @@ pub const REGISTRATION_OPEN: &str = "registration_open";
 const COOKIE_SECRET: &str = "cookie_secret";
 
 pub async fn get<T: DeserializeOwned>(pool: &SqlitePool, key: &str) -> AppResult<Option<T>> {
-    let raw: Option<String> = sqlx::query_scalar("SELECT value FROM app_settings WHERE key = ?").bind(key).fetch_optional(pool).await?;
+    let raw: Option<String> = sqlx::query_scalar("SELECT value FROM app_settings WHERE key = ?")
+        .bind(key)
+        .fetch_optional(pool)
+        .await?;
     Ok(raw.and_then(|v| serde_json::from_str(&v).ok()))
 }
 

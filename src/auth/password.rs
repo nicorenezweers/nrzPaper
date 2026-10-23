@@ -12,12 +12,17 @@ pub const MIN_LENGTH: usize = 8;
 /// damit die Anmeldung immer gleich lange dauert.
 pub static DUMMY_HASH: LazyLock<String> = LazyLock::new(|| {
     let salt = SaltString::generate(&mut OsRng);
-    Argon2::default().hash_password(&rand::random::<[u8; 16]>(), &salt).expect("Argon2").to_string()
+    Argon2::default()
+        .hash_password(&rand::random::<[u8; 16]>(), &salt)
+        .expect("Argon2")
+        .to_string()
 });
 
 pub fn check_strength(password: &str) -> AppResult<()> {
     if password.chars().count() < MIN_LENGTH {
-        return Err(AppError::bad(format!("Passwort: mindestens {MIN_LENGTH} Zeichen.")));
+        return Err(AppError::bad(format!(
+            "Passwort: mindestens {MIN_LENGTH} Zeichen."
+        )));
     }
     Ok(())
 }
@@ -25,7 +30,9 @@ pub fn check_strength(password: &str) -> AppResult<()> {
 pub async fn hash(password: String) -> AppResult<String> {
     tokio::task::spawn_blocking(move || {
         let salt = SaltString::generate(&mut OsRng);
-        Argon2::default().hash_password(password.as_bytes(), &salt).map(|h| h.to_string())
+        Argon2::default()
+            .hash_password(password.as_bytes(), &salt)
+            .map(|h| h.to_string())
     })
     .await
     .map_err(|e| AppError::Config(format!("Hash-Thread: {e}")))?
@@ -34,7 +41,11 @@ pub async fn hash(password: String) -> AppResult<String> {
 
 pub async fn verify(password: String, hash: String) -> bool {
     tokio::task::spawn_blocking(move || {
-        PasswordHash::new(&hash).is_ok_and(|h| Argon2::default().verify_password(password.as_bytes(), &h).is_ok())
+        PasswordHash::new(&hash).is_ok_and(|h| {
+            Argon2::default()
+                .verify_password(password.as_bytes(), &h)
+                .is_ok()
+        })
     })
     .await
     .unwrap_or(false)

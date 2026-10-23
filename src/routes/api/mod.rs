@@ -1,6 +1,8 @@
 //! REST-API unter `/api/v1`. Anmeldung per API-Key (`Authorization: Bearer np_…`) oder
 //! Sitzung; jeder Endpunkt prüft die passende Berechtigung.
 
+mod documents;
+
 use crate::auth::guards::ApiUser;
 use crate::db::models::Permission;
 use crate::error::{AppError, AppResult};
@@ -12,7 +14,24 @@ use serde::Deserialize;
 use sqlx::SqlitePool;
 
 pub fn routes() -> Vec<Route> {
-    routes![health, current_key, list_organizations, create_organization, get_organization]
+    let mut r = routes![
+        health,
+        current_key,
+        list_organizations,
+        create_organization,
+        get_organization
+    ];
+    r.extend(documents::routes());
+    r
+}
+
+/// Mitgliedschaft prüfen (404, wenn nicht Mitglied).
+pub(crate) async fn member(
+    pool: &SqlitePool,
+    api: &ApiUser,
+    org: &str,
+) -> AppResult<crate::db::models::Role> {
+    Ok(organizations::membership(pool, &api.user.id, org).await?.1)
 }
 
 /// Lebenszeichen für Docker-Healthcheck und Monitoring.
@@ -34,7 +53,9 @@ fn current_key(api: ApiUser) -> Value {
 async fn list_organizations(api: ApiUser, pool: &State<SqlitePool>) -> AppResult<Value> {
     api.require(Permission::OrganizationsRead)?;
     let orgs = organizations::list_for_user(pool, &api.user.id).await?;
-    Ok(json!({ "organizations": orgs.into_iter().map(|(o, role)| json!({ "id": o.id, "name": o.name, "role": role, "createdAt": o.created_at })).collect::<Vec<_>>() }))
+    Ok(
+        json!({ "organizations": orgs.into_iter().map(|(o, role)| json!({ "id": o.id, "name": o.name, "role": role, "createdAt": o.created_at })).collect::<Vec<_>>() }),
+    )
 }
 
 #[derive(Deserialize)]
@@ -43,15 +64,23 @@ struct NewOrganization {
 }
 
 #[post("/organizations", data = "<body>")]
-async fn create_organization(api: ApiUser, body: Json<NewOrganization>, pool: &State<SqlitePool>) -> AppResult<(Status, Value)> {
+async fn create_organization(
+    api: ApiUser,
+    body: Json<NewOrganization>,
+    pool: &State<SqlitePool>,
+    config: &State<crate::config::Config>,
+) -> AppResult<(Status, Value)> {
     api.require(Permission::OrganizationsCreate)?;
     let org = organizations::create(pool, &api.user.id, &body.name).await?;
+    crate::ingestion::create_org_dir(config, &org.id).await;
     Ok((Status::Created, json!({ "organization": org })))
 }
 
 #[get("/organizations/<id>")]
 async fn get_organization(api: ApiUser, id: &str, pool: &State<SqlitePool>) -> AppResult<Value> {
     api.require(Permission::OrganizationsRead)?;
-    let (org, role) = organizations::membership(pool, &api.user.id, id).await.map_err(|_| AppError::NotFound)?;
+    let (org, role) = organizations::membership(pool, &api.user.id, id)
+        .await
+        .map_err(|_| AppError::NotFound)?;
     Ok(json!({ "organization": org, "role": role }))
 }

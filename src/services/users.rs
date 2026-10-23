@@ -8,15 +8,23 @@ use crate::services::settings;
 use sqlx::SqlitePool;
 
 pub async fn count(pool: &SqlitePool) -> AppResult<i64> {
-    Ok(sqlx::query_scalar("SELECT count(*) FROM users").fetch_one(pool).await?)
+    Ok(sqlx::query_scalar("SELECT count(*) FROM users")
+        .fetch_one(pool)
+        .await?)
 }
 
 pub async fn by_id(pool: &SqlitePool, id: &str) -> AppResult<Option<User>> {
-    Ok(sqlx::query_as("SELECT * FROM users WHERE id = ?").bind(id).fetch_optional(pool).await?)
+    Ok(sqlx::query_as("SELECT * FROM users WHERE id = ?")
+        .bind(id)
+        .fetch_optional(pool)
+        .await?)
 }
 
 pub async fn by_username(pool: &SqlitePool, username: &str) -> AppResult<Option<User>> {
-    Ok(sqlx::query_as("SELECT * FROM users WHERE username = ?").bind(username.trim()).fetch_optional(pool).await?)
+    Ok(sqlx::query_as("SELECT * FROM users WHERE username = ?")
+        .bind(username.trim())
+        .fetch_optional(pool)
+        .await?)
 }
 
 /// Darf sich gerade jemand selbst registrieren? Das erste Konto immer, danach nur,
@@ -25,20 +33,32 @@ pub async fn registration_allowed(pool: &SqlitePool, config: &Config) -> AppResu
     if count(pool).await? == 0 {
         return Ok(true);
     }
-    Ok(settings::get::<bool>(pool, settings::REGISTRATION_OPEN).await?.unwrap_or(config.registration_open))
+    Ok(settings::get::<bool>(pool, settings::REGISTRATION_OPEN)
+        .await?
+        .unwrap_or(config.registration_open))
 }
 
 pub fn validate_username(name: &str) -> AppResult<String> {
     let name = name.trim();
-    let ok = (3..=32).contains(&name.chars().count()) && name.chars().all(|c| c.is_alphanumeric() || "._-".contains(c));
+    let ok = (3..=32).contains(&name.chars().count())
+        && name
+            .chars()
+            .all(|c| c.is_alphanumeric() || "._-".contains(c));
     if !ok {
-        return Err(AppError::bad("Benutzername: 3–32 Zeichen, nur Buchstaben, Zahlen, Punkt, Minus und Unterstrich."));
+        return Err(AppError::bad(
+            "Benutzername: 3–32 Zeichen, nur Buchstaben, Zahlen, Punkt, Minus und Unterstrich.",
+        ));
     }
     Ok(name.to_string())
 }
 
 /// Legt ein Konto an. Das allererste Konto wird Administrator der Instanz.
-pub async fn create(pool: &SqlitePool, username: &str, password_plain: &str, display_name: &str) -> AppResult<User> {
+pub async fn create(
+    pool: &SqlitePool,
+    username: &str,
+    password_plain: &str,
+    display_name: &str,
+) -> AppResult<User> {
     let username = validate_username(username)?;
     password::check_strength(password_plain)?;
     let hash = password::hash(password_plain.to_string()).await?;
@@ -64,9 +84,16 @@ pub async fn create(pool: &SqlitePool, username: &str, password_plain: &str, dis
 
 /// Anmeldedaten prüfen. Auch bei unbekanntem Namen wird ein Hash geprüft, damit die
 /// Antwortzeit nicht verrät, ob es das Konto gibt.
-pub async fn authenticate(pool: &SqlitePool, username: &str, password_plain: &str) -> AppResult<Option<User>> {
+pub async fn authenticate(
+    pool: &SqlitePool,
+    username: &str,
+    password_plain: &str,
+) -> AppResult<Option<User>> {
     let user = by_username(pool, username).await?;
-    let hash = user.as_ref().map(|u| u.password_hash.clone()).unwrap_or_else(|| password::DUMMY_HASH.clone());
+    let hash = user
+        .as_ref()
+        .map(|u| u.password_hash.clone())
+        .unwrap_or_else(|| password::DUMMY_HASH.clone());
     let ok = password::verify(password_plain.to_string(), hash).await;
     Ok(user.filter(|_| ok))
 }

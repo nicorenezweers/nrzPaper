@@ -112,7 +112,10 @@ text_enum!(
 impl PropertyType {
     /// Mehrere Werte je Dokument erlaubt.
     pub fn is_multi(self) -> bool {
-        matches!(self, PropertyType::MultiSelect | PropertyType::UserRelation | PropertyType::DocumentRelation)
+        matches!(
+            self,
+            PropertyType::MultiSelect | PropertyType::UserRelation | PropertyType::DocumentRelation
+        )
     }
 }
 

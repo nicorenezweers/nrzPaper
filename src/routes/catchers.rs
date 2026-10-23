@@ -40,10 +40,17 @@ pub enum UnauthorizedReply {
 #[catch(401)]
 fn unauthorized(req: &Request<'_>) -> UnauthorizedReply {
     if wants_json(req) {
-        return UnauthorizedReply::Error(Reply(Status::Unauthorized, message(Status::Unauthorized)));
+        return UnauthorizedReply::Error(Reply(
+            Status::Unauthorized,
+            message(Status::Unauthorized),
+        ));
     }
     let next = req.uri().to_string();
-    let target = if next == "/" { "/login".to_string() } else { format!("/login?next={}", urlencode(&next)) };
+    let target = if next == "/" {
+        "/login".to_string()
+    } else {
+        format!("/login?next={}", urlencode(&next))
+    };
     UnauthorizedReply::Login(Redirect::to(target))
 }
 
@@ -55,7 +62,9 @@ fn default(status: Status, _req: &Request<'_>) -> Reply {
 fn urlencode(s: &str) -> String {
     s.bytes()
         .map(|b| match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' | b'/' => (b as char).to_string(),
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' | b'/' => {
+                (b as char).to_string()
+            }
             _ => format!("%{b:02X}"),
         })
         .collect()

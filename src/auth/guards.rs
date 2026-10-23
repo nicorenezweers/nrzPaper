@@ -32,10 +32,17 @@ pub fn is_cross_origin(req: &Request<'_>) -> bool {
     if matches!(req.method(), Method::Get | Method::Head | Method::Options) {
         return false;
     }
-    let Some(origin) = req.headers().get_one("Origin") else { return false };
+    let Some(origin) = req.headers().get_one("Origin") else {
+        return false;
+    };
     let origin_host = origin.split_once("://").map(|(_, h)| h).unwrap_or("");
-    let own = [req.headers().get_one("X-Forwarded-Host"), req.headers().get_one("Host")];
-    !own.iter().flatten().any(|h| h.eq_ignore_ascii_case(origin_host))
+    let own = [
+        req.headers().get_one("X-Forwarded-Host"),
+        req.headers().get_one("Host"),
+    ];
+    !own.iter()
+        .flatten()
+        .any(|h| h.eq_ignore_ascii_case(origin_host))
 }
 
 pub struct CurrentUser(pub User);
@@ -46,7 +53,10 @@ impl<'r> FromRequest<'r> for CurrentUser {
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         if is_cross_origin(req) {
-            return Outcome::Error((Status::Forbidden, AppError::forbidden("Anfrage von einer fremden Seite abgewiesen.")));
+            return Outcome::Error((
+                Status::Forbidden,
+                AppError::forbidden("Anfrage von einer fremden Seite abgewiesen."),
+            ));
         }
         match session_user(req).await {
             Some(user) => Outcome::Success(CurrentUser(user)),
@@ -76,7 +86,10 @@ impl<'r> FromRequest<'r> for AdminUser {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match CurrentUser::from_request(req).await {
             Outcome::Success(CurrentUser(u)) if u.is_admin => Outcome::Success(AdminUser(u)),
-            Outcome::Success(_) => Outcome::Error((Status::Forbidden, AppError::forbidden("Nur für Administratoren."))),
+            Outcome::Success(_) => Outcome::Error((
+                Status::Forbidden,
+                AppError::forbidden("Nur für Administratoren."),
+            )),
             Outcome::Error(e) => Outcome::Error(e),
             Outcome::Forward(s) => Outcome::Forward(s),
         }
@@ -92,9 +105,9 @@ pub struct ApiUser {
 impl ApiUser {
     pub fn require(&self, permission: Permission) -> AppResult<()> {
         match &self.key {
-            Some(k) if !k.permissions.0.contains(&permission) => {
-                Err(AppError::forbidden(format!("Dem API-Key fehlt die Berechtigung „{permission}“.")))
-            }
+            Some(k) if !k.permissions.0.contains(&permission) => Err(AppError::forbidden(format!(
+                "Dem API-Key fehlt die Berechtigung „{permission}“."
+            ))),
             _ => Ok(()),
         }
     }
@@ -106,10 +119,14 @@ impl<'r> FromRequest<'r> for ApiUser {
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let unauthorized = || Outcome::Error((Status::Unauthorized, AppError::Unauthorized));
-        let Some(pool) = req.rocket().state::<SqlitePool>() else { return unauthorized() };
+        let Some(pool) = req.rocket().state::<SqlitePool>() else {
+            return unauthorized();
+        };
 
         if let Some(auth) = req.headers().get_one("Authorization") {
-            let Some(key) = auth.strip_prefix("Bearer ").map(str::trim) else { return unauthorized() };
+            let Some(key) = auth.strip_prefix("Bearer ").map(str::trim) else {
+                return unauthorized();
+            };
             return match api_key::lookup(pool, key).await {
                 Ok(Some(k)) => match users::by_id(pool, &k.user_id).await {
                     Ok(Some(user)) => Outcome::Success(ApiUser { user, key: Some(k) }),
@@ -135,6 +152,11 @@ impl<'r> FromRequest<'r> for UserAgent {
     type Error = std::convert::Infallible;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        Outcome::Success(UserAgent(req.headers().get_one("User-Agent").unwrap_or_default().to_string()))
+        Outcome::Success(UserAgent(
+            req.headers()
+                .get_one("User-Agent")
+                .unwrap_or_default()
+                .to_string(),
+        ))
     }
 }

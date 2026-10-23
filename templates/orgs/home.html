@@ -1,0 +1,11 @@
+{% extends "app_layout.html" %}
+{% block title %}{{ shell.org.name }} · nrzPaper{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight text-zinc-100">Dokumente</h1>
+<p class="mt-1 text-sm text-zinc-500">{{ shell.org.name }} · deine Rolle: {{ shell.role_label() }}</p>
+<div class="mt-8 grid place-items-center rounded-2xl border border-dashed border-zinc-800 px-6 py-20 text-center">
+  <svg viewBox="0 0 24 24" class="h-10 w-10 text-zinc-600"><path d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <p class="mt-4 font-medium text-zinc-300">Noch keine Dokumente</p>
+  <p class="mt-1 text-sm text-zinc-500">Upload, Texterkennung und Liste folgen in Schritt 4 und 5.</p>
+</div>
+{% endblock %}

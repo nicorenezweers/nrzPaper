@@ -42,6 +42,57 @@ Regeln, die im Schema stecken:
 - **Eigenschaftswerte**: genau eine Wert-Spalte je Zeile (`CHECK`), Mehrfachwerte als mehrere Zeilen.
 - **Abfragen zur Laufzeit** (`query_as` + `FromRow`): die `query!`-Makros bräuchten beim Übersetzen eine unverschlüsselte Datenbank. Dynamisches SQL muss in sqlx 0.9 ausdrücklich als `AssertSqlSafe` markiert werden – nur für feste Bausteine, Werte immer über `bind`.
 
+## Server (Schritt 3)
+
+**Start** (`lib.rs::build_with`): Konfiguration lesen → Datenbank öffnen und migrieren → Cookie-Schlüssel aus der
+Datenbank (beim ersten Start erzeugt, liegt verschlüsselt in `app_settings`; ein gesetzter `secret_key` hat Vorrang)
+→ Fairings, Routen, Catcher.
+
+**Anmeldung**
+
+- Passwörter: Argon2id auf einem Blocking-Thread. Unbekannte Benutzernamen prüfen einen Dummy-Hash, damit die
+  Antwortzeit nichts verrät; Fehlversuche warten zusätzlich 400 ms.
+- Sitzungen: Zufalls-Token (256 Bit) im privaten Cookie `nrzpaper_session` (von Rocket verschlüsselt und signiert,
+  `HttpOnly`, `SameSite=Lax`, optional `Secure`). In der Datenbank liegt nur der SHA-256. 30 Tage, verlängert sich
+  bei Benutzung (höchstens einmal pro Stunde ein Schreibzugriff), abgelaufene löscht ein Hintergrund-Job stündlich.
+- Das erste Konto wird Administrator. Danach ist die Registrierung zu (`registration_open` bzw. Einstellung in der DB).
+- API-Keys: `np_` + 240 Bit Zufall, gespeichert als SHA-256 plus Präfix zur Anzeige, mit Berechtigungen und Ablauf.
+
+**Request Guards** (`src/auth/guards.rs`)
+
+| Guard | Bedeutung |
+|-------|-----------|
+| `CurrentUser` | Sitzung gültig; ändernde Anfragen mit fremdem `Origin` → 403 |
+| `MaybeUser` | Sitzung optional (Anmeldeseite, Start) |
+| `AdminUser` | zusätzlich Administrator |
+| `ApiUser` | `Authorization: Bearer np_…` oder Sitzung; `require(Permission)` prüft den Key |
+| `UserAgent` | Browser-Kennung für die Sitzungsliste |
+
+Organisationen prüft `services::organizations::membership` – wer kein Mitglied ist, bekommt 404, nicht 403.
+
+**CSRF**: `SameSite=Lax` verhindert, dass fremde Seiten POST-Anfragen mit Sitzung auslösen. Zusätzlich lehnen die
+Guards ändernde Anfragen ab, deren `Origin` nicht zu `Host`/`X-Forwarded-Host` passt. Rücksprünge nach der Anmeldung
+(`next`) sind nur auf eigene Pfade erlaubt.
+
+**Fairings**: `SecurityHeaders` (CSP mit genau den beiden CDNs, `X-Frame-Options`, `nosniff`, Referrer- und
+Permissions-Policy), `RequestLog` (Methode, Pfad, Status, Dauer über `tracing`), `Background` (Liftoff: Aufräum-Jobs,
+beendet sich mit dem Server).
+
+**Fehler**: `AppError` ist ein Responder – API-Pfade und `Accept: application/json` bekommen
+`{"error":{"code","message"}}`, die Oberfläche eine Fehlerseite. Interne Fehler werden protokolliert, nach aussen steht
+nur „Interner Fehler“. Catcher: 401 leitet in der Oberfläche zur Anmeldung (mit Rücksprung), sonst Seite bzw. JSON.
+
+**Routen bisher**
+
+| Pfad | Zweck |
+|------|-------|
+| `GET /` | weiter zur ersten Organisation, zur Anmeldung oder zur Ersteinrichtung |
+| `GET/POST /login`, `POST /logout`, `GET/POST /register` | Anmeldung |
+| `GET/POST /organizations/new`, `GET /organizations/<id>` | Organisation anlegen, öffnen |
+| `GET /api/v1/health` | Lebenszeichen |
+| `GET /api/v1/api-keys/current` | eigener Key und Rechte |
+| `GET/POST /api/v1/organizations`, `GET /api/v1/organizations/<id>` | Organisationen |
+
 ## Datenfluss
 
 ```
@@ -98,7 +149,7 @@ nrzPaper/
 
 1. **Architektur & Projektstruktur** – diese Datei, `Cargo.toml`, Modulgerüst, SQLCipher-Test. ✅
 2. **Datenbank-Schema & Migrationen** – `migrations/0001_init.sql`, Modelle in `src/db/models.rs`, Tests in `tests/schema.rs`. ✅
-3. Rocket-Server: Konfiguration, Fairings, Request Guards, Routing, Fehlerbehandlung.
+3. **Rocket-Server** – Fairings, Request Guards, Anmeldung, Routing, Fehlerbehandlung, erste Seiten, `tests/web.rs`. ✅
 4. Upload-, Speicher- und OCR-Pipeline, Eingangsordner.
 5. SSR-Oberfläche (Askama + Tailwind, Grautöne), PDF-Vorschau.
 6. REST-API, Webhooks, Freigabelinks.

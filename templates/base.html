@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="de" class="h-full bg-zinc-950">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{% block title %}nrzPaper{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"] } } } };
+  </script>
+  <style>
+    /* Nur Grautöne: Fokus-Ring und Auswahl ebenfalls grau */
+    ::selection { background: #52525b; color: #fafafa; }
+    :focus-visible { outline: 2px solid #a1a1aa; outline-offset: 2px; }
+  </style>
+</head>
+<body class="h-full text-zinc-200 antialiased font-sans">
+{% block body %}{% endblock %}
+</body>
+</html>

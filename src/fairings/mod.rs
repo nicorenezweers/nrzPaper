@@ -1,2 +1,9 @@
-//! Fairings: Sicherheits-Header (CSP, X-Frame-Options …) und das Starten der
-//! Hintergrundarbeiten (OCR-Warteschlange, Eingangsordner, Papierkorb). – Schritt 3
+//! Fairings: Sicherheits-Header, Anfrage-Protokoll und das Starten der Hintergrundarbeiten.
+
+mod background;
+mod request_log;
+mod security;
+
+pub use background::Background;
+pub use request_log::RequestLog;
+pub use security::SecurityHeaders;

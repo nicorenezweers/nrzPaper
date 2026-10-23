@@ -21,6 +21,8 @@ pub struct Config {
     pub ocr_workers: usize,
     /// Neue Benutzer dürfen sich selbst registrieren (das erste Konto immer).
     pub registration_open: bool,
+    /// Cookies nur über HTTPS senden – einschalten, sobald nrzPaper hinter HTTPS läuft.
+    pub cookie_secure: bool,
 }
 
 impl Default for Config {
@@ -32,6 +34,7 @@ impl Default for Config {
             ocr_languages: "deu+eng".into(),
             ocr_workers: 2,
             registration_open: false,
+            cookie_secure: false,
         }
     }
 }

@@ -1,0 +1,17 @@
+{% extends "auth_layout.html" %}
+{% import "macros.html" as m %}
+{% block title %}Registrieren · nrzPaper{% endblock %}
+{% block card %}
+<h1 class="text-lg font-semibold text-zinc-100">{% if first_user %}Willkommen bei nrzPaper{% else %}Konto erstellen{% endif %}</h1>
+<p class="text-sm text-zinc-500 mt-1 mb-6">{% if first_user %}Das erste Konto verwaltet die Instanz.{% else %}Mit Benutzername und Passwort.{% endif %}</p>
+{% if let Some(e) = error %}<div class="mb-5 rounded-lg border border-zinc-700 bg-zinc-800/60 px-3 py-2.5 text-sm text-zinc-200">{{ e }}</div>{% endif %}
+<form method="post" action="/register" class="space-y-4">
+  {% call m::field("Benutzername", "username", "text", username, "username") %}{% endcall %}
+  {% call m::field("Passwort", "password", "password", "", "new-password") %}{% endcall %}
+  <p class="text-xs text-zinc-500 -mt-2">Mindestens 8 Zeichen.</p>
+  <button class="w-full rounded-lg bg-zinc-100 px-4 py-2.5 font-semibold text-zinc-900 transition hover:bg-white">Konto erstellen</button>
+</form>
+{% endblock %}
+{% block below %}
+{% if !first_user %}<p class="mt-6 text-center text-sm text-zinc-500">Schon ein Konto? <a href="/login" class="text-zinc-300 underline-offset-4 hover:underline">Anmelden</a></p>{% endif %}
+{% endblock %}

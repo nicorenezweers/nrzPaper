@@ -3,13 +3,13 @@
 Selbst gehostete Dokumentenverwaltung im Funktionsumfang von [Papra](https://papra.app) – komplett in Rust.
 Alle Daten, auch die Dokumente selbst, liegen in **einer einzigen, mit SQLCipher verschlüsselten SQLite-Datei**.
 
-> Stand: Schritt 2 von 7 – Architektur, Projektgerüst, Datenbank-Schema mit Migrationen. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
+> Stand: Schritt 3 von 7 – Datenbank, Server mit Anmeldung, Organisationen und erster API. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Starten (Entwicklung)
 
 ```bash
 cargo run
-# http://localhost:8320/api/v1/health
+# http://localhost:8320 – beim ersten Aufruf das Administrator-Konto anlegen
 ```
 
 Beim ersten Start entsteht `data/nrzpaper.db` (verschlüsselt) und `data/nrzpaper.key`.
@@ -23,6 +23,8 @@ Beim ersten Start entsteht `data/nrzpaper.db` (verschlüsselt) und `data/nrzpape
 | `NRZPAPER_DB_KEY` | – | Datenbank-Schlüssel; fehlt er, wird `nrzpaper.key` verwendet bzw. erzeugt |
 | `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Sprachen für Tesseract |
 | `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Aufbewahrung im Papierkorb |
+| `NRZPAPER_REGISTRATION_OPEN` | `false` | Selbst-Registrierung nach dem ersten Konto |
+| `NRZPAPER_COOKIE_SECURE` | `false` | Cookies nur über HTTPS (hinter HTTPS einschalten) |
 | `NRZPAPER_LOG` | `info` | Log-Filter (`tracing`) |
 
 ## Tests
@@ -32,4 +34,5 @@ cargo test
 ```
 
 - `tests/sqlcipher.rs` – Grundannahme: verschlüsselte Datei ohne lesbaren Inhalt, FTS5 mit Umlauten, falscher Schlüssel wird abgewiesen.
+- `tests/web.rs` – Ersteinrichtung, Anmeldung, Sitzungen (auch nach Neustart), fremde Organisationen, CSRF, offene Redirects, Sicherheits-Header, Fehler als HTML/JSON, API-Keys mit Berechtigungen und Ablauf.
 - `tests/schema.rs` – Migrationen, Volltextindex (auch nach `VACUUM`), Löschketten, Eindeutigkeit, Prüfbedingungen, Modelle, verschlüsselte Dokument-Blöcke.

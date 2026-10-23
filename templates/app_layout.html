@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="flex min-h-full">
+  <aside class="hidden md:flex w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-900/40 px-3 py-4">
+    <details class="relative group mb-5">
+      <summary class="flex cursor-pointer list-none items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2.5 hover:bg-zinc-800/80">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-zinc-800 text-sm font-semibold text-zinc-300">{{ shell.org_initial() }}</span>
+        <span class="flex-1 truncate font-semibold text-zinc-100">{{ shell.org.name }}</span>
+        <svg viewBox="0 0 20 20" class="h-4 w-4 text-zinc-500"><path d="M6 8l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </summary>
+      <div class="absolute inset-x-0 top-full z-20 mt-2 rounded-xl border border-zinc-800 bg-zinc-900 p-1.5 shadow-2xl shadow-black/50">
+        {% for (o, _) in shell.orgs %}
+        <a href="/organizations/{{ o.id }}" class="block truncate rounded-lg px-3 py-2 text-sm {% if o.id == shell.org.id %}bg-zinc-800 text-zinc-100{% else %}text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200{% endif %}">{{ o.name }}</a>
+        {% endfor %}
+        <a href="/organizations/new" class="mt-1 block rounded-lg border-t border-zinc-800 px-3 py-2 text-sm text-zinc-400 hover:text-zinc-200">+ Neue Organisation</a>
+      </div>
+    </details>
+    <nav class="space-y-0.5 text-sm">
+      {% for (key, label, ready) in shell.nav() %}
+      {% if ready %}
+      <a href="/organizations/{{ shell.org.id }}{% if key != "" %}/{{ key }}{% endif %}" class="flex items-center gap-3 rounded-lg px-3 py-2 {% if key == shell.active %}bg-zinc-800 font-medium text-zinc-100{% else %}text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200{% endif %}">{{ label }}</a>
+      {% else %}
+      <span class="flex items-center justify-between rounded-lg px-3 py-2 text-zinc-600">{{ label }}<span class="text-[11px]">bald</span></span>
+      {% endif %}
+      {% endfor %}
+    </nav>
+    <div class="mt-auto border-t border-zinc-800 pt-3 text-sm">
+      <div class="flex items-center justify-between px-3 py-1.5">
+        <span class="truncate text-zinc-400">{{ shell.user.username }}{% if shell.user.is_admin %} · Admin{% endif %}</span>
+        <form method="post" action="/logout"><button class="text-zinc-500 hover:text-zinc-200">Abmelden</button></form>
+      </div>
+    </div>
+  </aside>
+  <div class="flex min-w-0 flex-1 flex-col">
+    <header class="flex items-center gap-3 border-b border-zinc-800/70 px-6 py-3.5">
+      <div class="flex w-80 max-w-full items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-500">
+        <svg viewBox="0 0 20 20" class="h-4 w-4"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Suche (Schritt 5)
+      </div>
+    </header>
+    <main class="flex-1 px-6 py-8">{% block content %}{% endblock %}</main>
+  </div>
+</div>
+{% endblock %}

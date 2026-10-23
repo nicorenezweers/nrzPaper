@@ -1,0 +1,7 @@
+{% macro field(label, field_name, kind, value, autocomplete) %}
+<label class="block">
+  <span class="block text-sm font-medium text-zinc-400 mb-1.5">{{ label }}</span>
+  <input type="{{ kind }}" name="{{ field_name }}" value="{{ value }}" autocomplete="{{ autocomplete }}" required
+         class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-zinc-100 placeholder-zinc-600 outline-none transition focus:border-zinc-500">
+</label>
+{% endmacro %}

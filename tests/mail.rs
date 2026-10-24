@@ -1,10 +1,12 @@
 //! E-Mail-Eingang gegen einen kleinen Schein-IMAP-Server; dazu Ordner, Vorschaubilder und Kacheln.
 
+mod common;
+
 use base64::Engine;
+use common::{call, pool};
 use rocket::http::{Accept, ContentType, Status};
 use rocket::local::asynchronous::Client;
 use serde_json::{json, Value};
-use sqlx::SqlitePool;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -150,62 +152,33 @@ async fn fake_ai() -> String {
 }
 
 async fn client() -> (tempfile::TempDir, Client, String) {
-    let dir = tempfile::tempdir().unwrap();
-    let figment = nrzpaper::config::figment()
-        .merge(("data_dir", dir.path()))
-        .merge(("db_key", "test"))
-        .merge(("log_level", "off"))
-        .merge(("background", false))
-        .merge(("openrouter_url", fake_ai().await))
-        .merge(("openrouter_key", "sk-test"));
-    let client = Client::tracked(nrzpaper::build_with(figment).await.unwrap())
-        .await
-        .unwrap();
-    client
-        .post("/register")
-        .header(ContentType::Form)
-        .body("username=nico&password=geheim-123")
-        .dispatch()
-        .await;
-    let org = {
-        let res = client
-            .post("/organizations/new")
-            .header(ContentType::Form)
-            .body("name=Privat")
-            .dispatch()
-            .await;
-        res.headers()
-            .get_one("Location")
-            .unwrap()
-            .trim_start_matches("/organizations/")
-            .to_string()
-    };
-    (dir, client, org)
-}
-
-fn pool(client: &Client) -> &SqlitePool {
-    client.rocket().state::<SqlitePool>().unwrap()
-}
-
-async fn form(client: &Client, uri: String, body: String) -> Status {
-    client
-        .post(uri)
-        .header(ContentType::Form)
-        .body(body)
-        .dispatch()
-        .await
-        .status()
+    let ai = fake_ai().await;
+    common::client_with(|f| f.merge(("openrouter_url", ai)).merge(("openrouter_key", "sk-test"))).await
 }
 
 async fn post_json(client: &Client, uri: String) -> (Status, Value) {
-    let res = client.post(uri).header(Accept::JSON).dispatch().await;
-    let status = res.status();
-    (status, res.into_json().await.unwrap_or(Value::Null))
+    call(client, "POST", format!("/api/v1{uri}"), None).await
+}
+
+/// Postfach-Eingabe wie aus der Oberfläche.
+fn account(org: &str, port: u16, password: &str) -> Value {
+    json!({
+        "name": "Privat-Mail", "organizationId": org, "host": "127.0.0.1", "port": port,
+        "security": "none", "username": "nico@example.ch", "password": password,
+        "folder": "INBOX", "tags": ["E-Mail", "Rechnung"], "enabled": true, "markSeen": true,
+        "intervalMinutes": 5,
+    })
+}
+
+async fn new_tag(client: &Client, org: &str, name: &str) -> String {
+    let (s, v) = call(client, "POST", format!("/api/v1/organizations/{org}/tags"), Some(json!({ "name": name }))).await;
+    assert_eq!(s, Status::Created, "{v}");
+    v["tag"]["id"].as_str().unwrap().to_string()
 }
 
 async fn items(client: &Client, org: &str) -> Vec<Value> {
     let res = client
-        .get(format!("/organizations/{org}/review/items"))
+        .get(format!("/api/v1/organizations/{org}/review/items"))
         .header(Accept::JSON)
         .dispatch()
         .await;
@@ -218,33 +191,18 @@ async fn mail_attachments_land_in_inbox() {
     let (_d, client, org) = client().await;
     let log = Arc::new(Mutex::new(Vec::new()));
     let port = fake_imap(log.clone()).await;
-    assert_eq!(
-        form(
-            &client,
-            format!("/organizations/{org}/tags"),
-            "name=Rechnung".into()
-        )
-        .await,
-        Status::SeeOther
-    );
+    new_tag(&client, &org, "Rechnung").await;
 
     // Postfach anlegen (falsches Passwort zuerst, um die Fehlermeldung zu sehen)
-    let base = format!("name=Privat-Mail&organization_id={org}&host=127.0.0.1&port={port}&security=none&username=nico%40example.ch&folder=INBOX&tags=E-Mail%2C+Rechnung&enabled=true&mark_seen=true&interval_minutes=5");
-    assert_eq!(
-        form(
-            &client,
-            format!("/organizations/{org}/account/mail"),
-            format!("{base}&password=falsch")
-        )
-        .await,
-        Status::SeeOther
-    );
-    let (id, pw): (String, String) = sqlx::query_as("SELECT id, password FROM mail_accounts")
+    let (st, v) = call(&client, "POST", "/api/v1/me/mail-accounts", Some(account(&org, port, "falsch"))).await;
+    assert_eq!(st, Status::Created, "{v}");
+    let id = v["mailAccount"]["id"].as_str().unwrap().to_string();
+    let pw: String = sqlx::query_scalar("SELECT password FROM mail_accounts")
         .fetch_one(pool(&client))
         .await
         .unwrap();
     assert_eq!(pw, "falsch");
-    let (st, v) = post_json(&client, format!("/mail/{id}/test")).await;
+    let (st, v) = post_json(&client, format!("/me/mail-accounts/{id}/test")).await;
     assert_eq!(st, Status::BadRequest);
     assert!(
         v["error"]["message"]
@@ -255,43 +213,19 @@ async fn mail_attachments_land_in_inbox() {
     );
 
     // Passwort ändern; ohne Passwort bleibt das alte
-    assert_eq!(
-        form(
-            &client,
-            format!("/organizations/{org}/account/mail/{id}"),
-            format!("{base}&password=geheim")
-        )
-        .await,
-        Status::SeeOther
-    );
-    assert_eq!(
-        form(
-            &client,
-            format!("/organizations/{org}/account/mail/{id}"),
-            format!("{base}&password=")
-        )
-        .await,
-        Status::SeeOther
-    );
-    let (st, v) = post_json(&client, format!("/mail/{id}/test")).await;
+    let url = format!("/api/v1/me/mail-accounts/{id}");
+    assert_eq!(call(&client, "PUT", &url, Some(account(&org, port, "geheim"))).await.0, Status::Ok);
+    assert_eq!(call(&client, "PUT", &url, Some(account(&org, port, ""))).await.0, Status::Ok);
+    let (st, v) = post_json(&client, format!("/me/mail-accounts/{id}/test")).await;
     assert_eq!(st, Status::Ok, "{v}");
 
-    // Kontoseite zeigt das Postfach, nie das Passwort
-    let html = client
-        .get(format!("/organizations/{org}/account"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(
-        html.contains("Privat-Mail")
-            && html.contains("E-Mail, Rechnung")
-            && !html.contains("geheim\"")
-    );
+    // Liste zeigt das Postfach, nie das Passwort
+    let (_, v) = call(&client, "GET", "/api/v1/me/mail-accounts", None).await;
+    let list = v.to_string();
+    assert!(list.contains("Privat-Mail") && list.contains("Rechnung") && !list.contains("geheim"), "{list}");
 
     // Abrufen: zwei Mails, zwei Dokumente (PDF und Foto), keins aus der Mail ohne Anhang
-    let (st, v) = post_json(&client, format!("/mail/{id}/fetch")).await;
+    let (st, v) = post_json(&client, format!("/me/mail-accounts/{id}/fetch")).await;
     assert_eq!(st, Status::Ok, "{v}");
     assert_eq!(v["report"], json!({ "messages": 2, "documents": 2 }));
     let cmds = log.lock().unwrap().clone();
@@ -344,7 +278,7 @@ async fn mail_attachments_land_in_inbox() {
     }
 
     // Noch einmal abrufen: nichts doppelt
-    let (_, v) = post_json(&client, format!("/mail/{id}/fetch")).await;
+    let (_, v) = post_json(&client, format!("/me/mail-accounts/{id}/fetch")).await;
     assert_eq!(v["report"], json!({ "messages": 0, "documents": 0 }));
     let (n, last): (i64, String) =
         sqlx::query_as("SELECT imported_count, last_error FROM mail_accounts")
@@ -356,7 +290,7 @@ async fn mail_attachments_land_in_inbox() {
     // Abnehmen: Dokument mit beiden Tags (E-Mail wird angelegt)
     let res = client
         .post(format!(
-            "/organizations/{org}/review/{}/approve",
+            "/api/v1/organizations/{org}/review/{}/approve",
             photo["id"].as_str().unwrap()
         ))
         .header(Accept::JSON)
@@ -375,15 +309,7 @@ async fn mail_attachments_land_in_inbox() {
     assert_eq!(tags, ["E-Mail", "Rechnung"]);
 
     // Entfernen
-    assert_eq!(
-        form(
-            &client,
-            format!("/organizations/{org}/account/mail/{id}/delete"),
-            String::new()
-        )
-        .await,
-        Status::SeeOther
-    );
+    assert_eq!(call(&client, "DELETE", &url, None).await.0, Status::NoContent);
     let n: i64 = sqlx::query_scalar("SELECT count(*) FROM mail_accounts")
         .fetch_one(pool(&client))
         .await
@@ -395,52 +321,30 @@ async fn mail_attachments_land_in_inbox() {
 #[tokio::test]
 async fn mail_account_validation_and_access() {
     let (_d, client, org) = client().await;
-    let ok = format!("organization_id={org}&host=imap.example.ch&port=993&security=tls&username=a&password=b&interval_minutes=5");
-    let url = format!("/organizations/{org}/account/mail");
-    assert_eq!(
-        form(
-            &client,
-            url.clone(),
-            ok.replace("host=imap.example.ch", "host=")
-        )
-        .await,
-        Status::BadRequest
-    );
-    assert_eq!(
-        form(&client, url.clone(), ok.replace("port=993", "port=70000")).await,
-        Status::BadRequest
-    );
-    assert_eq!(
-        form(
-            &client,
-            url.clone(),
-            ok.replace("security=tls", "security=ssl3")
-        )
-        .await,
-        Status::BadRequest
-    );
-    assert_eq!(
-        form(&client, url.clone(), ok.replace("&password=b", "")).await,
-        Status::BadRequest
-    );
-    assert_eq!(
-        form(&client, url.clone(), ok.replace(&org, "fremd")).await,
-        Status::NotFound
-    );
-    assert_eq!(
-        form(&client, url.clone(), ok.clone()).await,
-        Status::SeeOther
-    );
-    let id: String = sqlx::query_scalar("SELECT id FROM mail_accounts")
-        .fetch_one(pool(&client))
-        .await
-        .unwrap();
+    let ok = json!({
+        "organizationId": org, "host": "imap.example.ch", "port": 993, "security": "tls",
+        "username": "a", "password": "b", "intervalMinutes": 5,
+    });
+    let with = |k: &str, v: Value| {
+        let mut x = ok.clone();
+        x[k] = v;
+        x
+    };
+    let create = |body: Value| call(&client, "POST", "/api/v1/me/mail-accounts", Some(body));
+    assert_eq!(create(with("host", json!(""))).await.0, Status::BadRequest);
+    assert_eq!(create(with("port", json!(70000))).await.0, Status::BadRequest);
+    assert_eq!(create(with("security", json!("ssl3"))).await.0, Status::BadRequest);
+    assert_eq!(create(with("password", json!(""))).await.0, Status::BadRequest);
+    assert_eq!(create(with("organizationId", json!("fremd"))).await.0, Status::NotFound);
+    let (st, v) = create(ok.clone()).await;
+    assert_eq!(st, Status::Created);
+    let id = v["mailAccount"]["id"].as_str().unwrap().to_string();
     // Server nicht erreichbar → verständlicher Fehler, gespeichert am Postfach
     sqlx::query("UPDATE mail_accounts SET host = '127.0.0.1', port = 1")
         .execute(pool(&client))
         .await
         .unwrap();
-    let (st, v) = post_json(&client, format!("/mail/{id}/fetch")).await;
+    let (st, v) = post_json(&client, format!("/me/mail-accounts/{id}/fetch")).await;
     assert_eq!(st, Status::BadRequest);
     assert!(
         v["error"]["message"]
@@ -455,14 +359,9 @@ async fn mail_account_validation_and_access() {
         .unwrap();
     assert!(!err.is_empty());
     // Fremde Postfächer gibt es nicht
-    client.post("/logout").dispatch().await;
-    client
-        .post("/register")
-        .header(ContentType::Form)
-        .body("username=zweite&password=geheim-123")
-        .dispatch()
-        .await;
-    let (st, _) = post_json(&client, format!("/mail/{id}/fetch")).await;
+    common::logout(&client).await;
+    common::register(&client, "zweite", "geheim-123").await;
+    let (st, _) = post_json(&client, format!("/me/mail-accounts/{id}/fetch")).await;
     assert!(st == Status::NotFound || st == Status::Unauthorized, "{st}");
     client.terminate().await;
 }
@@ -470,29 +369,9 @@ async fn mail_account_validation_and_access() {
 #[tokio::test]
 async fn folders_thumbnails_and_grid() {
     let (_d, client, org) = client().await;
-    for t in ["Rechnung", "Steuern", "Wohnung"] {
-        form(
-            &client,
-            format!("/organizations/{org}/tags"),
-            format!("name={t}"),
-        )
-        .await;
-    }
-    let tag = |name: &'static str| {
-        let pool = pool(&client).clone();
-        async move {
-            sqlx::query_scalar::<_, String>("SELECT id FROM tags WHERE name = ?")
-                .bind(name)
-                .fetch_one(&pool)
-                .await
-                .unwrap()
-        }
-    };
-    let (rechnung, steuern, wohnung) = (
-        tag("Rechnung").await,
-        tag("Steuern").await,
-        tag("Wohnung").await,
-    );
+    let rechnung = new_tag(&client, &org, "Rechnung").await;
+    let steuern = new_tag(&client, &org, "Steuern").await;
+    let wohnung = new_tag(&client, &org, "Wohnung").await;
 
     // Zwei Dokumente hochladen und taggen
     let mut docs = Vec::new();
@@ -502,99 +381,57 @@ async fn folders_thumbnails_and_grid() {
         body.extend_from_slice(data);
         body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
         let res = client
-            .post(format!("/organizations/{org}/documents"))
+            .post(format!("/api/v1/organizations/{org}/documents"))
             .header(ContentType::new("multipart", "form-data").with_params(("boundary", boundary)))
             .header(Accept::JSON)
             .body(body)
             .dispatch()
             .await;
         let v: Value = res.into_json().await.unwrap();
-        docs.push(v["documents"][0]["id"].as_str().unwrap().to_string());
+        docs.push(v["document"]["id"].as_str().unwrap().to_string());
     }
     let (pdf, photo) = (docs[0].clone(), docs[1].clone());
-    form(
-        &client,
-        format!("/organizations/{org}/documents/{pdf}/tags"),
-        "name=Rechnung".into(),
-    )
-    .await;
-    form(
-        &client,
-        format!("/organizations/{org}/documents/{photo}/tags"),
-        "name=Wohnung".into(),
-    )
-    .await;
+    let base = format!("/api/v1/organizations/{org}");
+    for (doc, tag) in [(&pdf, &rechnung), (&photo, &wohnung)] {
+        let (s, _) = call(&client, "POST", format!("{base}/documents/{doc}/tags"), Some(json!({ "tagId": tag }))).await;
+        assert_eq!(s, Status::Created);
+    }
 
     // Ordner "Finanzen" (Rechnung + Steuern) mit Unterordner "Wohnen" (Wohnung)
-    let url = format!("/organizations/{org}/folders");
-    assert_eq!(
-        form(
-            &client,
-            url.clone(),
-            format!("name=Finanzen&tags={rechnung}&tags={steuern}")
-        )
-        .await,
-        Status::SeeOther
-    );
-    let fin: String = sqlx::query_scalar("SELECT id FROM folders WHERE name = 'Finanzen'")
-        .fetch_one(pool(&client))
-        .await
-        .unwrap();
-    assert_eq!(
-        form(
-            &client,
-            url.clone(),
-            format!("name=Wohnen&parent={fin}&tags={wohnung}")
-        )
-        .await,
-        Status::SeeOther
-    );
-    let wohnen: String = sqlx::query_scalar("SELECT id FROM folders WHERE name = 'Wohnen'")
-        .fetch_one(pool(&client))
-        .await
-        .unwrap();
-    assert_eq!(
-        form(&client, url.clone(), "name=".into()).await,
-        Status::BadRequest
-    );
-    assert_eq!(
-        form(&client, url.clone(), "name=X&tags=fremd".into()).await,
-        Status::NotFound
-    );
+    let url = format!("{base}/folders");
+    let folder = |body: Value| call(&client, "POST", &url, Some(body));
+    let (s, v) = folder(json!({ "name": "Finanzen", "tagIds": [rechnung, steuern] })).await;
+    assert_eq!(s, Status::Created, "{v}");
+    let fin = v["folder"]["id"].as_str().unwrap().to_string();
+    let (s, v) = folder(json!({ "name": "Wohnen", "parentId": fin, "tagIds": [wohnung] })).await;
+    assert_eq!(s, Status::Created);
+    let wohnen = v["folder"]["id"].as_str().unwrap().to_string();
+    assert_eq!(folder(json!({ "name": "" })).await.0, Status::BadRequest);
+    assert_eq!(folder(json!({ "name": "X", "tagIds": ["fremd"] })).await.0, Status::NotFound);
     // Ordner kann nicht in sich selbst liegen
-    assert_eq!(
-        form(
-            &client,
-            format!("{url}/{fin}"),
-            format!("name=Finanzen&parent={wohnen}&tags={rechnung}")
-        )
-        .await,
-        Status::BadRequest
-    );
+    let (s, _) = call(
+        &client,
+        "PUT",
+        format!("{url}/{fin}"),
+        Some(json!({ "name": "Finanzen", "parentId": wohnen, "tagIds": [rechnung] })),
+    )
+    .await;
+    assert_eq!(s, Status::BadRequest);
 
-    let html = client
-        .get(format!("{url}/{fin}"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(
-        html.contains("rechnung.pdf") && html.contains("foto.jpg"),
-        "Unterordner zählen mit"
-    );
-    assert!(
-        html.contains(&format!("{url}/{wohnen}")),
-        "Ordnerbaum in der Seitenleiste"
-    );
-    let html = client
-        .get(format!("{url}/{wohnen}"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(html.contains("foto.jpg") && !html.contains("rechnung.pdf"));
+    let names = |folder: String, q: &'static str| {
+        let c = &client;
+        let base = base.clone();
+        async move {
+            let (_, v) = call(c, "GET", format!("{base}/documents?folderId={folder}&searchQuery={q}"), None).await;
+            let mut n: Vec<String> =
+                v["documents"].as_array().unwrap().iter().map(|d| d["name"].as_str().unwrap().to_string()).collect();
+            n.sort();
+            n
+        }
+    };
+    assert_eq!(names(fin.clone(), "").await, ["foto.jpg", "rechnung.pdf"], "Unterordner zählen mit");
+    assert_eq!(names(wohnen.clone(), "").await, ["foto.jpg"]);
+    assert_eq!(names(fin.clone(), "foto").await, ["foto.jpg"], "Suche im Ordner");
     let tree = nrzpaper::services::folders::tree(pool(&client), &org)
         .await
         .unwrap();
@@ -604,45 +441,13 @@ async fn folders_thumbnails_and_grid() {
             .collect::<Vec<_>>(),
         [("Finanzen", 0, 2), ("Wohnen", 1, 1)]
     );
-    // Live-Suche im Ordner
-    let part = client
-        .get(format!("{url}/{fin}?q=foto&partial=true"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(part.contains("foto.jpg") && !part.contains("rechnung.pdf") && !part.contains("<html"));
-
-    // Kacheln sind Standard, Liste wird gemerkt
-    let html = client
-        .get(format!("/organizations/{org}"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(html.contains("/thumb") && html.contains("data-preview="));
-    let html = client
-        .get(format!("/organizations/{org}?view=list"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(html.contains("<table"));
-    let html = client
-        .get(format!("/organizations/{org}"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(html.contains("<table"), "Ansicht gemerkt");
+    // Seitenleiste: Ordnerbaum in der Übersicht
+    let (_, v) = call(&client, "GET", format!("{base}/overview"), None).await;
+    assert_eq!(v["folders"].as_array().unwrap().len(), 2);
 
     // Vorschaubild: Foto immer (image), PDF wenn Poppler da ist, sonst Platzhalter
     let res = client
-        .get(format!("/organizations/{org}/documents/{photo}/thumb"))
+        .get(format!("{base}/documents/{photo}/thumbnail"))
         .dispatch()
         .await;
     assert_eq!(res.content_type(), Some(ContentType::JPEG));
@@ -650,7 +455,7 @@ async fn folders_thumbnails_and_grid() {
     let img = image::load_from_memory(&thumb).unwrap();
     assert!(img.width() <= 420 && img.width() > 100);
     let res = client
-        .get(format!("/organizations/{org}/documents/{pdf}/thumb"))
+        .get(format!("{base}/documents/{pdf}/thumbnail"))
         .dispatch()
         .await;
     let ct = res.content_type().unwrap();
@@ -663,10 +468,7 @@ async fn folders_thumbnails_and_grid() {
     assert_eq!(n, 2, "einmal erzeugt, gespeichert");
 
     // Ordner löschen: Unterordner mit, Tags und Dokumente bleiben
-    assert_eq!(
-        form(&client, format!("{url}/{fin}/delete"), String::new()).await,
-        Status::SeeOther
-    );
+    assert_eq!(call(&client, "DELETE", format!("{url}/{fin}"), None).await.0, Status::NoContent);
     let n: i64 = sqlx::query_scalar("SELECT count(*) FROM folders")
         .fetch_one(pool(&client))
         .await

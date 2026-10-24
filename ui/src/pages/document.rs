@@ -104,7 +104,7 @@ pub fn DocumentPage(org: String, id: String) -> Element {
 
 /// PDF-Viewer bzw. Bild/Text. Der PDF-Viewer ist das bewährte static/viewer.js (PDF.js).
 #[component]
-fn Viewer(url: String, doc: Document) -> Element {
+pub fn Viewer(url: String, doc: Document) -> Element {
     let id = format!("viewer-{}", doc.id);
     let kind = doc.kind();
     let mount_id = id.clone();
@@ -279,7 +279,7 @@ fn NameCard(org: String, doc: Document, on_change: EventHandler<()>) -> Element 
             }
         });
     };
-    let mut save2 = save.clone();
+    let save2 = save.clone();
     rsx! {
         Card { title: "Name",
             form { class: "flex gap-2", onsubmit: move |e| { e.prevent_default(); if changed { save2(); } },
@@ -317,7 +317,7 @@ fn TagsCard(org: String, doc: Document, on_change: EventHandler<()>) -> Element 
             }
         });
     };
-    let mut add2 = add.clone();
+    let add2 = add.clone();
     rsx! {
         Card { title: "Tags",
             div { class: "flex flex-wrap gap-1.5",
@@ -348,7 +348,7 @@ fn TagsCard(org: String, doc: Document, on_change: EventHandler<()>) -> Element 
                 div { class: "mt-2 flex flex-wrap gap-1",
                     for t in unassigned.iter().take(8).cloned() {
                         button { class: "rounded-full border border-dashed px-2 py-0.5 text-[11px] text-muted-foreground hover:border-solid hover:text-foreground",
-                            onclick: { let mut add = add.clone(); let n = t.name.clone(); move |_| add(n.clone()) },
+                            onclick: { let add = add.clone(); let n = t.name.clone(); move |_| add(n.clone()) },
                             "+ {t.name}"
                         }
                     }

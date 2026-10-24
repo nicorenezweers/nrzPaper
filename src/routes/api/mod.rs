@@ -3,6 +3,7 @@
 
 mod app;
 mod documents;
+mod scan;
 mod tags;
 mod webhooks;
 
@@ -28,6 +29,7 @@ pub fn routes() -> Vec<Route> {
     ];
     r.extend(app::routes());
     r.extend(documents::routes());
+    r.extend(scan::routes());
     r.extend(tags::routes());
     r.extend(webhooks::routes());
     r

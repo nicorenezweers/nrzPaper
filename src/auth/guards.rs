@@ -36,6 +36,10 @@ pub fn is_cross_origin(req: &Request<'_>) -> bool {
         return false;
     };
     let origin_host = origin.split_once("://").map(|(_, h)| h).unwrap_or("");
+    // `dx serve` (Entwicklung der Oberfläche) leitet von :8080 weiter und schreibt Host um
+    if cfg!(debug_assertions) && origin_host == "localhost:8080" {
+        return false;
+    }
     let own = [
         req.headers().get_one("X-Forwarded-Host"),
         req.headers().get_one("Host"),

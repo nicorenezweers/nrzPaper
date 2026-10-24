@@ -31,5 +31,7 @@ futures-channel = "0.3"
 opt-level = "z"
 lto = true
 codegen-units = 1
-strip = true
+# Nicht strippen: neuere objcopy-Versionen entfernen die Daten, die wasm-bindgen braucht.
+# wasm-opt (dx bundle) entfernt danach ohnehin alles Unnötige.
+strip = false
 panic = "abort"

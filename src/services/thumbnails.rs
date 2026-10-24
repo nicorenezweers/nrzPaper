@@ -92,6 +92,16 @@ async fn render(mime: &str, data: Vec<u8>) -> Result<Vec<u8>, String> {
 }
 
 /// Platzhalter (SVG) mit dem Dateityp, wenn es keine Vorschau gibt.
+/// Kurzbezeichnung der Dateiart für den Platzhalter.
+pub fn type_label(doc: &Document) -> &'static str {
+    match doc.mime_type.as_str() {
+        "application/pdf" => "PDF",
+        m if m.starts_with("image/") => "Bild",
+        "text/plain" => "Text",
+        _ => "Datei",
+    }
+}
+
 pub fn placeholder(label: &str) -> String {
     let label: String = label
         .chars()

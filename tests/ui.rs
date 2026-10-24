@@ -1,5 +1,7 @@
-//! Oberfläche und Suche: Suchsyntax gegen die echte Datenbank, Dokumentliste mit
-//! Live-Suche, Detailseite, Formular-Aktionen, Tags, Papierkorb und eingebettete Dateien.
+//! Oberfläche und Suche: Suchsyntax gegen die echte Datenbank, die Aktionen der App über die
+//! API (Liste, Suche, Umbenennen, Tags, Papierkorb) und eingebettete Dateien.
+
+mod common;
 
 use nrzpaper::config::Config;
 use nrzpaper::db::{self, models::*};
@@ -7,8 +9,9 @@ use nrzpaper::ocr::OcrQueue;
 use nrzpaper::search;
 use nrzpaper::services::documents::{self, NewDocument};
 use nrzpaper::services::{organizations, tags, users};
+use common::call;
 use rocket::http::{ContentType, Status};
-use rocket::local::asynchronous::Client;
+use serde_json::json;
 use sqlx::SqlitePool;
 
 const TEXT_PDF: &[u8] = include_bytes!("fixtures/text.pdf");
@@ -197,56 +200,9 @@ async fn search_syntax_against_the_database() {
     pool.close().await;
 }
 
-async fn client() -> (tempfile::TempDir, Client, String) {
-    let dir = tempfile::tempdir().unwrap();
-    let figment = nrzpaper::config::figment()
-        .merge(("data_dir", dir.path()))
-        .merge(("db_key", "test"))
-        .merge(("log_level", "off"))
-        .merge(("background", false));
-    let client = Client::tracked(nrzpaper::build_with(figment).await.unwrap())
-        .await
-        .unwrap();
-    client
-        .post("/register")
-        .header(ContentType::Form)
-        .body("username=nico&password=geheim-123")
-        .dispatch()
-        .await;
-    let org = {
-        let res = client
-            .post("/organizations/new")
-            .header(ContentType::Form)
-            .body("name=Privat")
-            .dispatch()
-            .await;
-        res.headers()
-            .get_one("Location")
-            .unwrap()
-            .trim_start_matches("/organizations/")
-            .to_string()
-    };
-    (dir, client, org)
-}
-
-async fn body(client: &Client, uri: String) -> (Status, String) {
-    let res = client.get(uri).dispatch().await;
-    (res.status(), res.into_string().await.unwrap_or_default())
-}
-
-async fn form(client: &Client, uri: String, body: &str) -> Status {
-    client
-        .post(uri)
-        .header(ContentType::Form)
-        .body(body.to_string())
-        .dispatch()
-        .await
-        .status()
-}
-
 #[rocket::async_test]
-async fn pages_and_actions() {
-    let (_d, client, org) = client().await;
+async fn document_actions_as_the_app_does_them() {
+    let (_d, client, org) = common::client().await;
     {
         let pool = client.rocket().state::<SqlitePool>().unwrap();
         let pdf = add(
@@ -257,158 +213,94 @@ async fn pages_and_actions() {
             "Kaution drei Monatsmieten",
         )
         .await;
-        let img = add(pool, &org, "Beleg.png", SCAN_PNG, "Kantonalbank").await;
-        let base = format!("/organizations/{org}");
+        add(pool, &org, "Beleg.png", SCAN_PNG, "Kantonalbank").await;
+        let base = format!("/api/v1/organizations/{org}");
+        let list = |q: &str| {
+            let url = format!("{base}/documents?searchQuery={}", q.replace(' ', "%20").replace(':', "%3A"));
+            let c = &client;
+            async move {
+                let (_, v) = call(c, "GET", url, None).await;
+                v["documents"].as_array().unwrap().iter().map(|d| d["name"].as_str().unwrap().to_string()).collect::<Vec<_>>()
+            }
+        };
 
-        // Liste
-        let (s, html) = body(&client, base.clone()).await;
-        assert_eq!(s, Status::Ok);
-        assert!(
-            html.contains("Mietvertrag.pdf")
-                && html.contains("Beleg.png")
-                && html.contains("2 Dokumente")
-        );
-        assert!(html.contains("data-live-search"), "Live-Suche fehlt");
+        // Liste und Suche
+        assert_eq!(list("").await.len(), 2);
+        assert_eq!(list("kaution").await, ["Mietvertrag.pdf"]);
+        assert!(list("tag:x kaution").await.is_empty());
 
-        // Live-Suche: nur die Ergebnisse, nicht die ganze Seite
-        let (_, part) = body(&client, format!("{base}?q=kaution&partial=true")).await;
-        assert!(part.contains("Mietvertrag.pdf") && !part.contains("Beleg.png"));
-        assert!(
-            !part.contains("<html") && !part.contains("<aside"),
-            "Teilansicht enthält die ganze Seite"
-        );
-        assert!(
-            part.contains("?find=kaution"),
-            "Suchbegriff wird an die Vorschau weitergegeben"
-        );
-        let (_, filtered) = body(&client, format!("{base}?q=tag%3Ax%20kaution&partial=true")).await;
-        assert!(filtered.contains("Keine Treffer"));
-
-        // Detail: PDF-Viewer bzw. Bild-Viewer
-        let (s, html) = body(&client, format!("{base}/documents/{pdf}")).await;
-        assert_eq!(s, Status::Ok);
-        assert!(
-            html.contains(r#"data-kind="pdf""#)
-                && html.contains("/static/viewer.js?v=")
-                && html.contains("Kaution drei Monatsmieten")
-        );
-        let (_, html) = body(&client, format!("{base}/documents/{img}")).await;
-        assert!(html.contains(r#"data-kind="image""#));
-
-        // Aktionen
+        // Umbenennen, Text, Tag anlegen und anhängen
         let doc = format!("{base}/documents/{pdf}");
+        assert_eq!(call(&client, "PATCH", &doc, Some(json!({ "name": "Vertrag Bern" }))).await.0, Status::Ok);
         assert_eq!(
-            form(&client, format!("{doc}/rename"), "name=Vertrag+Bern").await,
-            Status::SeeOther
+            call(&client, "PATCH", &doc, Some(json!({ "content": "Neuer Text Wohnung" }))).await.0,
+            Status::Ok
         );
-        assert_eq!(
-            form(
-                &client,
-                format!("{doc}/content"),
-                "content=Neuer+Text+Wohnung"
-            )
-            .await,
-            Status::SeeOther
-        );
-        assert_eq!(
-            form(&client, format!("{doc}/tags"), "name=Wohnen").await,
-            Status::SeeOther
-        );
+        let (s, v) = call(&client, "POST", format!("{base}/tags"), Some(json!({ "name": "Wohnen" }))).await;
+        assert_eq!(s, Status::Created);
+        let tag = v["tag"]["id"].as_str().unwrap().to_string();
+        assert_eq!(call(&client, "POST", format!("{doc}/tags"), Some(json!({ "tagId": tag }))).await.0, Status::Created);
         let d = documents::get(pool, &org, &pdf).await.unwrap();
         assert_eq!(
             (d.name.as_str(), d.content.as_str()),
             ("Vertrag Bern", "Neuer Text Wohnung")
         );
-        let tag = tags::by_name(pool, &org, "wohnen")
-            .await
-            .unwrap()
-            .expect("Tag wurde angelegt");
-        let (_, html) = body(&client, doc.clone()).await;
-        assert!(
-            html.contains("Umbenannt in „Vertrag Bern“")
-                && html.contains("Tag „Wohnen“ hinzugefügt"),
-            "Verlauf fehlt"
-        );
-        let (_, list) = body(&client, format!("{base}?q=tag%3Awohnen&partial=true")).await;
-        assert!(list.contains("Vertrag Bern"));
-        assert_eq!(
-            form(&client, format!("{doc}/tags/{}/remove", tag.id), "").await,
-            Status::SeeOther
-        );
+        let (_, v) = call(&client, "GET", format!("{doc}/activity"), None).await;
+        let events: Vec<&str> = v["activities"].as_array().unwrap().iter().map(|a| a["event"].as_str().unwrap()).collect();
+        assert!(events.contains(&"renamed") && events.contains(&"tag_added"), "Verlauf fehlt: {events:?}");
+        assert_eq!(list("tag:wohnen").await, ["Vertrag Bern"]);
+        assert_eq!(call(&client, "DELETE", format!("{doc}/tags/{tag}"), None).await.0, Status::NoContent);
         assert!(tags::for_documents(pool, &[pdf.clone()])
             .await
             .unwrap()
             .is_empty());
 
-        assert_eq!(
-            form(&client, format!("{doc}/trash"), "").await,
-            Status::SeeOther
-        );
-        let (_, trash) = body(&client, format!("{base}/trash")).await;
-        assert!(trash.contains("Vertrag Bern") && trash.contains("noch 30 Tage"));
-        assert_eq!(
-            form(&client, format!("{doc}/restore"), "").await,
-            Status::SeeOther
-        );
+        // Papierkorb: hinein, wiederherstellen, wieder hinein, leeren
+        assert_eq!(call(&client, "DELETE", &doc, None).await.0, Status::NoContent);
+        let (_, v) = call(&client, "GET", format!("{base}/documents/deleted"), None).await;
+        assert_eq!(v["documents"][0]["name"], "Vertrag Bern");
+        assert_eq!(call(&client, "POST", format!("{doc}/restore"), None).await.0, Status::NoContent);
         assert!(!documents::get(pool, &org, &pdf).await.unwrap().in_trash());
-        assert_eq!(
-            form(&client, format!("{doc}/trash"), "").await,
-            Status::SeeOther
-        );
-        assert_eq!(
-            form(&client, format!("{base}/trash/empty"), "").await,
-            Status::SeeOther
-        );
+        call(&client, "DELETE", &doc, None).await;
+        let (s, v) = call(&client, "POST", format!("{base}/trash/empty"), None).await;
+        assert_eq!((s, v["deleted"].clone()), (Status::Ok, json!(1)));
         assert!(
             documents::get(pool, &org, &pdf).await.is_err(),
             "Papierkorb nicht geleert"
         );
 
-        // Tags-Seite: anlegen, doppelt → Meldung, ändern, löschen
-        assert_eq!(
-            form(
-                &client,
-                format!("{base}/tags"),
-                "name=Steuern&color=%23ff0000&description=Belege"
-            )
-            .await,
-            Status::SeeOther
-        );
-        let res = client
-            .post(format!("{base}/tags"))
-            .header(ContentType::Form)
-            .body("name=steuern")
-            .dispatch()
-            .await;
-        assert_eq!(res.status(), Status::Conflict);
-        assert!(res.into_string().await.unwrap().contains("gibt es schon"));
-        let steuern = tags::by_name(pool, &org, "Steuern").await.unwrap().unwrap();
-        assert_eq!(steuern.color, "#ff0000");
-        assert_eq!(
-            form(
-                &client,
-                format!("{base}/tags/{}", steuern.id),
-                "name=Steuern+2026&color=nix"
-            )
-            .await,
-            Status::SeeOther
-        );
-        assert_eq!(
-            tags::get(pool, &org, &steuern.id).await.unwrap().name,
-            "Steuern 2026"
-        );
-        assert_eq!(
-            form(&client, format!("{base}/tags/{}/delete", steuern.id), "").await,
-            Status::SeeOther
-        );
-        assert!(tags::get(pool, &org, &steuern.id).await.is_err());
+        // Tags: anlegen, doppelt → Meldung, ändern, löschen
+        let (s, v) = call(
+            &client,
+            "POST",
+            format!("{base}/tags"),
+            Some(json!({ "name": "Steuern", "color": "#ff0000", "description": "Belege" })),
+        )
+        .await;
+        assert_eq!(s, Status::Created);
+        let steuern = v["tag"]["id"].as_str().unwrap().to_string();
+        let (s, v) = call(&client, "POST", format!("{base}/tags"), Some(json!({ "name": "steuern" }))).await;
+        assert_eq!(s, Status::Conflict);
+        assert!(v.to_string().contains("gibt es schon"));
+        assert_eq!(tags::get(pool, &org, &steuern).await.unwrap().color, "#ff0000");
+        let (s, _) = call(
+            &client,
+            "PUT",
+            format!("{base}/tags/{steuern}"),
+            Some(json!({ "name": "Steuern 2026", "color": "#00aa00" })),
+        )
+        .await;
+        assert_eq!(s, Status::Ok);
+        assert_eq!(tags::get(pool, &org, &steuern).await.unwrap().name, "Steuern 2026");
+        assert_eq!(call(&client, "DELETE", format!("{base}/tags/{steuern}"), None).await.0, Status::NoContent);
+        assert!(tags::get(pool, &org, &steuern).await.is_err());
     }
     client.terminate().await;
 }
 
 #[rocket::async_test]
 async fn members_cannot_empty_the_trash_of_others_and_assets_are_served() {
-    let (_d, client, org) = client().await;
+    let (_d, client, org) = common::client().await;
     {
         let pool = client.rocket().state::<SqlitePool>().unwrap();
         let member = users::create(pool, "mitglied", "geheim-456", "")
@@ -420,21 +312,17 @@ async fn members_cannot_empty_the_trash_of_others_and_assets_are_served() {
             .execute(pool)
             .await
             .unwrap();
-        client.post("/logout").dispatch().await;
-        client
-            .post("/login")
-            .header(ContentType::Form)
-            .body("username=mitglied&password=geheim-456")
-            .dispatch()
-            .await;
+        common::logout(&client).await;
+        common::login(&client, "mitglied", "geheim-456").await;
         assert_eq!(
-            form(&client, format!("/organizations/{org}/trash/empty"), "").await,
+            call(&client, "POST", format!("/api/v1/organizations/{org}/trash/empty"), None).await.0,
             Status::Forbidden
         );
 
-        // Eingebettete Dateien
+        // Eingebettete Dateien für Vorschau und Lupe
         for (path, cache) in [
-            ("/static/app.js", "max-age=3600"),
+            ("/static/viewer.js", "max-age=3600"),
+            ("/static/preview.js", "max-age=3600"),
             ("/static/vendor/pdfjs/pdf.min.mjs", "immutable"),
             ("/static/vendor/pdfjs/pdf.worker.min.mjs", "immutable"),
         ] {
@@ -466,28 +354,12 @@ async fn members_cannot_empty_the_trash_of_others_and_assets_are_served() {
             Status::NotFound
         );
 
-        // Alles eingebettet (CSS, Schrift, PDF.js) – keine fremden Quellen
-        let csp = client
-            .get("/login")
-            .dispatch()
-            .await
-            .headers()
-            .get_one("Content-Security-Policy")
-            .unwrap()
-            .to_string();
-        assert!(
-            !csp.contains("https://") && csp.contains("script-src 'self';"),
-            "{csp}"
-        );
-        let page = client
-            .get(format!("/organizations/{org}"))
-            .dispatch()
-            .await
-            .into_string()
-            .await
-            .unwrap();
+        // Alles eingebettet (App, Schrift, PDF.js) – keine fremden Quellen
+        let res = client.get("/login").dispatch().await;
+        let csp = res.headers().get_one("Content-Security-Policy").unwrap().to_string();
+        assert!(!csp.contains("https://"), "{csp}");
+        let page = res.into_string().await.unwrap();
         assert!(!page.contains("https://"), "fremde Quelle in der Seite");
-        assert!(page.contains("/static/app.css?v="));
         let font = client
             .get("/static/fonts/inter-latin.woff2")
             .dispatch()
@@ -498,8 +370,6 @@ async fn members_cannot_empty_the_trash_of_others_and_assets_are_served() {
             .get_one("Cache-Control")
             .unwrap()
             .contains("immutable"));
-        let css = client.get("/static/app.css").dispatch().await;
-        assert_eq!(css.content_type(), Some(ContentType::CSS));
     }
     client.terminate().await;
 }

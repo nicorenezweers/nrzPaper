@@ -28,7 +28,7 @@ fn AuthCard(#[props(into)] title: String, #[props(into)] subtitle: String, child
 }
 
 fn safe_next(next: &str) -> String {
-    if next.starts_with('/') && !next.starts_with("//") { next.to_string() } else { "/".into() }
+    if next.starts_with('/') && !next.starts_with("//") && !next.contains('\\') { next.to_string() } else { "/".into() }
 }
 
 #[component]

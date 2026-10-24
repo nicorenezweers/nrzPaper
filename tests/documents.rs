@@ -1,6 +1,8 @@
 //! Dokumente: Aufnahme, Duplikate, Papierkorb, Texterkennung (echt mit Tesseract/Poppler,
 //! falls installiert), Warteschlange mit Volltextsuche, Eingangsordner, Upload und Range.
 
+mod common;
+
 use nrzpaper::auth::api_key;
 use nrzpaper::config::Config;
 use nrzpaper::db::{self, models::*};
@@ -10,7 +12,6 @@ use nrzpaper::ocr::{queue, Engine, OcrQueue};
 use nrzpaper::services::documents::{self, Ingested, NewDocument};
 use nrzpaper::services::{organizations, users};
 use rocket::http::{ContentType, Header, Status};
-use rocket::local::asynchronous::Client;
 use sqlx::SqlitePool;
 use std::time::{Duration, SystemTime};
 
@@ -346,37 +347,7 @@ fn multipart(files: &[(&str, &[u8])]) -> (ContentType, Vec<u8>) {
     )
 }
 
-async fn client() -> (tempfile::TempDir, Client, String) {
-    let dir = tempfile::tempdir().unwrap();
-    let figment = nrzpaper::config::figment()
-        .merge(("data_dir", dir.path()))
-        .merge(("db_key", "test"))
-        .merge(("log_level", "off"))
-        .merge(("background", false));
-    let client = Client::tracked(nrzpaper::build_with(figment).await.unwrap())
-        .await
-        .unwrap();
-    client
-        .post("/register")
-        .header(ContentType::Form)
-        .body("username=nico&password=geheim-123")
-        .dispatch()
-        .await;
-    let org = {
-        let res = client
-            .post("/organizations/new")
-            .header(ContentType::Form)
-            .body("name=Privat")
-            .dispatch()
-            .await;
-        res.headers()
-            .get_one("Location")
-            .unwrap()
-            .trim_start_matches("/organizations/")
-            .to_string()
-    };
-    (dir, client, org)
-}
+use common::client;
 
 #[rocket::async_test]
 async fn upload_and_serve_with_ranges() {
@@ -384,7 +355,7 @@ async fn upload_and_serve_with_ranges() {
     {
         let (ct, body) = multipart(&[("Zürich Brief.pdf", TEXT_PDF), ("bild.png", SCAN_PNG)]);
         let res = client
-            .post(format!("/organizations/{org}/documents"))
+            .post(format!("/api/v1/organizations/{org}/documents"))
             .header(ct.clone())
             .body(body.clone())
             .dispatch()
@@ -392,19 +363,34 @@ async fn upload_and_serve_with_ranges() {
         assert_eq!(res.status(), Status::Created);
         let json: serde_json::Value = res.into_json().await.unwrap();
         assert_eq!(json["documents"].as_array().unwrap().len(), 2);
-        let id = json["documents"][0]["id"].as_str().unwrap().to_string();
-        assert_eq!(json["documents"][0]["name"], "Zürich Brief.pdf");
+        let id = json["documents"][0]["document"]["id"].as_str().unwrap().to_string();
+        assert_eq!(json["documents"][0]["document"]["name"], "Zürich Brief.pdf");
+        assert_eq!(json["documents"][0]["document"]["source"], "web", "Sitzung = Oberfläche");
+        assert_eq!(json["errors"], serde_json::json!([]));
 
-        // Gleiche Dateien nochmal → Fehler je Datei
+        // Gleiche Dateien nochmal → Fehler je Datei, zusammen 409
         let res = client
-            .post(format!("/organizations/{org}/documents"))
-            .header(ct)
+            .post(format!("/api/v1/organizations/{org}/documents"))
+            .header(ct.clone())
             .body(body)
             .dispatch()
             .await;
         assert_eq!(res.status(), Status::Conflict);
+        drop(res);
+        // Eine neue und eine bekannte Datei → die neue kommt rein, die andere als Fehler
+        let (ct2, body2) = multipart(&[("neu.txt", b"etwas Neues"), ("bild.png", SCAN_PNG)]);
+        let res = client
+            .post(format!("/api/v1/organizations/{org}/documents"))
+            .header(ct2)
+            .body(body2)
+            .dispatch()
+            .await;
+        assert_eq!(res.status(), Status::Created);
+        let json: serde_json::Value = res.into_json().await.unwrap();
+        assert_eq!(json["documents"].as_array().unwrap().len(), 1);
+        assert_eq!(json["errors"][0]["file"], "bild.png");
 
-        let url = format!("/organizations/{org}/documents/{id}/file");
+        let url = format!("/api/v1/organizations/{org}/documents/{id}/file");
         let res = client.get(url.as_str()).dispatch().await;
         assert_eq!(res.status(), Status::Ok);
         assert_eq!(res.content_type(), Some(ContentType::PDF));
@@ -451,13 +437,8 @@ async fn upload_and_serve_with_ranges() {
         )
         .await
         .unwrap();
-        client.post("/logout").dispatch().await;
-        client
-            .post("/login")
-            .header(ContentType::Form)
-            .body("username=fremd&password=geheim-456")
-            .dispatch()
-            .await;
+        common::logout(&client).await;
+        assert_eq!(common::login(&client, "fremd", "geheim-456").await, Status::Ok);
         assert_eq!(
             client.get(url.as_str()).dispatch().await.status(),
             Status::NotFound
@@ -472,7 +453,7 @@ async fn api_document_lifecycle() {
     {
         let pool = client.rocket().state::<SqlitePool>().unwrap();
         let user = users::by_username(pool, "nico").await.unwrap().unwrap();
-        client.post("/logout").dispatch().await;
+        common::logout(&client).await;
 
         let (_, read_only) =
             api_key::create(pool, &user.id, "lesen", &[Permission::DocumentsRead], None)

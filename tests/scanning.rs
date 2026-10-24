@@ -1,6 +1,8 @@
 //! Scannen und Prüfen (aus nrzDocsScanner): echter eSCL-Ablauf gegen einen kleinen Schein-Scanner,
 //! KI-Analyse gegen ein Schein-OpenRouter, Prüfen, Freigeben → Dokument mit Tags und Eigenschaften.
 
+mod common;
+
 use rocket::http::{ContentType, Status};
 use rocket::local::asynchronous::Client;
 use serde_json::{json, Value};
@@ -163,37 +165,12 @@ async fn env() -> Env {
     let scan_jobs = Arc::new(Mutex::new(Vec::new()));
     let ai_url = fake_ai(ai_requests.clone(), ai_answer.clone()).await;
     let scanner = fake_scanner(scan_jobs.clone()).await;
-    let dir = tempfile::tempdir().unwrap();
-    let figment = nrzpaper::config::figment()
-        .merge(("data_dir", dir.path()))
-        .merge(("db_key", "test"))
-        .merge(("log_level", "off"))
-        .merge(("background", false))
-        .merge(("scanner_url", scanner))
-        .merge(("openrouter_url", ai_url))
-        .merge(("openrouter_key", "sk-test"));
-    let client = Client::tracked(nrzpaper::build_with(figment).await.unwrap())
-        .await
-        .unwrap();
-    client
-        .post("/register")
-        .header(ContentType::Form)
-        .body("username=nico&password=geheim-123")
-        .dispatch()
-        .await;
-    let org = {
-        let res = client
-            .post("/organizations/new")
-            .header(ContentType::Form)
-            .body("name=Privat")
-            .dispatch()
-            .await;
-        res.headers()
-            .get_one("Location")
-            .unwrap()
-            .trim_start_matches("/organizations/")
-            .to_string()
-    };
+    let (dir, client, org) = common::client_with(|f| {
+        f.merge(("scanner_url", scanner))
+            .merge(("openrouter_url", ai_url))
+            .merge(("openrouter_key", "sk-test"))
+    })
+    .await;
     Env {
         _dir: dir,
         client,
@@ -209,35 +186,27 @@ impl Env {
         self.client.rocket().state::<SqlitePool>().unwrap()
     }
 
+    /// JSON-Aufruf unter `/api/v1` (Pfade ohne Präfix werden ergänzt).
     async fn json(&self, method: &str, uri: String, body: Option<Value>) -> (Status, Value) {
-        let req = match method {
-            "GET" => self.client.get(uri),
-            "POST" => self.client.post(uri),
-            "PUT" => self.client.put(uri),
-            "DELETE" => self.client.delete(uri),
-            _ => unreachable!(),
-        }
-        .header(rocket::http::Accept::JSON);
-        let req = match body {
-            Some(b) => req.header(ContentType::JSON).body(b.to_string()),
-            None => req,
-        };
-        let res = req.dispatch().await;
-        let status = res.status();
-        (
-            status,
-            res.into_json::<Value>().await.unwrap_or(Value::Null),
-        )
+        let uri = if uri.starts_with("/api/") { uri } else { format!("/api/v1{uri}") };
+        common::call(&self.client, method, uri, body).await
     }
 
-    async fn form(&self, uri: String, body: &str) -> Status {
-        self.client
-            .post(uri)
-            .header(ContentType::Form)
-            .body(body)
-            .dispatch()
+    async fn tag(&self, name: &str, description: &str) {
+        let (st, v) = self
+            .json(
+                "POST",
+                format!("/organizations/{}/tags", self.org),
+                Some(json!({ "name": name, "description": description })),
+            )
+            .await;
+        assert_eq!(st, Status::Created, "{v}");
+    }
+
+    async fn scanner(&self, url: &str, color: bool, dpi: i64) -> Status {
+        self.json("PUT", "/me/scanner".into(), Some(json!({ "scannerUrl": url, "color": color, "dpi": dpi })))
             .await
-            .status()
+            .0
     }
 
     /// Warten, bis die KI fertig ist (Status nicht mehr "analyse").
@@ -282,30 +251,9 @@ async fn scan_review_and_approve() {
     let e = env().await;
     let org = e.org.clone();
     let scan = format!("/organizations/{org}/scan");
-    assert_eq!(
-        e.form(
-            format!("/organizations/{org}/tags"),
-            "name=Rechnung&description=Rechnungen+aller+Art"
-        )
-        .await,
-        Status::SeeOther
-    );
-    assert_eq!(
-        e.form(format!("/organizations/{org}/tags"), "name=Privat")
-            .await,
-        Status::SeeOther
-    );
+    e.tag("Rechnung", "Rechnungen aller Art").await;
+    e.tag("Privat", "").await;
 
-    // Seiten sind da und bedienbar
-    let html = e
-        .client
-        .get(scan.clone())
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(html.contains("data-scan-page") && html.contains("/static/scan.js"));
     let (_, s) = e.json("GET", "/scanner/status".into(), None).await;
     assert_eq!(s["ok"], true);
     assert_eq!(s["state"], "Idle");
@@ -334,7 +282,7 @@ async fn scan_review_and_approve() {
     // Seitenbild, Umsortieren, falsche Reihenfolge, Foto anhängen, Seite löschen
     let img = e
         .client
-        .get(format!("{scan}/pages/{}", pages[0]))
+        .get(format!("/api/v1{scan}/pages/{}", pages[0]))
         .dispatch()
         .await;
     assert_eq!(img.content_type(), Some(ContentType::JPEG));
@@ -360,7 +308,7 @@ async fn scan_review_and_approve() {
     let (ct, body) = multipart(&[("foto.jpg", PAGE)]);
     let res = e
         .client
-        .post(format!("{scan}/photos"))
+        .post(format!("/api/v1{scan}/photos"))
         .header(ct)
         .header(rocket::http::Accept::JSON)
         .body(body)
@@ -372,7 +320,7 @@ async fn scan_review_and_approve() {
     let (ct, body) = multipart(&[("kein.jpg", b"nur Text")]);
     let res = e
         .client
-        .post(format!("{scan}/photos"))
+        .post(format!("/api/v1{scan}/photos"))
         .header(ct)
         .header(rocket::http::Accept::JSON)
         .body(body)
@@ -414,26 +362,19 @@ async fn scan_review_and_approve() {
     );
     assert_eq!(req["model"], "openrouter/free");
 
-    // Prüfseite und Zähler
-    let html = e
-        .client
-        .get(format!("/organizations/{org}/review"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(html.contains("data-review-page") && html.contains("data-review-count"));
+    // Zähler der Inbox in der Seitenleiste
+    let (_, o) = e.json("GET", format!("/organizations/{org}/overview"), None).await;
+    assert_eq!(o["reviewCount"], 1);
     let page = e
         .client
-        .get(format!("/organizations/{org}/review/{id}/pages/2"))
+        .get(format!("/api/v1/organizations/{org}/review/{id}/pages/2"))
         .dispatch()
         .await;
     assert_eq!(page.content_type(), Some(ContentType::JPEG));
     drop(page);
     let pdf = e
         .client
-        .get(format!("/organizations/{org}/review/{id}/pdf"))
+        .get(format!("/api/v1/organizations/{org}/review/{id}/pdf"))
         .dispatch()
         .await
         .into_bytes()
@@ -515,36 +456,23 @@ async fn scan_review_and_approve() {
         .unwrap();
     assert_eq!(files, 0, "PDF und Seiten nach der Ablage gelöscht");
 
-    // Dokumentseite zeigt Eigenschaften und Verlauf; Eigenschaft ändern
-    let html = e
-        .client
-        .get(format!("/organizations/{org}/documents/{doc}"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(
-        html.contains("Eigenschaften")
-            && html.contains("Swisscom")
-            && html.contains("Gescannt und geprüft (KI: mock/vision)")
-    );
+    // Dokument: Eigenschaften und Verlauf; Eigenschaft ändern
+    let (_, v) = e.json("GET", format!("/organizations/{org}/documents/{doc}/custom-properties"), None).await;
+    assert!(v.to_string().contains("Swisscom"), "{v}");
+    let (_, v) = e.json("GET", format!("/organizations/{org}/documents/{doc}/activity"), None).await;
+    let reviewed = v["activities"].as_array().unwrap().iter().find(|a| a["event"] == "reviewed").cloned();
+    assert_eq!(reviewed.unwrap()["data"], json!({ "model": "mock/vision", "pages": 2 }), "{v}");
     let betrag = props
         .iter()
         .find(|p| p.name == "Betrag")
         .unwrap()
         .definition_id
         .clone();
-    let prop_url = format!("/organizations/{org}/documents/{doc}/properties/{betrag}");
-    assert_eq!(
-        e.form(prop_url.clone(), "value=abc").await,
-        Status::BadRequest
-    );
-    assert_eq!(
-        e.form(prop_url.clone(), "value=12.5").await,
-        Status::SeeOther
-    );
-    assert_eq!(e.form(prop_url, "value=").await, Status::SeeOther);
+    let prop_url = format!("/organizations/{org}/documents/{doc}/custom-properties/{betrag}");
+    let set = |v: Value| e.json("PUT", prop_url.clone(), Some(json!({ "values": v })));
+    assert_eq!(set(json!(["abc"])).await.0, Status::BadRequest);
+    assert_eq!(set(json!(["12.5"])).await.0, Status::Ok);
+    assert_eq!(set(json!([])).await.0, Status::Ok);
     let props = nrzpaper::services::properties::for_document(e.pool(), &doc)
         .await
         .unwrap();
@@ -569,27 +497,14 @@ async fn scan_review_and_approve() {
 async fn import_failures_and_moving() {
     let e = env().await;
     let org = e.org.clone();
-    let res = e
-        .client
-        .post("/organizations/new")
-        .header(ContentType::Form)
-        .body("name=Gewerbe")
-        .dispatch()
-        .await;
-    let other = res
-        .headers()
-        .get_one("Location")
-        .unwrap()
-        .trim_start_matches("/organizations/")
-        .to_string();
-    drop(res);
+    let other = common::new_org(&e.client, "Gewerbe").await;
 
     // KI nicht erreichbar → trotzdem prüfbar, mit Hinweis; Dateiname bleibt
     *e.ai_answer.lock().unwrap() = None;
     let (ct, body) = multipart(&[("Brief vom Amt.pdf", TEXT_PDF)]);
     let res = e
         .client
-        .post(format!("/organizations/{org}/review/import"))
+        .post(format!("/api/v1/organizations/{org}/review/import"))
         .header(ct)
         .header(rocket::http::Accept::JSON)
         .body(body)
@@ -621,7 +536,7 @@ async fn import_failures_and_moving() {
     let (ct, body) = multipart(&[("bild.jpg", PAGE)]);
     let res = e
         .client
-        .post(format!("/organizations/{org}/review/import"))
+        .post(format!("/api/v1/organizations/{org}/review/import"))
         .header(ct)
         .header(rocket::http::Accept::JSON)
         .body(body)
@@ -675,7 +590,7 @@ async fn import_failures_and_moving() {
     let (ct, body) = multipart(&[("schon-da.pdf", TEXT_PDF)]);
     let res = e
         .client
-        .post(format!("/organizations/{other}/documents"))
+        .post(format!("/api/v1/organizations/{other}/documents"))
         .header(ct)
         .header(rocket::http::Accept::JSON)
         .body(body)
@@ -716,44 +631,19 @@ async fn import_failures_and_moving() {
 async fn scanner_settings_and_access() {
     let e = env().await;
     let org = e.org.clone();
-    // Konto: Scanner und KI-Bereich
-    let html = e
-        .client
-        .get(format!("/organizations/{org}/account"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(html.contains("data-account-scan") && html.contains("openrouter/free"));
-    assert_eq!(
-        e.form(
-            "/scanner/settings".into(),
-            "scanner_url=192.168.0.70/&dpi=600&next=/x"
-        )
-        .await,
-        Status::SeeOther
-    );
+    // Konto: Scanner; KI-Einstellungen (Admin) zeigen das Standardmodell
+    let (_, v) = e.json("GET", "/settings/ai".into(), None).await;
+    assert_eq!(v["effectiveModel"], "openrouter/free");
+    assert_eq!(e.scanner("192.168.0.70/", false, 600).await, Status::Ok);
     let s: (String, bool, i64) =
         sqlx::query_as("SELECT scanner_url, color, dpi FROM scan_settings")
             .fetch_one(e.pool())
             .await
             .unwrap();
     assert_eq!(s, ("http://192.168.0.70".to_string(), false, 600));
-    assert_eq!(
-        e.form("/scanner/settings".into(), "scanner_url=http://&dpi=300")
-            .await,
-        Status::BadRequest
-    );
+    assert_eq!(e.scanner("http://", false, 300).await, Status::BadRequest);
     // Leer: kein Scanner → Scannen meldet das verständlich
-    assert_eq!(
-        e.form(
-            "/scanner/settings".into(),
-            "scanner_url=&color=true&dpi=300"
-        )
-        .await,
-        Status::SeeOther
-    );
+    assert_eq!(e.scanner("", true, 300).await, Status::Ok);
     let (st, v) = e
         .json(
             "POST",
@@ -781,7 +671,7 @@ async fn scanner_settings_and_access() {
         .json("GET", "/organizations/fremd/review/items".into(), None)
         .await;
     assert_eq!(st, Status::NotFound);
-    e.client.post("/logout").dispatch().await;
+    common::logout(&e.client).await;
     let (st, _) = e
         .json("GET", format!("/organizations/{org}/scan/session"), None)
         .await;

@@ -112,6 +112,9 @@ fn DocList(org: String, q: String, folder: Option<String>) -> Element {
                             toast(format!("„{name}“ hochgeladen – Texterkennung läuft."));
                         }
                     }
+                    for e in v["errors"].as_array().cloned().unwrap_or_default() {
+                        toast_error(format!("{}: {}", e["file"].as_str().unwrap_or(""), e["error"].as_str().unwrap_or("")));
+                    }
                     state::refresh();
                 }
                 Err(e) => toast_error(e),

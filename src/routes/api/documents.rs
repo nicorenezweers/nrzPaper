@@ -7,7 +7,7 @@ use crate::db::models::{DocumentSource, Permission};
 use crate::error::{AppError, AppResult};
 use crate::ocr::OcrQueue;
 use crate::routes::upload::UploadForm;
-use crate::routes::web::{serve_file, FileReply};
+use crate::routes::files::{serve as serve_file, FileReply};
 use crate::search;
 use crate::services::documents::{self, Ingested, NewDocument};
 use crate::services::{share_links, tags};
@@ -38,7 +38,10 @@ pub fn routes() -> Vec<Route> {
     ]
 }
 
-/// Upload (multipart, Feld `file`). Mehrere Dateien → mehrere Dokumente.
+/// Upload (multipart, Feld `file`). Eine Datei → `{ document, restored }` (wie Papra).
+/// Mehrere Dateien → `{ documents, errors }`: Duplikate und ungültige Dateien stehen einzeln
+/// in `errors`, die übrigen werden trotzdem aufgenommen (409, wenn keine klappt).
+/// Mit Sitzung (Oberfläche) gilt die Quelle „web“, mit API-Key „api“.
 #[post("/organizations/<org>/documents", data = "<form>")]
 async fn upload(
     api: ApiUser,
@@ -49,27 +52,47 @@ async fn upload(
 ) -> AppResult<(Status, Value)> {
     api.require(Permission::DocumentsCreate)?;
     member(pool, &api, org).await?;
+    let files = form.into_inner().file;
+    if files.is_empty() {
+        return Err(AppError::bad("Keine Datei im Feld „file“."));
+    }
+    let single = files.len() == 1;
+    let source = if api.key.is_some() {
+        DocumentSource::Api
+    } else {
+        DocumentSource::Web
+    };
     let mut docs = Vec::new();
-    for f in form.into_inner().file {
+    let mut errors = Vec::new();
+    for f in files {
+        let name = f.name.clone();
         let new = NewDocument {
             organization_id: org,
             user_id: Some(&api.user.id),
-            source: DocumentSource::Api,
+            source,
             file_name: &f.name,
             data: f.data,
         };
-        let outcome = documents::ingest(pool, queue, new).await?;
-        docs.push(json!({ "document": outcome.document(), "restored": matches!(outcome, Ingested::Restored(_)) }));
+        match documents::ingest(pool, queue, new).await {
+            Ok(outcome) => docs.push(json!({ "document": outcome.document(), "restored": matches!(outcome, Ingested::Restored(_)) })),
+            Err(e) if single => return Err(e),
+            Err(e @ (AppError::Conflict(_) | AppError::BadRequest(_))) => {
+                errors.push(json!({ "file": name, "error": e.public_message() }))
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    if single {
+        return Ok((Status::Created, docs.remove(0)));
     }
     if docs.is_empty() {
-        return Err(AppError::bad("Keine Datei im Feld „file“."));
+        let all: Vec<String> = errors
+            .iter()
+            .map(|e| format!("{}: {}", e["file"].as_str().unwrap_or(""), e["error"].as_str().unwrap_or("")))
+            .collect();
+        return Err(AppError::Conflict(all.join(" · ")));
     }
-    let body = if docs.len() == 1 {
-        docs.remove(0)
-    } else {
-        json!({ "documents": docs })
-    };
-    Ok((Status::Created, body))
+    Ok((Status::Created, json!({ "documents": docs, "errors": errors })))
 }
 
 /// Dokumente als JSON, jeweils mit ihren Tags.
@@ -166,17 +189,19 @@ async fn get_one(api: ApiUser, org: &str, id: &str, pool: &State<SqlitePool>) ->
     Ok(json!({ "document": with_tags(pool, vec![doc]).await?.remove(0) }))
 }
 
-#[get("/organizations/<org>/documents/<id>/file")]
+/// Die Datei: inline (Vorschau, mit Range), mit `?download=true` als Anhang.
+#[get("/organizations/<org>/documents/<id>/file?<download>")]
 async fn file(
     api: ApiUser,
     org: &str,
     id: &str,
+    download: Option<bool>,
     range: RangeHeader,
     pool: &State<SqlitePool>,
 ) -> AppResult<FileReply> {
     api.require(Permission::DocumentsRead)?;
     member(pool, &api, org).await?;
-    serve_file(pool, org, id, range.0.as_deref(), false).await
+    serve_file(pool, org, id, range.0.as_deref(), download.unwrap_or(false)).await
 }
 
 #[derive(Deserialize)]

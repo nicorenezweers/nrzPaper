@@ -15,8 +15,6 @@ pub enum AppError {
     Database(#[from] sqlx::Error),
     #[error("Datei: {0}")]
     Io(#[from] std::io::Error),
-    #[error("Darstellung: {0}")]
-    Template(#[from] askama::Error),
     #[error("{0}")]
     BadRequest(String),
     #[error("Bitte anmelden.")]
@@ -50,8 +48,7 @@ impl AppError {
             AppError::Database(sqlx::Error::RowNotFound) => Status::NotFound,
             AppError::Config(_)
             | AppError::Database(_)
-            | AppError::Io(_)
-            | AppError::Template(_) => Status::InternalServerError,
+            | AppError::Io(_) => Status::InternalServerError,
         }
     }
 
@@ -98,13 +95,20 @@ pub fn error_response(
                 .to_string(),
         )
     } else {
-        let page = crate::templates::ErrorPage {
-            status: status.code,
-            title: status.reason_lossy(),
-            message,
+        let esc = |s: &str| {
+            s.replace('&', "&amp;")
+                .replace('<', "&lt;")
+                .replace('>', "&gt;")
+                .replace('"', "&quot;")
         };
-        let html = askama::Template::render(&page)
-            .unwrap_or_else(|_| format!("<h1>{}</h1><p>{}</p>", status.code, message));
+        let html = format!(
+            "<!doctype html><html lang=de><meta charset=utf-8><title>{code} · nrzPaper</title>\
+             <body style=\"background:#171717;color:#e5e5e5;font-family:sans-serif;display:grid;place-items:center;min-height:90vh\">\
+             <main><h1>{code} – {title}</h1><p>{message}</p><p><a style=\"color:#e5e5e5\" href=\"/\">Zur Startseite</a></p></main>",
+            code = status.code,
+            title = esc(status.reason_lossy()),
+            message = esc(message),
+        );
         (ContentType::HTML, html)
     };
     Response::build()

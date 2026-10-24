@@ -15,7 +15,7 @@ pub fn routes() -> Vec<Route> {
 pub static VERSION: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
     use sha2::{Digest, Sha256};
     let mut h = Sha256::new();
-    for path in ["app.css", "app.js", "preview.js", "scan.js", "viewer.js", "viewer.css"] {
+    for path in ["preview.js", "viewer.js", "viewer.css"] {
         h.update(lookup(path).map(|a| a.body).unwrap_or_default());
     }
     hex::encode(h.finalize())[..12].to_string()
@@ -30,14 +30,6 @@ struct Asset {
 fn lookup(path: &str) -> Option<Asset> {
     let js = ContentType::JavaScript;
     let (body, content_type, immutable): (&'static [u8], ContentType, bool) = match path {
-        // Erzeugt von scripts/tailwind.sh (im Docker-Build immer frisch)
-        "app.css" => (
-            include_bytes!("../../static/app.css"),
-            ContentType::CSS,
-            false,
-        ),
-        "app.js" => (include_bytes!("../../static/app.js"), js, false),
-        "scan.js" => (include_bytes!("../../static/scan.js"), js, false),
         "preview.js" => (include_bytes!("../../static/preview.js"), js, false),
         "viewer.js" => (include_bytes!("../../static/viewer.js"), js, false),
         "viewer.css" => (

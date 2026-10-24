@@ -65,7 +65,8 @@ pub fn routes() -> Vec<Route> {
         members,
         thumbnail,
         delete_permanently,
-        empty_trash
+        empty_trash,
+        shared
     ]
 }
 
@@ -806,7 +807,7 @@ async fn thumbnail(
             Header::new("Cache-Control", "private, max-age=604800"),
         ),
         None => Thumb::Placeholder(
-            crate::services::thumbnails::placeholder(crate::templates::type_label(&doc)),
+            crate::services::thumbnails::placeholder(crate::services::thumbnails::type_label(&doc)),
             ContentType::SVG,
             Header::new("Cache-Control", "private, max-age=3600"),
         ),
@@ -841,4 +842,19 @@ async fn empty_trash(user: CurrentUser, org: &str, pool: &State<SqlitePool>) -> 
             .await?
             .rows_affected();
     Ok(json!({ "deleted": n }))
+}
+
+/// Öffentliche Freigabe: Angaben zum Dokument (ohne Anmeldung). Zählt einen Aufruf; die Datei
+/// selbst liefert `/share/<token>/file`.
+#[get("/share/<token>")]
+async fn shared(token: &str, pool: &State<SqlitePool>) -> AppResult<Value> {
+    let (link, doc) = crate::services::share_links::resolve(pool, token, true).await?;
+    Ok(json!({
+        "document": {
+            "name": doc.name, "mimeType": doc.mime_type, "size": doc.size, "pageCount": doc.page_count,
+            "content": if doc.mime_type.starts_with("text/") { doc.content } else { String::new() },
+        },
+        "expiresAt": link.expires_at,
+        "fileUrl": format!("/share/{token}/file"),
+    }))
 }

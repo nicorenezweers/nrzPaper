@@ -1,10 +1,7 @@
-//! Scannen und Prüfen (aus nrzDocsScanner): die Seiten selbst sind server-seitig gerendert,
-//! die Arbeit darauf (scannen, umsortieren, prüfen, freigeben) erledigt `static/scan.js` über
-//! die JSON-Endpunkte hier. Alles gilt für die Organisation in der Adresse; der Benutzer muss
-//! Mitglied sein.
+//! Scannen und Inbox (aus nrzDocsScanner) unter `/api/v1`: Scan-Sitzung (scannen, umsortieren,
+//! Fotos/PDFs importieren), die Inbox mit Prüfen und Freigeben, Scanner-Status und KI-Test.
+//! Alles gilt für die Organisation in der Adresse; der Benutzer muss Mitglied sein.
 
-use super::pages::shell;
-use super::Page;
 use crate::ai::{self, AiConfig};
 use crate::auth::guards::CurrentUser;
 use crate::config::Config;
@@ -12,44 +9,15 @@ use crate::error::{AppError, AppResult};
 use crate::ocr::OcrQueue;
 use crate::routes::upload::UploadForm;
 use crate::services::{inbox, organizations, scan as scans, tags};
-use crate::templates::{render, ReviewPage, ScanPage};
 use rocket::form::Form;
 use rocket::http::{ContentType, Header};
-use rocket::response::Redirect;
 use rocket::serde::json::{json, Json, Value};
-use rocket::{delete, get, post, put, routes, FromForm, Responder, Route, State};
+use rocket::{delete, get, post, put, routes, Responder, Route, State};
 use serde::Deserialize;
 use sqlx::SqlitePool;
 
-/// Nur die JSON-Endpunkte – für die Oberfläche zusätzlich unter `/api/v1`.
-pub fn json_routes() -> Vec<Route> {
-    routes![
-        session,
-        update_session,
-        clear_session,
-        scan_now,
-        add_photos,
-        page_image,
-        delete_page,
-        finish,
-        import_pdfs,
-        items,
-        item_pdf,
-        item_page,
-        edit_item,
-        approve,
-        analyze,
-        discard,
-        scanner_status,
-        discover,
-        ai_test
-    ]
-}
-
 pub fn routes() -> Vec<Route> {
     routes![
-        scan_page,
-        review_page,
         session,
         update_session,
         clear_session,
@@ -68,7 +36,6 @@ pub fn routes() -> Vec<Route> {
         discard,
         scanner_status,
         discover,
-        save_scanner,
         ai_test
     ]
 }
@@ -105,33 +72,6 @@ async fn tag_list(pool: &SqlitePool, org: &str) -> AppResult<Value> {
         .map(|(t, _)| json!({ "id": t.id, "name": t.name, "color": t.color, "description": t.description }))
         .collect();
     Ok(json!(list))
-}
-
-// ------------------------------------------------------------------ Seiten
-
-#[get("/organizations/<org>/scan")]
-async fn scan_page(
-    user: CurrentUser,
-    org: &str,
-    pool: &State<SqlitePool>,
-    config: &State<Config>,
-) -> AppResult<Page> {
-    let settings = scans::settings(pool, config, &user.0.id).await?;
-    let shell = shell(pool, user.0, org, "scan", "").await?;
-    Ok(Page::Html(render(&ScanPage {
-        shell,
-        settings,
-        ai_available: AiConfig::load(pool, config).await.available(),
-    })?))
-}
-
-#[get("/organizations/<org>/review")]
-async fn review_page(user: CurrentUser, org: &str, pool: &State<SqlitePool>) -> AppResult<Page> {
-    let shell = shell(pool, user.0, org, "review", "").await?;
-    Ok(Page::Html(render(&ReviewPage {
-        shell,
-        meta_fields: ai::META_FIELDS,
-    })?))
 }
 
 // ------------------------------------------------------------------ Scan-Sitzung
@@ -506,27 +446,6 @@ async fn discover(
     }
     let (scanners, scanned) = crate::scan::discover(&subnets).await;
     Ok(json!({ "scanners": scanners, "subnets": scanned }))
-}
-
-#[derive(FromForm)]
-struct ScannerForm<'r> {
-    scanner_url: &'r str,
-    #[field(default = false)]
-    color: bool,
-    #[field(default = 300)]
-    dpi: i64,
-    next: Option<&'r str>,
-}
-
-/// Scanner-Einstellungen (Konto-Seite oder Scan-Seite).
-#[post("/scanner/settings", data = "<form>")]
-async fn save_scanner(
-    user: CurrentUser,
-    form: Form<ScannerForm<'_>>,
-    pool: &State<SqlitePool>,
-) -> AppResult<Redirect> {
-    scans::save_settings(pool, &user.0.id, form.scanner_url, form.color, form.dpi).await?;
-    Ok(Redirect::to(super::safe_next(form.next)))
 }
 
 /// Kurzer Test der KI mit einer eingebauten Beispielseite.

@@ -1,5 +1,8 @@
 # syntax=docker/dockerfile:1.10
 # nrzPaper – Multi-Stage-Build für amd64 und arm64.
+#   Oberfläche zuerst: in ui/ `dx build --release` und den Ordner
+#     ui/target/dx/nrzpaper-ui/release/web/public
+#   nach ui/dist/public kopieren (build.rs bettet ihn ein).
 #   docker build -t nrzpaper .
 #   docker run -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 # Beide Architekturen (Rust wird quer-kompiliert, nicht emuliert):
@@ -32,15 +35,15 @@ RUN set -eu; \
       touch /cross-env; \
     fi
 WORKDIR /src
-COPY Cargo.toml Cargo.lock build.rs tailwind.config.js ./
+COPY Cargo.toml Cargo.lock build.rs ./
 COPY migrations migrations
 COPY src src
-COPY templates templates
 COPY static static
 COPY assets assets
-COPY scripts scripts
-# CSS frisch aus den Templates (eigenständige Tailwind-CLI, Prüfsumme in scripts/tailwind.sh)
-RUN scripts/tailwind.sh
+# Fertige Oberfläche (Dioxus, ui/): vor dem Image-Bau mit `dx build --release` in ui/
+# übersetzen und nach ui/dist/public kopieren. build.rs bettet den Ordner ins Programm
+# ein (Text und WebAssembly gzip) – der Server braucht dafür keine Dateien mehr.
+COPY ui/dist/public ui/dist/public
 # Der eingebaute OpenRouter-Schlüssel (KI beim Scannen) kommt als Build-Secret – nie in den
 # Quelltext oder die Image-Schichten. Ohne Secret: KI nur mit NRZPAPER_OPENROUTER_KEY.
 #   --secret id=openrouter,env=NRZ_OPENROUTER_KEY

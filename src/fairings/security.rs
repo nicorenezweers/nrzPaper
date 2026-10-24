@@ -1,6 +1,8 @@
 //! Sicherheits-Header für jede Antwort. Die Content-Security-Policy erlaubt nur eigene
-//! Inhalte: CSS, Schrift und PDF.js sind eingebettet (siehe routes::assets), Skripte nur als
-//! Dateien. Inline-Stile bleiben erlaubt (Tag-Farben).
+//! Inhalte: Oberfläche, CSS, Schrift und PDF.js sind eingebettet (siehe routes::spa und
+//! routes::assets), Skripte nur als Dateien – keine Inline-Skripte. WebAssembly braucht
+//! 'wasm-unsafe-eval', Dioxus' `eval` (Anbindung von PDF-Vorschau und Lupe) 'unsafe-eval'.
+//! Inline-Stile bleiben erlaubt (Tag-Farben).
 
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Header;
@@ -9,7 +11,7 @@ use rocket::{Request, Response};
 pub struct SecurityHeaders;
 
 const CSP: &str = "default-src 'self'; \
-    script-src 'self'; \
+    script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'; \
     style-src 'self' 'unsafe-inline'; \
     font-src 'self'; \
     img-src 'self' data: blob:; \

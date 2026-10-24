@@ -105,7 +105,7 @@ fn TopBar(org: String, on_menu: EventHandler<()>) -> Element {
     use_effect(use_reactive!(|current_q| text.set(current_q)));
     let org2 = org.clone();
     let route2 = route.clone();
-    let mut submit = move |value: String| {
+    let submit = move |value: String| {
         match &route2 {
             Route::FolderView { org, folder, .. } => nav.push(Route::FolderView { org: org.clone(), folder: folder.clone(), q: value }),
             _ => nav.push(Route::Documents { org: org2.clone(), q: value }),

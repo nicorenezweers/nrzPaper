@@ -2,90 +2,24 @@
 //! API-Keys und Passwort in der Oberfläche, Webhooks mit Signatur an einen echten
 //! HTTP-Empfänger und öffentliche Freigabelinks.
 
+mod common;
+
+use common::{client, pool};
 use nrzpaper::services::webhooks;
 use rocket::http::{ContentType, Header, Status};
 use rocket::local::asynchronous::Client;
 use serde_json::{json, Value};
-use sqlx::SqlitePool;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-async fn client() -> (tempfile::TempDir, Client, String) {
-    let dir = tempfile::tempdir().unwrap();
-    let figment = nrzpaper::config::figment()
-        .merge(("data_dir", dir.path()))
-        .merge(("db_key", "test"))
-        .merge(("log_level", "off"))
-        .merge(("background", false));
-    let client = Client::tracked(nrzpaper::build_with(figment).await.unwrap())
-        .await
-        .unwrap();
-    client
-        .post("/register")
-        .header(ContentType::Form)
-        .body("username=nico&password=geheim-123")
-        .dispatch()
-        .await;
-    let org = {
-        let res = client
-            .post("/organizations/new")
-            .header(ContentType::Form)
-            .body("name=Privat")
-            .dispatch()
-            .await;
-        res.headers()
-            .get_one("Location")
-            .unwrap()
-            .trim_start_matches("/organizations/")
-            .to_string()
-    };
-    (dir, client, org)
-}
-
-fn pool(client: &Client) -> &SqlitePool {
-    client.rocket().state::<SqlitePool>().unwrap()
-}
-
-/// Erstes Vorkommen von `prefix` + URL-sicheren Zeichen in einem Eingabefeld (`value="…`).
-fn token_in(html: &str, prefix: &str) -> Option<String> {
-    let start = html
-        .match_indices(prefix)
-        .map(|(i, _)| i)
-        .find(|&i| html[..i].ends_with("value=\"") || html[..i].ends_with("/share/"))?;
-    Some(
-        html[start..]
-            .chars()
-            .take_while(|c| c.is_ascii_alphanumeric() || *c == '_' || *c == '-')
-            .collect(),
-    )
-}
-
-/// API-Key über die Kontoseite anlegen – der Key steht nur in dieser Antwort.
-async fn create_key(client: &Client, org: &str, permissions: &[&str]) -> String {
-    let mut body = String::from("name=Test&expires_days=30");
-    for p in permissions {
-        body.push_str(&format!("&permissions={}", p.replace(':', "%3A")));
-    }
-    let res = client
-        .post(format!("/organizations/{org}/account/api-keys"))
-        .header(ContentType::Form)
-        .body(body)
-        .dispatch()
-        .await;
-    assert_eq!(res.status(), Status::Ok);
-    let html = res.into_string().await.unwrap();
-    let key = token_in(&html, "np_").expect("Key in der Antwort");
+/// API-Key über die Konto-API anlegen; danach steht nur noch der Präfix in der Liste.
+async fn create_key(client: &Client, _org: &str, permissions: &[&str]) -> String {
+    let key = common::create_key(client, permissions).await;
     assert_eq!(key.len(), 43);
-    // Danach nur noch der Präfix
-    let again = client
-        .get(format!("/organizations/{org}/account"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(!again.contains(&key));
-    assert!(again.contains(&key[..9]));
+    let (_, v) = common::call(client, "GET", "/api/v1/me/api-keys", None).await;
+    let list = v.to_string();
+    assert!(!list.contains(&key));
+    assert!(list.contains(&key[..9]));
     key
 }
 
@@ -372,28 +306,21 @@ async fn api_key_permissions_are_enforced() {
     assert_eq!(s, Status::Forbidden);
 
     // Ohne Rechte kein Key; gelöschter Key gilt nicht mehr
-    let res = client
-        .post(format!("/organizations/{org}/account/api-keys"))
-        .header(ContentType::Form)
-        .body("name=Leer")
-        .dispatch()
-        .await;
-    assert_eq!(res.status(), Status::BadRequest);
-    assert!(res
-        .into_string()
-        .await
-        .unwrap()
-        .contains("Mindestens eine Berechtigung"));
+    let (s, v) = common::call(
+        &client,
+        "POST",
+        "/api/v1/me/api-keys",
+        Some(json!({ "name": "Leer", "permissions": [] })),
+    )
+    .await;
+    assert_eq!(s, Status::BadRequest);
+    assert!(v.to_string().contains("Mindestens eine Berechtigung"));
     let id: String = sqlx::query_scalar("SELECT id FROM api_keys")
         .fetch_one(pool(&client))
         .await
         .unwrap();
-    let status = client
-        .post(format!("/organizations/{org}/account/api-keys/{id}/delete"))
-        .dispatch()
-        .await
-        .status();
-    assert_eq!(status, Status::SeeOther);
+    let (status, _) = common::call(&client, "DELETE", format!("/api/v1/me/api-keys/{id}"), None).await;
+    assert_eq!(status, Status::NoContent);
     let res = client
         .get("/api/v1/api-keys/current")
         .header(bearer(&key))
@@ -547,29 +474,20 @@ async fn webhooks_deliver_signed_events() {
             .is_err()
     );
 
-    // Oberfläche: Webhook-Liste in den Einstellungen, Geheimnis nur einmal
-    let html = client
-        .get(format!("/organizations/{org}/settings"))
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(html.contains("Empfänger") && html.contains("pausiert"));
-    assert!(!html.contains("whsec_test"));
-    let res = client
-        .post(format!("/organizations/{org}/webhooks"))
-        .header(ContentType::Form)
-        .body(format!(
-            "name=Zweiter&url={}&events=document%3Adeleted",
-            url.replace(':', "%3A").replace('/', "%2F")
-        ))
-        .dispatch()
-        .await;
-    assert_eq!(res.status(), Status::Ok);
-    let html = res.into_string().await.unwrap();
+    // Oberfläche (Sitzung): Liste ohne Geheimnis, ein neues wird genau einmal gezeigt
+    let (_, v) = common::call(&client, "GET", format!("{base}/webhooks"), None).await;
+    let list = v.to_string();
+    assert!(list.contains("Empfänger") && !list.contains("whsec_test"));
+    let (s, v) = common::call(
+        &client,
+        "POST",
+        format!("{base}/webhooks"),
+        Some(json!({ "name": "Zweiter", "url": url, "events": ["document:deleted"] })),
+    )
+    .await;
+    assert_eq!(s, Status::Created);
     assert!(
-        token_in(&html, "whsec_").is_some(),
+        v["secret"].as_str().unwrap().starts_with("whsec_"),
         "erzeugtes Geheimnis wird gezeigt"
     );
 
@@ -587,6 +505,11 @@ async fn webhooks_deliver_signed_events() {
     client.terminate().await;
 }
 
+/// Status der öffentlichen Freigabe (JSON der Oberfläche).
+async fn shared(client: &Client, token: &str) -> Status {
+    common::call(client, "GET", format!("/api/v1/share/{token}"), None).await.0
+}
+
 #[tokio::test]
 async fn share_links_are_public_until_revoked() {
     let (_d, client, org) = client().await;
@@ -602,24 +525,19 @@ async fn share_links_are_public_until_revoked() {
     let id = doc["id"].as_str().unwrap().to_string();
     let detail = format!("/organizations/{org}/documents/{id}");
 
-    // In der Oberfläche anlegen: Link erscheint genau einmal
-    let res = client
-        .post(format!("{detail}/share"))
-        .header(ContentType::Form)
-        .body("expires_days=7")
-        .dispatch()
-        .await;
-    assert_eq!(res.status(), Status::Ok);
-    let token = token_in(&res.into_string().await.unwrap(), "sh_").expect("Link in der Antwort");
-    let html = client
-        .get(detail.clone())
-        .dispatch()
-        .await
-        .into_string()
-        .await
-        .unwrap();
-    assert!(!html.contains(&token));
-    assert!(html.contains("Freigabelink erstellt"));
+    // In der Oberfläche (Sitzung) anlegen: der Link steht nur in dieser Antwort
+    let (s, v) = common::call(
+        &client,
+        "POST",
+        format!("/api/v1{detail}/share-links"),
+        Some(json!({ "expiresInDays": 7 })),
+    )
+    .await;
+    assert_eq!(s, Status::Created);
+    let token = v["token"].as_str().unwrap().to_string();
+    assert!(token.starts_with("sh_"));
+    let (_, v) = common::call(&client, "GET", format!("/api/v1{detail}/share-links"), None).await;
+    assert!(!v.to_string().contains(&token));
 
     // Über die API ein zweiter, unbefristeter Link
     let (s, v) = api(
@@ -637,12 +555,16 @@ async fn share_links_are_public_until_revoked() {
     assert!(v["shareLink"]["expiresAt"].is_null());
 
     // Abmelden: Freigabe funktioniert ohne Konto
-    client.post("/logout").dispatch().await;
+    common::logout(&client).await;
     let res = client.get(format!("/share/{token}")).dispatch().await;
-    assert_eq!(res.status(), Status::Ok);
-    let html = res.into_string().await.unwrap();
-    assert!(html.contains("vertrag.txt") && html.contains("Mietvertrag Seestrasse"));
-    assert!(html.contains("noindex"));
+    assert_eq!(res.status(), Status::Ok, "Seite der Oberfläche");
+    assert_eq!(res.headers().get_one("X-Robots-Tag"), Some("noindex"));
+    drop(res);
+    let (s, v) = common::call(&client, "GET", format!("/api/v1/share/{token}"), None).await;
+    assert_eq!(s, Status::Ok);
+    assert_eq!(v["document"]["name"], "vertrag.txt");
+    assert_eq!(v["document"]["content"], "Mietvertrag Seestrasse");
+    assert_eq!(v["fileUrl"], format!("/share/{token}/file"));
     let res = client
         .get(format!("/share/{token}/file"))
         .header(Header::new("Range", "bytes=0-3"))
@@ -661,19 +583,12 @@ async fn share_links_are_public_until_revoked() {
         .starts_with("attachment"));
     drop(res);
     // Die Organisation bleibt ohne Anmeldung zu
-    assert_ne!(
-        client.get(detail.clone()).dispatch().await.status(),
-        Status::Ok
+    assert_eq!(
+        common::call(&client, "GET", format!("/api/v1{detail}"), None).await.0,
+        Status::Unauthorized
     );
     for bad in ["sh_falsch", "np_abc", "x"] {
-        assert_eq!(
-            client
-                .get(format!("/share/{bad}"))
-                .dispatch()
-                .await
-                .status(),
-            Status::NotFound
-        );
+        assert_eq!(shared(&client, bad).await, Status::NotFound);
     }
 
     // Aufrufe gezählt (nur die Seite, nicht die Datei)
@@ -698,21 +613,13 @@ async fn share_links_are_public_until_revoked() {
         .await
         .unwrap();
     assert_eq!(
-        client
-            .get(format!("/share/{token}"))
-            .dispatch()
-            .await
-            .status(),
+        shared(&client, &token).await,
         Status::NotFound
     );
 
     // Papierkorb → 404, wiederhergestellt → wieder da
     assert_eq!(
-        client
-            .get(format!("/share/{token2}"))
-            .dispatch()
-            .await
-            .status(),
+        shared(&client, &token2).await,
         Status::Ok
     );
     api(&client, &key, "DELETE", format!("/api/v1{detail}"), None).await;
@@ -742,11 +649,7 @@ async fn share_links_are_public_until_revoked() {
     )
     .await;
     assert_eq!(
-        client
-            .get(format!("/share/{token2}"))
-            .dispatch()
-            .await
-            .status(),
+        shared(&client, &token2).await,
         Status::Ok
     );
 
@@ -761,11 +664,7 @@ async fn share_links_are_public_until_revoked() {
     .await;
     assert_eq!(s, Status::NoContent);
     assert_eq!(
-        client
-            .get(format!("/share/{token2}"))
-            .dispatch()
-            .await
-            .status(),
+        shared(&client, &token2).await,
         Status::NotFound
     );
     let (s, _) = api(
@@ -782,7 +681,7 @@ async fn share_links_are_public_until_revoked() {
 
 #[tokio::test]
 async fn password_change_ends_other_sessions() {
-    let (_d, client, org) = client().await;
+    let (_d, client, _org) = client().await;
     let sessions = || async {
         sqlx::query_scalar::<_, i64>("SELECT count(*) FROM sessions")
             .fetch_one(pool(&client))
@@ -790,75 +689,31 @@ async fn password_change_ends_other_sessions() {
             .unwrap()
     };
     // Zweite Anmeldung (anderes Gerät)
-    client
-        .post("/login")
-        .header(ContentType::Form)
-        .body("username=nico&password=geheim-123")
-        .dispatch()
-        .await;
+    assert_eq!(common::login(&client, "nico", "geheim-123").await, Status::Ok);
     assert_eq!(sessions().await, 2);
 
-    let change = |body: &'static str| {
-        client
-            .post(format!("/organizations/{org}/account/password"))
-            .header(ContentType::Form)
-            .body(body)
-            .dispatch()
+    let change = |current: &str, new: &str, confirm: &str| {
+        let body = json!({ "current": current, "new": new, "confirm": confirm });
+        let c = &client;
+        async move { common::call(c, "PUT", "/api/v1/me/password", Some(body)).await }
     };
-    let res = change("current=falsch&new=neues-pass-1&confirm=neues-pass-1").await;
-    assert_eq!(res.status(), Status::BadRequest);
-    assert!(res
-        .into_string()
-        .await
-        .unwrap()
-        .contains("aktuelle Passwort stimmt nicht"));
-    assert_eq!(
-        change("current=geheim-123&new=neues-pass-1&confirm=anders-pass-1")
-            .await
-            .status(),
-        Status::BadRequest
-    );
-    assert_eq!(
-        change("current=geheim-123&new=kurz&confirm=kurz")
-            .await
-            .status(),
-        Status::BadRequest
-    );
+    let (s, v) = change("falsch", "neues-pass-1", "neues-pass-1").await;
+    assert_eq!(s, Status::BadRequest);
+    assert!(v.to_string().contains("aktuelle Passwort stimmt nicht"));
+    assert_eq!(change("geheim-123", "neues-pass-1", "anders-pass-1").await.0, Status::BadRequest);
+    assert_eq!(change("geheim-123", "kurz", "kurz").await.0, Status::BadRequest);
     assert_eq!(sessions().await, 2, "Fehlversuche ändern nichts");
 
-    let res = change("current=geheim-123&new=neues-pass-1&confirm=neues-pass-1").await;
-    assert_eq!(res.status(), Status::Ok);
-    assert!(res
-        .into_string()
-        .await
-        .unwrap()
-        .contains("Passwort geändert"));
+    assert_eq!(change("geheim-123", "neues-pass-1", "neues-pass-1").await.0, Status::Ok);
     assert_eq!(sessions().await, 1, "nur noch diese Sitzung");
-    assert_eq!(
-        client
-            .get(format!("/organizations/{org}"))
-            .dispatch()
-            .await
-            .status(),
-        Status::Ok
-    );
+    assert_eq!(common::call(&client, "GET", "/api/v1/me", None).await.0, Status::Ok);
 
-    client.post("/logout").dispatch().await;
-    let status = client
-        .post("/login")
-        .header(ContentType::Form)
-        .body("username=nico&password=geheim-123")
-        .dispatch()
-        .await
-        .status();
-    assert_ne!(status, Status::SeeOther, "altes Passwort gilt nicht mehr");
-    let res = client
-        .post("/login")
-        .header(ContentType::Form)
-        .body("username=nico&password=neues-pass-1")
-        .dispatch()
-        .await;
-    assert_eq!(res.status(), Status::SeeOther);
-    drop(res);
+    common::logout(&client).await;
+    assert_eq!(
+        common::login(&client, "nico", "geheim-123").await,
+        Status::Unauthorized,
+        "altes Passwort gilt nicht mehr"
+    );
+    assert_eq!(common::login(&client, "nico", "neues-pass-1").await, Status::Ok);
     client.terminate().await;
 }

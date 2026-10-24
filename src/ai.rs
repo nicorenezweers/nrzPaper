@@ -22,15 +22,34 @@ static HTTP: std::sync::LazyLock<reqwest::Client> = std::sync::LazyLock::new(|| 
         .expect("HTTP-Client")
 });
 
-/// Zugang zu OpenRouter aus der Konfiguration.
+/// Zugang zu OpenRouter: Schlüssel, Modell, Ersatzmodelle.
 #[derive(Clone)]
 pub struct AiConfig {
     pub key: String,
     pub model: String,
     pub url: String,
+    /// Weitere Modelle, wenn das gewünschte versagt (der Reihe nach).
+    pub fallbacks: Vec<String>,
+    /// KI ganz ausgeschaltet (Einstellungen)
+    pub disabled: bool,
 }
 
+/// KI-Einstellungen in der Oberfläche (app_settings "ai"). Leere Felder = Vorgabe.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct AiSettings {
+    pub disabled: bool,
+    /// Eigener OpenRouter-Schlüssel (sonst Umgebung bzw. eingebauter)
+    pub key: String,
+    pub model: String,
+    /// Ersatzmodelle; leer = die eingebauten kostenlosen Bild-Modelle
+    pub fallbacks: Vec<String>,
+}
+
+pub const SETTINGS_KEY: &str = "ai";
+
 impl AiConfig {
+    /// Nur aus der Konfiguration (Umgebung/eingebaut) – ohne die Einstellungen in der Datenbank.
     pub fn from(config: &crate::config::Config) -> Self {
         AiConfig {
             key: resolve_key(config.openrouter_key.as_deref().unwrap_or("")),
@@ -40,16 +59,50 @@ impl AiConfig {
                 config.openrouter_model.trim().into()
             },
             url: config.openrouter_url.trim_end_matches('/').to_string(),
+            fallbacks: FALLBACK_MODELS.iter().map(|m| m.to_string()).collect(),
+            disabled: false,
         }
     }
 
+    /// Konfiguration plus Einstellungen aus der Oberfläche (die haben Vorrang).
+    pub async fn load(pool: &sqlx::SqlitePool, config: &crate::config::Config) -> Self {
+        let mut ai = Self::from(config);
+        if let Ok(Some(s)) = crate::services::settings::get::<AiSettings>(pool, SETTINGS_KEY).await
+        {
+            if !s.key.trim().is_empty() {
+                ai.key = s.key.trim().to_string();
+            }
+            if !s.model.trim().is_empty() {
+                ai.model = s.model.trim().to_string();
+            }
+            if !s.fallbacks.is_empty() {
+                ai.fallbacks = s.fallbacks;
+            }
+            ai.disabled = s.disabled;
+        }
+        ai
+    }
+
     pub fn available(&self) -> bool {
-        !self.key.is_empty()
+        !self.disabled && !self.key.is_empty()
+    }
+
+    /// Woher der Schlüssel kommt (für die Einstellungen; der Schlüssel selbst bleibt geheim).
+    pub fn key_hint(&self) -> String {
+        let k: Vec<char> = self.key.chars().collect();
+        if k.len() < 16 {
+            return String::new();
+        }
+        format!(
+            "{}…{}",
+            k[..10].iter().collect::<String>(),
+            k[k.len() - 4..].iter().collect::<String>()
+        )
     }
 }
 
 pub const DEFAULT_MODEL: &str = "openrouter/free";
-const FALLBACK_MODELS: &[&str] = &[
+pub const FALLBACK_MODELS: &[&str] = &[
     "nvidia/nemotron-3.5-super-vl:free",
     "google/gemma-4-31b-it:free",
     "google/gemma-4-26b-a4b-it:free",
@@ -144,8 +197,13 @@ pub async fn analyze(
     input: Input<'_>,
     tags: &[TagInfo],
 ) -> Result<Analysis, String> {
+    if ai.disabled {
+        return Err("Die KI ist in den Einstellungen ausgeschaltet.".into());
+    }
     if !ai.available() {
-        return Err("Kein OpenRouter-Schlüssel vorhanden (NRZPAPER_OPENROUTER_KEY).".into());
+        return Err(
+            "Kein OpenRouter-Schlüssel vorhanden – unter Einstellungen → KI eintragen.".into(),
+        );
     }
     let tag_list = if tags.is_empty() {
         "(keine – gib eine leere Liste zurück)".to_string()
@@ -195,7 +253,7 @@ pub async fn analyze(
     if model == DEFAULT_MODEL {
         models.push(DEFAULT_MODEL.into());
     }
-    models.extend(FALLBACK_MODELS.iter().map(|m| m.to_string()));
+    models.extend(ai.fallbacks.iter().filter(|m| m.as_str() != model).cloned());
     let mut errors = Vec::new();
     for m in &models {
         match chat(ai, m, &messages).await {
@@ -286,4 +344,39 @@ mod tests {
         assert_eq!(a.metadata.get("betrag").map(String::as_str), Some("79.9"));
         assert!(!a.metadata.contains_key("iban"));
     }
+}
+
+/// Kostenlose Modelle von OpenRouter, die Bilder lesen können (für die Auswahl in den Einstellungen).
+pub async fn free_vision_models(ai: &AiConfig) -> Result<Vec<(String, String)>, String> {
+    let resp = HTTP
+        .get(format!("{}/models", ai.url))
+        .timeout(Duration::from_secs(20))
+        .send()
+        .await
+        .map_err(|e| format!("OpenRouter nicht erreichbar: {e}"))?;
+    let v: Value = resp.json().await.map_err(|e| e.to_string())?;
+    let mut out: Vec<(String, String)> = v["data"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|m| {
+            m["id"]
+                .as_str()
+                .is_some_and(|id| id.ends_with(":free") || id == DEFAULT_MODEL)
+        })
+        .filter(|m| {
+            m["architecture"]["input_modalities"]
+                .as_array()
+                .is_some_and(|a| a.iter().any(|x| x == "image"))
+                || m["id"] == DEFAULT_MODEL
+        })
+        .map(|m| {
+            (
+                m["id"].as_str().unwrap_or_default().to_string(),
+                m["name"].as_str().unwrap_or_default().to_string(),
+            )
+        })
+        .collect();
+    out.sort();
+    Ok(out)
 }

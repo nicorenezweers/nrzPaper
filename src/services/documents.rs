@@ -168,6 +168,11 @@ pub async fn ingest(
     .await?;
     if status == OcrStatus::Pending {
         queue.wake();
+    } else if let Err(e) =
+        crate::services::tagging_rules::apply_to_document(pool, new.organization_id, &id).await
+    {
+        // Text-Dateien und unlesbare Typen: der Text steht sofort fest.
+        tracing::warn!(document = %id, "Tagging-Regeln: {e}");
     }
     tracing::info!(document = %id, organization = new.organization_id, mime = %mime, size = new.data.len(), source = %new.source, "Dokument aufgenommen");
     let doc = get(pool, new.organization_id, &id).await?;

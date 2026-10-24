@@ -46,6 +46,7 @@ hmac = "0.12"
 notify = "8"
 infer = "0.19"
 
+regex = "1"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "tiff", "gif", "bmp"] }
 async-imap = { version = "0.10", default-features = false, features = ["runtime-tokio"] }
 mail-parser = "0.11"

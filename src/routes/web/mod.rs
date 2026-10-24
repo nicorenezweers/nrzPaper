@@ -6,7 +6,7 @@ mod auth;
 mod documents;
 mod organizations;
 mod pages;
-mod scan;
+pub mod scan;
 mod settings;
 mod share;
 

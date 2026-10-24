@@ -1,6 +1,7 @@
 //! REST-API unter `/api/v1`. Anmeldung per API-Key (`Authorization: Bearer np_…`) oder
 //! Sitzung; jeder Endpunkt prüft die passende Berechtigung.
 
+mod app;
 mod documents;
 mod tags;
 mod webhooks;
@@ -25,6 +26,7 @@ pub fn routes() -> Vec<Route> {
         update_organization,
         delete_organization
     ];
+    r.extend(app::routes());
     r.extend(documents::routes());
     r.extend(tags::routes());
     r.extend(webhooks::routes());

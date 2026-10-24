@@ -21,6 +21,31 @@ use rocket::{delete, get, post, put, routes, FromForm, Responder, Route, State};
 use serde::Deserialize;
 use sqlx::SqlitePool;
 
+/// Nur die JSON-Endpunkte – für die Oberfläche zusätzlich unter `/api/v1`.
+pub fn json_routes() -> Vec<Route> {
+    routes![
+        session,
+        update_session,
+        clear_session,
+        scan_now,
+        add_photos,
+        page_image,
+        delete_page,
+        finish,
+        import_pdfs,
+        items,
+        item_pdf,
+        item_page,
+        edit_item,
+        approve,
+        analyze,
+        discard,
+        scanner_status,
+        discover,
+        ai_test
+    ]
+}
+
 pub fn routes() -> Vec<Route> {
     routes![
         scan_page,
@@ -96,7 +121,7 @@ async fn scan_page(
     Ok(Page::Html(render(&ScanPage {
         shell,
         settings,
-        ai_available: AiConfig::from(config).available(),
+        ai_available: AiConfig::load(pool, config).await.available(),
     })?))
 }
 
@@ -257,7 +282,7 @@ async fn finish(
     config: &State<Config>,
 ) -> AppResult<Value> {
     member(pool, &user, org).await?;
-    let item = scans::finish(pool, &AiConfig::from(config), &user.0.id, org).await?;
+    let item = scans::finish(pool, &AiConfig::load(pool, config).await, &user.0.id, org).await?;
     Ok(json!({ "item": item }))
 }
 
@@ -273,7 +298,7 @@ async fn import_pdfs(
     config: &State<Config>,
 ) -> AppResult<Value> {
     member(pool, &user, org).await?;
-    let ai = AiConfig::from(config);
+    let ai = AiConfig::load(pool, config).await;
     let mut created = Vec::new();
     for f in form.into_inner().file {
         if !f.data.starts_with(b"%PDF") {
@@ -411,7 +436,7 @@ async fn analyze(
     config: &State<Config>,
 ) -> AppResult<Value> {
     member(pool, &user, org).await?;
-    inbox::reanalyze(pool, &AiConfig::from(config), org, id).await?;
+    inbox::reanalyze(pool, &AiConfig::load(pool, config).await, org, id).await?;
     Ok(json!({ "ok": true }))
 }
 
@@ -506,8 +531,12 @@ async fn save_scanner(
 
 /// Kurzer Test der KI mit einer eingebauten Beispielseite.
 #[post("/ai/test")]
-async fn ai_test(_user: CurrentUser, config: &State<Config>) -> AppResult<Value> {
-    let ai = AiConfig::from(config);
+async fn ai_test(
+    _user: CurrentUser,
+    pool: &State<SqlitePool>,
+    config: &State<Config>,
+) -> AppResult<Value> {
+    let ai = AiConfig::load(pool, config).await;
     let tags = [ai::TagInfo {
         name: "Test".into(),
         description: "immer".into(),

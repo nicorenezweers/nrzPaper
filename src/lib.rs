@@ -47,5 +47,6 @@ pub async fn build_with(figment: Figment) -> Result<Rocket<Build>, error::AppErr
         .mount("/", routes::web::routes())
         .mount("/", routes::assets::routes())
         .mount("/api/v1", routes::api::routes())
+        .mount("/api/v1", routes::web::scan::json_routes())
         .register("/", routes::catchers::all()))
 }

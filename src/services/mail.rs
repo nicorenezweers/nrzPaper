@@ -532,7 +532,7 @@ pub async fn run(
 }
 
 /// Hintergrund: jede Minute nachsehen, welche Postfächer fällig sind.
-pub fn spawn(pool: SqlitePool, ai: AiConfig, mut shutdown: rocket::Shutdown) {
+pub fn spawn(pool: SqlitePool, config: crate::config::Config, mut shutdown: rocket::Shutdown) {
     tokio::spawn(async move {
         loop {
             let due: Vec<MailAccount> = sqlx::query_as(
@@ -542,8 +542,12 @@ pub fn spawn(pool: SqlitePool, ai: AiConfig, mut shutdown: rocket::Shutdown) {
             .fetch_all(&pool)
             .await
             .unwrap_or_default();
-            for account in due {
-                let _ = run(&pool, &ai, &account).await;
+            if !due.is_empty() {
+                // Einstellungen jedes Mal frisch – sie können sich in der Oberfläche ändern.
+                let ai = AiConfig::load(&pool, &config).await;
+                for account in due {
+                    let _ = run(&pool, &ai, &account).await;
+                }
             }
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_secs(60)) => {}

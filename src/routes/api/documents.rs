@@ -87,8 +87,10 @@ async fn with_tags(pool: &SqlitePool, docs: Vec<Document>) -> AppResult<Vec<Valu
         .collect())
 }
 
-/// Liste, optional mit Suche (`searchQuery`, gleiche Syntax wie in der Oberfläche).
-#[get("/organizations/<org>/documents?<pageIndex>&<pageSize>&<searchQuery>")]
+/// Liste, optional mit Suche (`searchQuery`, gleiche Syntax wie in der Oberfläche) und auf
+/// einen Ordner beschränkt (`folderId`: Dokumente mit einem Tag des Ordners oder seiner Unterordner).
+#[allow(clippy::too_many_arguments)]
+#[get("/organizations/<org>/documents?<pageIndex>&<pageSize>&<searchQuery>&<folderId>")]
 #[allow(non_snake_case)]
 async fn list(
     api: ApiUser,
@@ -96,15 +98,21 @@ async fn list(
     pageIndex: Option<u32>,
     pageSize: Option<u32>,
     searchQuery: Option<&str>,
+    folderId: Option<&str>,
     pool: &State<SqlitePool>,
 ) -> AppResult<Value> {
     api.require(Permission::DocumentsRead)?;
     member(pool, &api, org).await?;
     let (page, size) = (pageIndex.unwrap_or(0), pageSize.unwrap_or(100));
-    let (docs, total) = match searchQuery.map(str::trim).filter(|q| !q.is_empty()) {
-        Some(q) => search::search(pool, org, &search::parse(q), page, size).await?,
-        None => documents::list(pool, org, false, page, size).await?,
-    };
+    let mut query = search::parse(searchQuery.unwrap_or("").trim());
+    if let Some(folder) = folderId.filter(|f| !f.is_empty()) {
+        let tree = crate::services::folders::tree(pool, org).await?;
+        if !tree.iter().any(|f| f.id == folder) {
+            return Err(AppError::NotFound);
+        }
+        query.any_tag_ids = Some(crate::services::folders::subtree_tags(&tree, folder));
+    }
+    let (docs, total) = search::search(pool, org, &query, page, size).await?;
     Ok(json!({ "documents": with_tags(pool, docs).await?, "documentsCount": total }))
 }
 

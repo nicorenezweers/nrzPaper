@@ -10,6 +10,7 @@ pub mod properties;
 pub mod scan;
 pub mod settings;
 pub mod share_links;
+pub mod tagging_rules;
 pub mod tags;
 pub mod thumbnails;
 pub mod users;

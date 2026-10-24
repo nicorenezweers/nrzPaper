@@ -89,6 +89,15 @@ pub async fn process(
             .bind(document_id)
             .fetch_optional(pool)
             .await?;
+    // Tagging-Regeln: jetzt, wo der Text feststeht.
+    if let Some(doc) = &doc {
+        if let Err(e) =
+            crate::services::tagging_rules::apply_to_document(pool, &doc.organization_id, &doc.id)
+                .await
+        {
+            tracing::warn!(document = document_id, "Tagging-Regeln: {e}");
+        }
+    }
     if let Some(doc) = doc.filter(|_| status != OcrStatus::Skipped) {
         crate::services::webhooks::emit(
             pool,

@@ -51,7 +51,7 @@ async fn account_page(
 ) -> AppResult<Page> {
     let keys = api_key::list(pool, &user.id).await?;
     let scan = crate::services::scan::settings(pool, config, &user.id).await?;
-    let ai = crate::ai::AiConfig::from(config);
+    let ai = crate::ai::AiConfig::load(pool, config).await;
     let mail_accounts = crate::services::mail::list(pool, &user.id).await?;
     let shell = shell(pool, user, org, "account", "").await?;
     let page = render(&AccountPage {
@@ -416,7 +416,7 @@ async fn fetch_mail(
     config: &State<Config>,
 ) -> AppResult<rocket::serde::json::Value> {
     let account = crate::services::mail::get(pool, &user.0.id, id).await?;
-    let ai = crate::ai::AiConfig::from(config);
+    let ai = crate::ai::AiConfig::load(pool, config).await;
     let report = crate::services::mail::run(pool, &ai, &account)
         .await
         .map_err(AppError::bad)?;
@@ -432,7 +432,7 @@ async fn test_mail(
     config: &State<Config>,
 ) -> AppResult<rocket::serde::json::Value> {
     let account = crate::services::mail::get(pool, &user.0.id, id).await?;
-    let ai = crate::ai::AiConfig::from(config);
+    let ai = crate::ai::AiConfig::load(pool, config).await;
     crate::services::mail::fetch(pool, &ai, &account, true)
         .await
         .map_err(AppError::bad)?;

@@ -19,6 +19,14 @@ docker build -t nrzpaper .
 docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 ```
 
+Fertiges Image (amd64 und arm64) aus der Forgejo-Registry:
+
+```bash
+docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data 100.78.107.162:8101/nicorenezweers/nrzpaper:1.0.0
+```
+
+Auf Umbrel: App **nrzPaper** im nrzStore (bringt Programm und Texterkennung selbst mit, braucht keine Registry).
+
 Das Image enthält Tesseract (Deutsch, Englisch) und Poppler. Alle Daten liegen im Volume `/data`
 (`nrzpaper.db`, `nrzpaper.key`, `ingestion/`). Den Schlüssel am besten über `NRZPAPER_DB_KEY` setzen und
 getrennt vom Volume aufbewahren – wer Volume *und* Schlüsseldatei hat, kann alles lesen.

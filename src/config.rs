@@ -60,7 +60,12 @@ impl Config {
 pub fn figment() -> Figment {
     Figment::from(rocket::Config::default())
         .merge(Toml::file(Env::var_or("NRZPAPER_CONFIG", "Rocket.toml")).nested())
-        .merge(Env::prefixed("NRZPAPER_").ignore(&["PROFILE"]).global())
+        // NRZPAPER_LOG ist der tracing-Filter (main.rs), keine Rocket-Einstellung
+        .merge(
+            Env::prefixed("NRZPAPER_")
+                .ignore(&["PROFILE", "LOG"])
+                .global(),
+        )
         .select(rocket::figment::Profile::from_env_or(
             "NRZPAPER_PROFILE",
             rocket::Config::DEFAULT_PROFILE,

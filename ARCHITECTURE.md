@@ -236,8 +236,11 @@ wenn die Organisation gelöscht ist. Seitenaufrufe werden gezählt; `noindex`, `
 geht; `tests/assets.rs` meldet, wenn die Datei nicht mehr zu den Templates passt. Der Docker-Build erzeugt sie immer
 frisch.
 
-**Docker** (`Dockerfile`): Stufe 1 `rust:1-bookworm` baut CSS und Programm (`--locked`, SQLCipher/OpenSSL statisch
-mitgebaut, Cargo-Cache über BuildKit). Stufe 2 `debian:bookworm-slim` mit `tesseract-ocr` (+ `deu`, `eng`),
+**Docker** (`Dockerfile`): Stufe 1 `rust:1.98-bookworm` (gepinnt) baut CSS und Programm, für die fremde Architektur
+quer-kompiliert statt emuliert (`--locked`, SQLCipher/OpenSSL statisch mitgebaut, Cargo-Cache über BuildKit).
+Stufe `ocr` installiert Tesseract und Poppler und legt sie zusätzlich als eigenständiges Paket ab (Programme,
+Sprachdaten, nur die Bibliotheken, die im Basis-Image fehlen); Stufe `umbrel` exportiert Programm und Paket für den
+nrzStore (`--target umbrel --output type=local,dest=dist`), dort laufen sie im gepinnten `debian:bookworm-slim`. Stufe 2 `debian:bookworm-slim` mit `tesseract-ocr` (+ `deu`, `eng`),
 `poppler-utils` und CA-Zertifikaten (für Webhooks über HTTPS). Läuft als Benutzer `nrzpaper` (UID 1000), Daten in
 `/data` (Volume), Port 8320. `HEALTHCHECK` ruft `nrzpaper healthcheck` auf (fragt `/api/v1/health`, kein curl im
 Image). `docker stop` schickt SIGTERM: Rocket schliesst laufende Anfragen ab (5 s), dann wird die Datenbank

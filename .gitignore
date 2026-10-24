@@ -5,3 +5,4 @@
 *.db-*
 nrzpaper.key
 /.tools
+/dist

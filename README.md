@@ -3,7 +3,25 @@
 Selbst gehostete Dokumentenverwaltung im Funktionsumfang von [Papra](https://papra.app) – komplett in Rust.
 Alle Daten, auch die Dokumente selbst, liegen in **einer einzigen, mit SQLCipher verschlüsselten SQLite-Datei**.
 
-> Stand: Schritt 6 von 7 – Oberfläche mit Live-Suche, PDF-Viewer, Tags und Papierkorb; Upload, Texterkennung, Eingangsordner; vollständige REST-API, API-Keys und Passwort in der Oberfläche, signierte Webhooks, öffentliche Freigabelinks. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
+> Stand: alle 7 Schritte – Oberfläche mit Live-Suche, PDF-Viewer, Tags und Papierkorb; Upload, Texterkennung, Eingangsordner; vollständige REST-API, API-Keys und Passwort in der Oberfläche, signierte Webhooks, öffentliche Freigabelinks; Docker-Image mit Tesseract, Tailwind beim Build. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Starten mit Docker
+
+```bash
+docker compose up -d --build
+# http://localhost:8320 – beim ersten Aufruf das Administrator-Konto anlegen
+```
+
+oder ohne Compose:
+
+```bash
+docker build -t nrzpaper .
+docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
+```
+
+Das Image enthält Tesseract (Deutsch, Englisch) und Poppler. Alle Daten liegen im Volume `/data`
+(`nrzpaper.db`, `nrzpaper.key`, `ingestion/`). Den Schlüssel am besten über `NRZPAPER_DB_KEY` setzen und
+getrennt vom Volume aufbewahren – wer Volume *und* Schlüsseldatei hat, kann alles lesen.
 
 ## Starten (Entwicklung)
 
@@ -26,7 +44,16 @@ Beim ersten Start entsteht `data/nrzpaper.db` (verschlüsselt) und `data/nrzpape
 | `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Aufbewahrung im Papierkorb |
 | `NRZPAPER_REGISTRATION_OPEN` | `false` | Selbst-Registrierung nach dem ersten Konto |
 | `NRZPAPER_COOKIE_SECURE` | `false` | Cookies nur über HTTPS (hinter HTTPS einschalten) |
-| `NRZPAPER_LOG` | `info` | Log-Filter (`tracing`) |
+| `NRZPAPER_LOG` | `info` (Rocket-Details gedämpft) | Log-Filter (`tracing`), z. B. `debug` |
+
+### Oberfläche (CSS)
+
+Das CSS wird aus den Templates erzeugt. Nach Änderungen an Klassen in `templates/` oder `static/*.js`:
+
+```bash
+scripts/tailwind.sh          # einmal (lädt beim ersten Mal die Tailwind-CLI nach .tools/)
+scripts/tailwind.sh --watch  # während der Arbeit
+```
 
 ### Texterkennung
 
@@ -76,4 +103,5 @@ cargo test
 - `tests/documents.rs` – Aufnahme und Typen, Duplikate, Papierkorb, echte Texterkennung (Textebene, Scan, Bild – übersprungen ohne Tesseract), Warteschlange mit Volltextsuche, Eingangsordner, Upload mit Range, Dokument-API mit Berechtigungen.
 - `tests/web.rs` – Ersteinrichtung, Anmeldung, Sitzungen (auch nach Neustart), fremde Organisationen, CSRF, offene Redirects, Sicherheits-Header, Fehler als HTML/JSON, API-Keys mit Berechtigungen und Ablauf.
 - `tests/integrations.rs` – API (Tags, Suche, Statistik, Verlauf, Organisation), Rechte der Keys, Webhook an einen echten HTTP-Empfänger mit Signaturprüfung, Freigabelinks (öffentlich, Range, Ablauf, Papierkorb, Widerruf), Passwortwechsel.
+- `tests/assets.rs` – `static/app.css` passt zu den Templates, nur lokale Schriften.
 - `tests/schema.rs` – Migrationen, Volltextindex (auch nach `VACUUM`), Löschketten, Eindeutigkeit, Prüfbedingungen, Modelle, verschlüsselte Dokument-Blöcke.

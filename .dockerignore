@@ -1,0 +1,9 @@
+target
+data
+.tools
+.git
+*.db
+*.db-*
+nrzpaper.key
+tests
+**/.DS_Store

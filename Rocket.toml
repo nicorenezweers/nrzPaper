@@ -7,6 +7,9 @@ ident = "nrzPaper"
 data_dir = "./data"
 # Uploads bis 200 MiB
 limits = { file = "200MiB", data-form = "210MiB", form = "64KiB", json = "1MiB" }
+# Sauber beenden bei Ctrl-C und SIGTERM (docker stop): laufende Anfragen abschliessen,
+# dann die Datenbank schliessen.
+shutdown = { ctrlc = true, signals = ["term", "hup"], grace = 5, mercy = 5 }
 
 [debug]
 log_level = "normal"

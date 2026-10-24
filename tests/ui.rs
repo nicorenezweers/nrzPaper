@@ -466,7 +466,7 @@ async fn members_cannot_empty_the_trash_of_others_and_assets_are_served() {
             Status::NotFound
         );
 
-        // PDF.js ist eingebettet – kein fremdes CDN für Skripte ausser Tailwind
+        // Alles eingebettet (CSS, Schrift, PDF.js) – keine fremden Quellen
         let csp = client
             .get("/login")
             .dispatch()
@@ -476,9 +476,30 @@ async fn members_cannot_empty_the_trash_of_others_and_assets_are_served() {
             .unwrap()
             .to_string();
         assert!(
-            !csp.contains("jsdelivr") && csp.contains("worker-src 'self' blob:"),
+            !csp.contains("https://") && csp.contains("script-src 'self';"),
             "{csp}"
         );
+        let page = client
+            .get(format!("/organizations/{org}"))
+            .dispatch()
+            .await
+            .into_string()
+            .await
+            .unwrap();
+        assert!(!page.contains("https://"), "fremde Quelle in der Seite");
+        assert!(page.contains("/static/app.css?v="));
+        let font = client
+            .get("/static/fonts/inter-latin.woff2")
+            .dispatch()
+            .await;
+        assert_eq!(font.content_type(), Some(ContentType::WOFF2));
+        assert!(font
+            .headers()
+            .get_one("Cache-Control")
+            .unwrap()
+            .contains("immutable"));
+        let css = client.get("/static/app.css").dispatch().await;
+        assert_eq!(css.content_type(), Some(ContentType::CSS));
     }
     client.terminate().await;
 }

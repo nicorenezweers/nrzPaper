@@ -14,7 +14,7 @@ Daten liegen in **einer einzigen, vollständig verschlüsselten SQLite-Datenbank
 | Schlüssel | `NRZPAPER_DB_KEY` (Umgebung/Docker-Secret); fehlt er, wird beim ersten Start `data/nrzpaper.key` erzeugt | Der Schlüssel darf nicht in der Datenbank liegen. Ohne Schlüssel sind die Daten verloren – im Betrieb sichern. |
 | Volltextsuche | FTS5 in derselben Datenbank, `unicode61 remove_diacritics 2` | „Zürich“ findet auch „Zurich“. Präfix-Suche, Ranking über `bm25`. |
 | OCR | Tesseract + Poppler als Systemprogramme, **nur über Pipes** (stdin/stdout, `fd://0`) | Kein Klartext auf der Platte, auch nicht kurzzeitig. Textebene eines PDFs zuerst (`pdftotext`), sonst Seiten rendern (`pdftoppm`) → `tesseract`. |
-| Oberfläche | Server-Side Rendering mit **Askama** (Templates zur Übersetzungszeit geprüft) + Tailwind (CDN) | Vorgabe. Eigenes Design in Grautönen. |
+| Oberfläche | Server-Side Rendering mit **Askama** (Templates zur Übersetzungszeit geprüft) + Tailwind (beim Build erzeugt, eingebettet) | Vorgabe. Eigenes Design in Grautönen; kein CDN, läuft offline. |
 | PDF-Vorschau | PDF.js (pdfjs-dist 4.10.38) **ins Programm eingebettet**, Daten per Range-Anfrage aus der verschlüsselten DB | Browser führen kein Rust aus; die Vorschau ist der einzige grössere Teil mit JavaScript. Eingebettet statt CDN, damit sie auch ohne Internet (z. B. auf Umbrel) läuft. |
 | Hintergrund | Tokio-Aufgaben, gestartet in einem Liftoff-Fairing | OCR-Warteschlange, Eingangsordner-Beobachter (`notify`), Papierkorb-Leerung, Webhook-Zustellung. |
 
@@ -74,7 +74,7 @@ Organisationen prüft `services::organizations::membership` – wer kein Mitglie
 Guards ändernde Anfragen ab, deren `Origin` nicht zu `Host`/`X-Forwarded-Host` passt. Rücksprünge nach der Anmeldung
 (`next`) sind nur auf eigene Pfade erlaubt.
 
-**Fairings**: `SecurityHeaders` (CSP mit genau den beiden CDNs, `X-Frame-Options`, `nosniff`, Referrer- und
+**Fairings**: `SecurityHeaders` (CSP nur für die eigene Seite, `X-Frame-Options`, `nosniff`, Referrer- und
 Permissions-Policy), `RequestLog` (Methode, Pfad, Status, Dauer über `tracing`), `Background` (Liftoff: Aufräum-Jobs,
 beendet sich mit dem Server).
 
@@ -185,10 +185,10 @@ Vollbild; Tastatur (←/→, +/−, R, ⌘F, Esc). Der Suchbegriff aus der Liste
 Bilder: Zoom, Drehen, Vollbild. Text-Dateien: als Text. Eingescannte PDFs ohne Textebene lassen sich im Viewer
 nicht durchsuchen – ihr erkannter Text steht rechts daneben und ist in der Dokumentsuche enthalten.
 
-**Eigene Dateien** (`src/routes/assets.rs`): `app.js`, `viewer.js`, `viewer.css` und PDF.js sind mit
-`include_bytes!` eingebettet. Die Links tragen `?v=` mit einer Prüfsumme der Dateien, damit Browser nach jeder
-Änderung neu laden; PDF.js wird ein Jahr lang gecacht (`immutable`). Die Content-Security-Policy lässt für
-Skripte nur noch die eigene Seite und Tailwind zu.
+**Eigene Dateien** (`src/routes/assets.rs`): `app.css`, `app.js`, `viewer.js`, `viewer.css`, die Schrift Inter
+und PDF.js sind mit `include_bytes!` eingebettet. Die Links tragen `?v=` mit einer Prüfsumme der Dateien, damit
+Browser nach jeder Änderung neu laden; PDF.js und die Schrift werden ein Jahr lang gecacht (`immutable`).
+Die Content-Security-Policy erlaubt nur die eigene Seite (`script-src 'self'`, keine Inline-Skripte).
 
 **Design**: nur Grautöne (Tailwind `zinc`), Tags dürfen eine Farbe tragen. Auf kleinen Bildschirmen ersetzt eine
 Leiste oben die Seitenleiste.
@@ -227,6 +227,21 @@ Versuch landet in `webhook_deliveries`. Lokale Ziele sind erlaubt (Selbst-Hostin
 `/share/<token>` zeigt Name, Angaben und denselben Viewer wie die Detailseite (`templates/documents/_viewer.html`),
 `/share/<token>/file` liefert die Datei mit Range. Ungültig (→ 404) nach Ablauf, Widerruf, im Papierkorb oder
 wenn die Organisation gelöscht ist. Seitenaufrufe werden gezählt; `noindex`, `Referrer-Policy: same-origin`.
+
+## Build & Betrieb (Schritt 7)
+
+**CSS**: `assets/app.css` (Tailwind-Direktiven, `@font-face` für Inter, Grundstile) → `scripts/tailwind.sh` →
+`static/app.css` (minifiziert, ~20 KB). Das Skript lädt die eigenständige Tailwind-CLI 3.4.17 (kein Node) nach
+`.tools/` und prüft ihre SHA-256-Prüfsumme. `static/app.css` liegt im Repository, damit `cargo build` ohne Werkzeug
+geht; `tests/assets.rs` meldet, wenn die Datei nicht mehr zu den Templates passt. Der Docker-Build erzeugt sie immer
+frisch.
+
+**Docker** (`Dockerfile`): Stufe 1 `rust:1-bookworm` baut CSS und Programm (`--locked`, SQLCipher/OpenSSL statisch
+mitgebaut, Cargo-Cache über BuildKit). Stufe 2 `debian:bookworm-slim` mit `tesseract-ocr` (+ `deu`, `eng`),
+`poppler-utils` und CA-Zertifikaten (für Webhooks über HTTPS). Läuft als Benutzer `nrzpaper` (UID 1000), Daten in
+`/data` (Volume), Port 8320. `HEALTHCHECK` ruft `nrzpaper healthcheck` auf (fragt `/api/v1/health`, kein curl im
+Image). `docker stop` schickt SIGTERM: Rocket schliesst laufende Anfragen ab (5 s), dann wird die Datenbank
+geschlossen.
 
 ## Datenfluss
 
@@ -288,4 +303,4 @@ nrzPaper/
 4. **Upload, Speicher, OCR, Eingangsordner** – `storage`, `ocr`, `ingestion`, `services::documents`, `tests/documents.rs`. ✅
 5. **Oberfläche** – Dokumentliste mit Live-Suche, Detailseite mit PDF-Viewer, Tags, Papierkorb, `tests/ui.rs`. ✅
 6. **API, Konto, Webhooks, Freigaben** – restliche Endpunkte, API-Keys und Passwort in der Oberfläche, Einstellungen, signierte Webhooks, öffentliche Links, `tests/integrations.rs`. ✅
-7. Dockerfile (Multi-Stage, `debian:bookworm-slim` mit Tesseract und Poppler).
+7. **Docker & Tailwind-Build** – Multi-Stage-`Dockerfile` (`debian:bookworm-slim` mit Tesseract und Poppler), Tailwind-CSS beim Build, Schrift eingebettet, `tests/assets.rs`. ✅

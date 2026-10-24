@@ -1,0 +1,23 @@
+# Beispiel: docker compose up -d → http://localhost:8320
+# Den Datenbank-Schlüssel sicher aufbewahren: ohne ihn ist die Datenbank nicht lesbar.
+services:
+  nrzpaper:
+    build: .
+    image: nrzpaper:latest
+    restart: unless-stopped
+    ports:
+      - "8320:8320"
+    environment:
+      # Leer lassen → Schlüssel wird erzeugt und in /data/nrzpaper.key abgelegt.
+      # Besser: eigener Schlüssel (64 Hex-Zeichen oder eine lange Passphrase), getrennt vom Volume gesichert.
+      NRZPAPER_DB_KEY: ${NRZPAPER_DB_KEY:-}
+      NRZPAPER_OCR_LANGUAGES: deu+eng
+      # Hinter HTTPS (Reverse Proxy) einschalten:
+      NRZPAPER_COOKIE_SECURE: "false"
+    volumes:
+      - nrzpaper-data:/data
+      # Eingangsordner vom Host einbinden (Unterordner je Organisations-ID):
+      # - ./eingang:/data/ingestion
+
+volumes:
+  nrzpaper-data:

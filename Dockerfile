@@ -44,7 +44,7 @@ RUN scripts/tailwind.sh
 # Der eingebaute OpenRouter-Schlüssel (KI beim Scannen) kommt als Build-Secret – nie in den
 # Quelltext oder die Image-Schichten. Ohne Secret: KI nur mit NRZPAPER_OPENROUTER_KEY.
 #   --secret id=openrouter,env=NRZ_OPENROUTER_KEY
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/src/target,id=nrzpaper-target-$TARGETARCH \
     --mount=type=secret,id=openrouter,env=NRZ_OPENROUTER_KEY \
     env $(cat /cross-env) cargo build --release --locked --target "$(cat /rust-target)" \

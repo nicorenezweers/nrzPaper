@@ -1,5 +1,5 @@
 //! Sicherheits-Header für jede Antwort. Die Content-Security-Policy erlaubt nur die
-//! eigenen Inhalte plus die beiden CDNs aus der Architektur (Tailwind, PDF.js).
+//! eigenen Inhalte plus Tailwind vom CDN; PDF.js ist eingebettet (siehe routes::assets).
 
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Header;
@@ -8,11 +8,11 @@ use rocket::{Request, Response};
 pub struct SecurityHeaders;
 
 const CSP: &str = "default-src 'self'; \
-    script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; \
+    script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; \
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
     font-src 'self' https://fonts.gstatic.com; \
     img-src 'self' data: blob:; \
-    worker-src 'self' blob: https://cdn.jsdelivr.net; \
+    worker-src 'self' blob:; \
     connect-src 'self'; \
     object-src 'none'; \
     frame-ancestors 'none'; \

@@ -4,4 +4,5 @@
 pub mod documents;
 pub mod organizations;
 pub mod settings;
+pub mod tags;
 pub mod users;

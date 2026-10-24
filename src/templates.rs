@@ -1,6 +1,6 @@
 //! Askama-Templates (Ordner `templates/`) – zur Übersetzungszeit geprüft.
 
-use crate::db::models::{Organization, Role, User};
+use crate::db::models::{Document, DocumentSource, OcrStatus, Organization, Role, Tag, User};
 use crate::error::AppResult;
 use askama::Template;
 use rocket::response::content::RawHtml;
@@ -9,13 +9,34 @@ pub fn render<T: Template>(page: &T) -> AppResult<RawHtml<String>> {
     Ok(RawHtml(page.render()?))
 }
 
-/// Rahmen der App: Benutzer, aktuelle Organisation, Organisationsliste, aktiver Menüpunkt.
+/// Version für `?v=` an den eigenen Dateien (Browser laden nach Updates neu).
+pub fn asset_version() -> &'static str {
+    crate::routes::assets::VERSION.as_str()
+}
+
+/// Grösse lesbar: 812 B, 14,2 KB, 3,1 MB.
+pub fn human_size(bytes: &i64) -> String {
+    let b = *bytes as f64;
+    let (v, unit) = if b >= 1_048_576.0 {
+        (b / 1_048_576.0, "MB")
+    } else if b >= 1024.0 {
+        (b / 1024.0, "KB")
+    } else {
+        return format!("{bytes} B");
+    };
+    format!("{v:.1} {unit}").replace('.', ",")
+}
+
+/// Rahmen der App: Benutzer, aktuelle Organisation, Organisationsliste, aktiver Menüpunkt,
+/// Suchtext (für das Suchfeld oben) und ob es live sucht (nur auf der Dokumentliste).
 pub struct Shell {
     pub user: User,
     pub org: Organization,
     pub role: Role,
     pub orgs: Vec<(Organization, Role)>,
     pub active: &'static str,
+    pub query: String,
+    pub live_search: bool,
 }
 
 impl Shell {
@@ -40,10 +61,10 @@ impl Shell {
     pub fn nav(&self) -> Vec<(&'static str, &'static str, bool)> {
         vec![
             ("", "Dokumente", true),
-            ("tags", "Tags", false),
+            ("tags", "Tags", true),
             ("tagging-rules", "Tagging-Regeln", false),
             ("properties", "Eigenschaften", false),
-            ("trash", "Papierkorb", false),
+            ("trash", "Papierkorb", true),
             ("settings", "Einstellungen", false),
         ]
     }
@@ -82,8 +103,207 @@ pub struct NewOrgPage {
     pub username: String,
 }
 
+// ------------------------------------------------------------------ Dokumente
+
+/// Art der Vorschau.
+pub fn preview_kind(doc: &Document) -> &'static str {
+    match doc.mime_type.as_str() {
+        "application/pdf" => "pdf",
+        m if m.starts_with("image/") => "image",
+        "text/plain" => "text",
+        _ => "other",
+    }
+}
+
+pub fn type_label(doc: &Document) -> &'static str {
+    match preview_kind(doc) {
+        "pdf" => "PDF",
+        "image" => "Bild",
+        "text" => "Text",
+        _ => "Datei",
+    }
+}
+
+pub fn ocr_label(status: &OcrStatus) -> &'static str {
+    match status {
+        OcrStatus::Pending => "Texterkennung wartet",
+        OcrStatus::Processing => "Texterkennung läuft",
+        OcrStatus::Done => "Text erkannt",
+        OcrStatus::Failed => "Texterkennung fehlgeschlagen",
+        OcrStatus::Skipped => "ohne Texterkennung",
+    }
+}
+
+pub fn is_busy(status: &OcrStatus) -> bool {
+    matches!(status, OcrStatus::Pending | OcrStatus::Processing)
+}
+
+/// Zeile der Dokumentliste.
+pub struct DocRow {
+    pub doc: Document,
+    pub tags: Vec<Tag>,
+}
+
+/// Seitenzahlen für die Blätterleiste (0-basiert, `None` = Auslassung).
+pub fn page_window(page: &u32, pages: &u32) -> Vec<Option<u32>> {
+    let (page, pages) = (*page, *pages);
+    let mut out = Vec::new();
+    for p in 0..pages {
+        if p == 0 || p + 1 == pages || p.abs_diff(page) <= 1 {
+            out.push(Some(p));
+        } else if out.last() != Some(&None) {
+            out.push(None);
+        }
+    }
+    out
+}
+
+/// URL-kodiert für Links (Suche, Tags).
+pub fn urlencode(s: impl AsRef<str>) -> String {
+    s.as_ref()
+        .bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
+            _ => format!("%{b:02X}"),
+        })
+        .collect()
+}
+
+/// Nur die freien Wörter einer Suche (ohne `tag:` usw.) – zum Markieren in der Vorschau.
+pub fn find_text(query: &str) -> String {
+    let q = crate::search::parse(query);
+    q.terms
+        .iter()
+        .chain(&q.name_terms)
+        .chain(&q.content_terms)
+        .map(|t| t.trim_matches('"'))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Ergebnisliste – auch einzeln abrufbar für die Live-Suche.
 #[derive(Template)]
-#[template(path = "orgs/home.html")]
-pub struct OrgHomePage {
+#[template(path = "documents/_results.html")]
+pub struct ResultsPartial {
+    pub org_id: String,
+    pub rows: Vec<DocRow>,
+    pub total: i64,
+    pub page: u32,
+    pub pages: u32,
+    pub query: String,
+    pub any_documents: bool,
+}
+
+#[derive(Template)]
+#[template(path = "documents/list.html")]
+pub struct DocumentsPage {
     pub shell: Shell,
+    /// Fertig gerenderte Ergebnisliste (dasselbe Template wie für die Live-Suche)
+    pub results_html: String,
+    pub tags: Vec<(Tag, i64)>,
+    pub poll: bool,
+}
+
+impl DocumentsPage {
+    /// Ist dieser Tag schon als Filter in der Suche?
+    pub fn tag_active(&self, name: &str) -> bool {
+        crate::search::parse(&self.shell.query)
+            .tags
+            .iter()
+            .any(|t| t.eq_ignore_ascii_case(name))
+    }
+
+    /// Suche mit diesem Tag ergänzt bzw. ohne ihn.
+    pub fn tag_toggle_query(&self, name: &str) -> String {
+        let filter = if name.contains(' ') {
+            format!("tag:\"{name}\"")
+        } else {
+            format!("tag:{name}")
+        };
+        let q = self.shell.query.trim();
+        if self.tag_active(name) {
+            q.replace(&filter, "")
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+        } else if q.is_empty() {
+            filter
+        } else {
+            format!("{q} {filter}")
+        }
+    }
+}
+
+pub struct ActivityRow {
+    pub label: String,
+    pub user: Option<String>,
+    pub at: i64,
+}
+
+#[derive(Template)]
+#[template(path = "documents/detail.html")]
+pub struct DetailPage {
+    pub shell: Shell,
+    pub doc: Document,
+    pub tags: Vec<Tag>,
+    pub all_tags: Vec<Tag>,
+    pub activity: Vec<ActivityRow>,
+    pub created_by: Option<String>,
+    /// Suchtext aus der Liste – wird im PDF markiert.
+    pub find: String,
+}
+
+impl DetailPage {
+    pub fn unassigned_tags(&self) -> Vec<&Tag> {
+        self.all_tags
+            .iter()
+            .filter(|t| !self.tags.iter().any(|x| x.id == t.id))
+            .collect()
+    }
+
+    pub fn file_url(&self) -> String {
+        format!(
+            "/organizations/{}/documents/{}/file",
+            self.doc.organization_id, self.doc.id
+        )
+    }
+
+    pub fn base_url(&self) -> String {
+        format!(
+            "/organizations/{}/documents/{}",
+            self.doc.organization_id, self.doc.id
+        )
+    }
+}
+
+// ------------------------------------------------------------------ Tags & Papierkorb
+
+#[derive(Template)]
+#[template(path = "tags/list.html")]
+pub struct TagsPage {
+    pub shell: Shell,
+    pub tags: Vec<(Tag, i64)>,
+    pub palette: &'static [&'static str],
+    pub error: Option<String>,
+}
+
+#[derive(Template)]
+#[template(path = "trash.html")]
+pub struct TrashPage {
+    pub shell: Shell,
+    pub docs: Vec<Document>,
+    pub retention_days: u32,
+}
+
+impl TrashPage {
+    /// Tage, bis ein Dokument endgültig gelöscht wird.
+    pub fn days_left(&self, doc: &Document) -> i64 {
+        let deleted = doc.deleted_at.unwrap_or(0);
+        let end = deleted + i64::from(self.retention_days) * 86_400;
+        ((end - crate::db::models::now()) as f64 / 86_400.0)
+            .ceil()
+            .max(0.0) as i64
+    }
 }

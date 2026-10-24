@@ -1,0 +1,42 @@
+{% extends "app_layout.html" %}
+{% block title %}Tags · {{ shell.org.name }} · nrzPaper{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold tracking-tight text-zinc-100">Tags</h1>
+<p class="mt-1 text-sm text-zinc-500">Ordnen Dokumente in {{ shell.org.name }}. Ein Klick auf einen Tag zeigt seine Dokumente.</p>
+{% if let Some(e) = error %}<div class="mt-4 rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-3 text-sm text-zinc-200">{{ e }}</div>{% endif %}
+
+<form method="post" action="/organizations/{{ shell.org.id }}/tags" class="mt-6 grid gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:grid-cols-[1fr_1.5fr_auto_auto] sm:items-end">
+  <label class="block text-sm"><span class="mb-1 block text-zinc-500">Name</span><input name="name" required maxlength="64" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-zinc-600"></label>
+  <label class="block text-sm"><span class="mb-1 block text-zinc-500">Beschreibung</span><input name="description" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-zinc-600"></label>
+  <label class="block text-sm"><span class="mb-1 block text-zinc-500">Farbe</span>
+    <select name="color" class="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none">{% for c in palette %}<option value="{{ c }}" style="color: {{ c }}">● {{ c }}</option>{% endfor %}</select></label>
+  <button class="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white">Anlegen</button>
+</form>
+
+<div class="mt-6 overflow-hidden rounded-xl border border-zinc-800">
+  {% for (t, n) in tags %}
+  <details class="group border-b border-zinc-800/80 last:border-0">
+    <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-zinc-900/60">
+      <span class="h-2.5 w-2.5 rounded-full" style="background: {{ t.color }}"></span>
+      <span class="font-medium text-zinc-100">{{ t.name }}</span>
+      <span class="truncate text-sm text-zinc-500">{{ t.description }}</span>
+      <a href="/organizations/{{ shell.org.id }}?q=tag%3A%22{{ crate::templates::urlencode(t.name) }}%22" class="ml-auto shrink-0 text-sm text-zinc-500 hover:text-zinc-200">{{ n }} {% if *n == 1 %}Dokument{% else %}Dokumente{% endif %}</a>
+      <span class="text-xs text-zinc-600 group-open:hidden">Bearbeiten</span>
+    </summary>
+    <div class="flex flex-wrap items-end gap-3 bg-zinc-900/40 px-4 py-3">
+      <form method="post" action="/organizations/{{ shell.org.id }}/tags/{{ t.id }}" class="flex flex-1 flex-wrap items-end gap-3">
+        <input name="name" value="{{ t.name }}" required class="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-zinc-600">
+        <input name="description" value="{{ t.description }}" placeholder="Beschreibung" class="min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-zinc-600">
+        <select name="color" class="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100">{% for c in palette %}<option value="{{ c }}" {% if *c == t.color %}selected{% endif %}>● {{ c }}</option>{% endfor %}</select>
+        <button class="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-700">Speichern</button>
+      </form>
+      <form method="post" action="/organizations/{{ shell.org.id }}/tags/{{ t.id }}/delete" data-confirm="Tag „{{ t.name }}“ löschen? Er wird von allen Dokumenten entfernt.">
+        <button class="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100">Löschen</button>
+      </form>
+    </div>
+  </details>
+  {% else %}
+  <p class="px-4 py-10 text-center text-sm text-zinc-500">Noch keine Tags.</p>
+  {% endfor %}
+</div>
+{% endblock %}

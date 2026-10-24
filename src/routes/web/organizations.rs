@@ -5,7 +5,7 @@ use crate::auth::guards::CurrentUser;
 use crate::config::Config;
 use crate::error::{AppError, AppResult};
 use crate::services::organizations;
-use crate::templates::{render, NewOrgPage, OrgHomePage, Shell};
+use crate::templates::{render, NewOrgPage};
 use rocket::form::Form;
 use rocket::response::status::Custom;
 use rocket::response::Redirect;
@@ -13,25 +13,7 @@ use rocket::{get, post, routes, FromForm, Route, State};
 use sqlx::SqlitePool;
 
 pub fn routes() -> Vec<Route> {
-    routes![new_page, create, home]
-}
-
-/// Rahmen für eine Seite innerhalb einer Organisation (404, wenn kein Mitglied).
-pub async fn shell(
-    pool: &SqlitePool,
-    user: crate::db::models::User,
-    org_id: &str,
-    active: &'static str,
-) -> AppResult<Shell> {
-    let (org, role) = organizations::membership(pool, &user.id, org_id).await?;
-    let orgs = organizations::list_for_user(pool, &user.id).await?;
-    Ok(Shell {
-        user,
-        org,
-        role,
-        orgs,
-        active,
-    })
+    routes![new_page, create]
 }
 
 #[get("/organizations/new")]
@@ -73,10 +55,4 @@ async fn create(
         }
         Err(e) => Err(e),
     }
-}
-
-#[get("/organizations/<id>")]
-async fn home(user: CurrentUser, id: &str, pool: &State<SqlitePool>) -> AppResult<Page> {
-    let shell = shell(pool, user.0, id, "").await?;
-    Ok(Page::Html(render(&OrgHomePage { shell })?))
 }

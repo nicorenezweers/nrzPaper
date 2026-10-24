@@ -1,0 +1,56 @@
+{% if rows.is_empty() %}
+  {% if any_documents %}
+  <div class="grid place-items-center rounded-2xl border border-dashed border-zinc-800 px-6 py-16 text-center">
+    <p class="font-medium text-zinc-300">Keine Treffer</p>
+    <p class="mt-1 text-sm text-zinc-500">Für „{{ query }}“ wurde nichts gefunden.</p>
+  </div>
+  {% else %}
+  <div class="grid place-items-center rounded-2xl border border-dashed border-zinc-800 px-6 py-20 text-center">
+    <svg viewBox="0 0 24 24" class="h-10 w-10 text-zinc-600"><path d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <p class="mt-4 font-medium text-zinc-300">Noch keine Dokumente</p>
+    <p class="mt-1 text-sm text-zinc-500">Dateien hierher ziehen oder oben auf „Hochladen“ klicken.</p>
+  </div>
+  {% endif %}
+{% else %}
+<p class="mb-3 text-sm text-zinc-500">{{ total }} {% if total == 1 %}Dokument{% else %}Dokumente{% endif %}{% if !query.is_empty() %} für „{{ query }}“{% endif %}</p>
+<div class="overflow-hidden rounded-xl border border-zinc-800">
+  <table class="w-full text-sm">
+    <thead class="bg-zinc-900/70 text-left text-xs uppercase tracking-wider text-zinc-500">
+      <tr><th class="px-4 py-2.5 font-medium">Name</th><th class="hidden px-4 py-2.5 font-medium lg:table-cell">Tags</th><th class="hidden px-4 py-2.5 font-medium md:table-cell">Grösse</th><th class="px-4 py-2.5 font-medium">Hochgeladen</th></tr>
+    </thead>
+    <tbody class="divide-y divide-zinc-800/80">
+    {% for row in rows %}
+      <tr class="group hover:bg-zinc-900/60">
+        <td class="px-4 py-3">
+          <a href="/organizations/{{ org_id }}/documents/{{ row.doc.id }}{% let find = crate::templates::find_text(query) %}{% if !find.is_empty() %}?find={{ crate::templates::urlencode(find) }}{% endif %}" class="flex items-center gap-3">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-zinc-800 text-[10px] font-semibold text-zinc-400 group-hover:bg-zinc-700">{{ crate::templates::type_label(row.doc) }}</span>
+            <span class="min-w-0">
+              <span class="block truncate font-medium text-zinc-100">{{ row.doc.name }}</span>
+              {% if crate::templates::is_busy(row.doc.ocr_status) %}<span class="text-xs text-zinc-500">{{ crate::templates::ocr_label(row.doc.ocr_status) }} …</span>
+              {% else if row.doc.ocr_status == OcrStatus::Failed %}<span class="text-xs text-zinc-400">{{ crate::templates::ocr_label(row.doc.ocr_status) }}</span>
+              {% else if let Some(n) = row.doc.page_count %}<span class="text-xs text-zinc-500">{{ n }} {% if *n == 1 %}Seite{% else %}Seiten{% endif %}</span>{% endif %}
+            </span>
+          </a>
+        </td>
+        <td class="hidden px-4 py-3 lg:table-cell">
+          <div class="flex flex-wrap gap-1.5">
+          {% for t in row.tags %}<span class="inline-flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-800/70 px-2 py-0.5 text-xs text-zinc-300"><span class="h-1.5 w-1.5 rounded-full" style="background: {{ t.color }}"></span>{{ t.name }}</span>{% endfor %}
+          </div>
+        </td>
+        <td class="hidden px-4 py-3 text-zinc-500 md:table-cell">{{ crate::templates::human_size(row.doc.size) }}</td>
+        <td class="px-4 py-3 text-zinc-500"><time data-ts="{{ row.doc.created_at }}"></time></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if pages > 1 %}
+<nav class="mt-5 flex items-center justify-center gap-1 text-sm">
+  {% for p in crate::templates::page_window(page, pages) %}
+    {% if let Some(n) = p %}
+    <a href="/organizations/{{ org_id }}?q={{ crate::templates::urlencode(query) }}&page={{ n }}" class="min-w-9 rounded-lg px-3 py-1.5 text-center {% if *n == page %}bg-zinc-100 font-semibold text-zinc-900{% else %}text-zinc-400 hover:bg-zinc-800{% endif %}">{{ n + 1 }}</a>
+    {% else %}<span class="px-2 text-zinc-600">…</span>{% endif %}
+  {% endfor %}
+</nav>
+{% endif %}
+{% endif %}

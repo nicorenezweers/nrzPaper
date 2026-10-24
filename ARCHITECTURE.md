@@ -15,7 +15,7 @@ Daten liegen in **einer einzigen, vollständig verschlüsselten SQLite-Datenbank
 | Volltextsuche | FTS5 in derselben Datenbank, `unicode61 remove_diacritics 2` | „Zürich“ findet auch „Zurich“. Präfix-Suche, Ranking über `bm25`. |
 | OCR | Tesseract + Poppler als Systemprogramme, **nur über Pipes** (stdin/stdout, `fd://0`) | Kein Klartext auf der Platte, auch nicht kurzzeitig. Textebene eines PDFs zuerst (`pdftotext`), sonst Seiten rendern (`pdftoppm`) → `tesseract`. |
 | Oberfläche | Server-Side Rendering mit **Askama** (Templates zur Übersetzungszeit geprüft) + Tailwind (CDN) | Vorgabe. Eigenes Design in Grautönen. |
-| PDF-Vorschau | PDF.js im Browser, Daten per Range-Anfrage aus der verschlüsselten DB | Browser führen kein Rust aus; die Vorschau (Miniaturen, Zoom, Drehen, Suche im PDF, Text-Ebene) ist der einzige Teil mit JavaScript. Alles andere rendert der Server. |
+| PDF-Vorschau | PDF.js (pdfjs-dist 4.10.38) **ins Programm eingebettet**, Daten per Range-Anfrage aus der verschlüsselten DB | Browser führen kein Rust aus; die Vorschau ist der einzige grössere Teil mit JavaScript. Eingebettet statt CDN, damit sie auch ohne Internet (z. B. auf Umbrel) läuft. |
 | Hintergrund | Tokio-Aufgaben, gestartet in einem Liftoff-Fairing | OCR-Warteschlange, Eingangsordner-Beobachter (`notify`), Papierkorb-Leerung, Webhook-Zustellung. |
 
 ## Datenbank-Schema
@@ -159,6 +159,40 @@ ab (SIGSEGV, gefunden über die macOS-Absturzberichte). Deshalb:
 | `GET /api/v1/organizations/<org>/documents/<id>/file` | Datei (Range) |
 | `POST /api/v1/organizations/<org>/documents/<id>/restore` · `/reprocess` | wiederherstellen, Texterkennung neu |
 
+## Oberfläche (Schritt 5)
+
+**Seiten** (`src/routes/web/pages.rs`, Templates unter `templates/`) – alles server-seitig gerendert, Formulare
+nach Post/Redirect/Get:
+
+| Pfad | Seite |
+|------|-------|
+| `/organizations/<org>?q=&page=` | Dokumentliste: Suche, Tag-Filter mit Anzahl, Upload per Drag & Drop, 25 je Seite |
+| `…?partial=true` | nur die Ergebnisliste (für die Live-Suche) |
+| `/organizations/<org>/documents/<id>?find=` | Detail: Vorschau, Name, Tags, Angaben, erkannter Text (bearbeitbar), Verlauf |
+| `/organizations/<org>/tags` | Tags anlegen, bearbeiten, löschen |
+| `/organizations/<org>/trash` | Papierkorb: wiederherstellen, endgültig löschen, leeren (nur Besitzer/Admin) |
+
+**Suche** (`src/search`): eigene Syntax wie bei Papra – freie Wörter (Präfix, Umlaute egal), `"Wortfolge"`,
+`name:`, `content:`, `tag:`/`-tag:`, `has:tags`, `type:pdf|image|text`, `created:2026`, `created:>2026-06-01`,
+`status:failed`. Daraus wird eine Abfrage mit `QueryBuilder` und gebundenen Werten; der FTS5-Ausdruck besteht nur
+aus vollständig gequoteten Begriffen, Eingaben können also keine FTS-Syntax einschleusen. Mit Text-Suche wird nach
+`bm25` sortiert (Name 10-fach gewichtet), sonst nach Datum.
+
+**PDF-Viewer** (`static/viewer.js`): fortlaufendes Scrollen, Seiten werden erst beim Sichtbarwerden gerendert
+(IntersectionObserver), scharf auf Retina; Miniaturen-Leiste; Seitenwahl; Zoom (Seitenbreite, ganze Seite,
+50–300 %, ±); Drehen; Suche im PDF mit Treffer-Navigation (Umlaute egal) über die Text-Ebene; markierbarer Text;
+Vollbild; Tastatur (←/→, +/−, R, ⌘F, Esc). Der Suchbegriff aus der Liste wird gleich markiert (`?find=`).
+Bilder: Zoom, Drehen, Vollbild. Text-Dateien: als Text. Eingescannte PDFs ohne Textebene lassen sich im Viewer
+nicht durchsuchen – ihr erkannter Text steht rechts daneben und ist in der Dokumentsuche enthalten.
+
+**Eigene Dateien** (`src/routes/assets.rs`): `app.js`, `viewer.js`, `viewer.css` und PDF.js sind mit
+`include_bytes!` eingebettet. Die Links tragen `?v=` mit einer Prüfsumme der Dateien, damit Browser nach jeder
+Änderung neu laden; PDF.js wird ein Jahr lang gecacht (`immutable`). Die Content-Security-Policy lässt für
+Skripte nur noch die eigene Seite und Tailwind zu.
+
+**Design**: nur Grautöne (Tailwind `zinc`), Tags dürfen eine Farbe tragen. Auf kleinen Bildschirmen ersetzt eine
+Leiste oben die Seitenleiste.
+
 ## Datenfluss
 
 ```
@@ -217,6 +251,6 @@ nrzPaper/
 2. **Datenbank-Schema & Migrationen** – `migrations/0001_init.sql`, Modelle in `src/db/models.rs`, Tests in `tests/schema.rs`. ✅
 3. **Rocket-Server** – Fairings, Request Guards, Anmeldung, Routing, Fehlerbehandlung, erste Seiten, `tests/web.rs`. ✅
 4. **Upload, Speicher, OCR, Eingangsordner** – `storage`, `ocr`, `ingestion`, `services::documents`, `tests/documents.rs`. ✅
-5. SSR-Oberfläche (Askama + Tailwind, Grautöne), PDF-Vorschau.
+5. **Oberfläche** – Dokumentliste mit Live-Suche, Detailseite mit PDF-Viewer, Tags, Papierkorb, `tests/ui.rs`. ✅
 6. REST-API, Webhooks, Freigabelinks.
 7. Dockerfile (Multi-Stage, `debian:bookworm-slim` mit Tesseract und Poppler).

@@ -32,13 +32,35 @@
     </div>
   </aside>
   <div class="flex min-w-0 flex-1 flex-col">
-    <header class="flex items-center gap-3 border-b border-zinc-800/70 px-6 py-3.5">
-      <div class="flex w-80 max-w-full items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-500">
-        <svg viewBox="0 0 20 20" class="h-4 w-4"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        Suche (Schritt 5)
-      </div>
+    <!-- Kleine Bildschirme: Navigation statt Seitenleiste -->
+    <nav class="flex items-center gap-1 overflow-x-auto border-b border-zinc-800 px-3 py-2 text-sm md:hidden">
+      <a href="/organizations/{{ shell.org.id }}" class="mr-2 shrink-0 font-semibold text-zinc-100">{{ shell.org.name }}</a>
+      {% for (key, label, ready) in shell.nav() %}{% if ready %}
+      <a href="/organizations/{{ shell.org.id }}{% if key != "" %}/{{ key }}{% endif %}" class="shrink-0 rounded-md px-2.5 py-1 {% if key == shell.active %}bg-zinc-800 text-zinc-100{% else %}text-zinc-400{% endif %}">{{ label }}</a>
+      {% endif %}{% endfor %}
+      <form method="post" action="/logout" class="ml-auto shrink-0"><button class="px-2 py-1 text-zinc-500">Abmelden</button></form>
+    </nav>
+    <header class="flex items-center gap-3 border-b border-zinc-800/70 px-6 py-3">
+      <form method="get" action="/organizations/{{ shell.org.id }}" class="flex w-full max-w-xl items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm focus-within:border-zinc-600">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-zinc-500"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input type="search" name="q" value="{{ shell.query }}" placeholder="Suchen … z. B. rechnung tag:steuern created:2026" autocomplete="off"
+               {% if shell.live_search %}data-live-search data-target="#results"{% endif %}
+               class="w-full bg-transparent text-zinc-100 placeholder-zinc-600 outline-none">
+      </form>
+      <details class="relative">
+        <summary class="cursor-pointer list-none rounded-lg px-2 py-1.5 text-xs text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300">Suchhilfe</summary>
+        <div class="absolute left-0 top-full z-30 mt-2 w-80 rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-xs leading-relaxed text-zinc-400 shadow-2xl shadow-black/50">
+          <p><code class="text-zinc-200">rechnung zürich</code> – beide Wörter, Anfang genügt</p>
+          <p><code class="text-zinc-200">"mobile abo"</code> – genau diese Folge</p>
+          <p><code class="text-zinc-200">name:</code> / <code class="text-zinc-200">content:</code> – nur Name bzw. Text</p>
+          <p><code class="text-zinc-200">tag:steuern</code>, <code class="text-zinc-200">-tag:privat</code>, <code class="text-zinc-200">has:tags</code></p>
+          <p><code class="text-zinc-200">type:pdf</code> / <code class="text-zinc-200">image</code> / <code class="text-zinc-200">text</code></p>
+          <p><code class="text-zinc-200">created:2026</code>, <code class="text-zinc-200">created:&gt;2026-06-01</code></p>
+          <p><code class="text-zinc-200">status:failed</code> – Texterkennung fehlgeschlagen</p>
+        </div>
+      </details>
     </header>
-    <main class="flex-1 px-6 py-8">{% block content %}{% endblock %}</main>
+    <main class="flex-1 px-6 py-6">{% block content %}{% endblock %}</main>
   </div>
 </div>
 {% endblock %}

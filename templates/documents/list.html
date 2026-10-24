@@ -1,0 +1,42 @@
+{% extends "app_layout.html" %}
+{% block title %}Dokumente · {{ shell.org.name }} · nrzPaper{% endblock %}
+{% block body_attrs %}{% if poll %}data-poll="5000"{% endif %}{% endblock %}
+{% block content %}
+<div data-upload="/organizations/{{ shell.org.id }}/documents">
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-zinc-100">Dokumente</h1>
+      <p class="mt-1 text-sm text-zinc-500">PDFs und Bilder hierher ziehen – der Text wird automatisch erkannt.</p>
+    </div>
+    <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white">
+      <svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M10 13V3m0 0L6 7m4-4l4 4M3 13v2a2 2 0 002 2h10a2 2 0 002-2v-2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Hochladen
+      <input type="file" multiple data-file-input class="hidden">
+    </label>
+  </div>
+
+  <div data-progress hidden class="mb-4 h-1 overflow-hidden rounded-full bg-zinc-800"><div class="h-full w-0 bg-zinc-300 transition-all"></div></div>
+
+  {% if !tags.is_empty() %}
+  <div class="mb-5 flex flex-wrap gap-2">
+    {% for (t, n) in tags %}
+    <a href="/organizations/{{ shell.org.id }}?q={{ crate::templates::urlencode(self.tag_toggle_query(t.name)) }}"
+       class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition {% if self.tag_active(t.name) %}border-zinc-400 bg-zinc-200 text-zinc-900{% else %}border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200{% endif %}">
+      <span class="h-1.5 w-1.5 rounded-full" style="background: {{ t.color }}"></span>{{ t.name }}<span class="text-zinc-500">{{ n }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div id="results">
+    {{ results_html|safe }}
+  </div>
+
+  <div data-drop-overlay hidden class="fixed inset-0 z-40 grid place-items-center bg-zinc-950/85 backdrop-blur-sm">
+    <div class="rounded-2xl border-2 border-dashed border-zinc-500 px-16 py-14 text-center">
+      <p class="text-lg font-semibold text-zinc-100">Loslassen zum Hochladen</p>
+      <p class="mt-1 text-sm text-zinc-400">in {{ shell.org.name }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -5,6 +5,7 @@ pub use documents::{serve as serve_file, FileReply};
 mod auth;
 mod documents;
 mod organizations;
+mod pages;
 
 use rocket::response::content::RawHtml;
 use rocket::response::status::Custom;
@@ -15,6 +16,7 @@ pub fn routes() -> Vec<Route> {
     let mut r = auth::routes();
     r.extend(organizations::routes());
     r.extend(documents::routes());
+    r.extend(pages::routes());
     r
 }
 

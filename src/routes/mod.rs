@@ -2,6 +2,7 @@
 //! `catchers` beantwortet Fehler passend als HTML oder JSON.
 
 pub mod api;
+pub mod assets;
 pub mod catchers;
 pub mod upload;
 pub mod web;

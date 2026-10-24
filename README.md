@@ -3,7 +3,7 @@
 Selbst gehostete Dokumentenverwaltung im Funktionsumfang von [Papra](https://papra.app) – komplett in Rust.
 Alle Daten, auch die Dokumente selbst, liegen in **einer einzigen, mit SQLCipher verschlüsselten SQLite-Datei**.
 
-> Stand: Schritt 4 von 7 – Datenbank, Anmeldung, Upload, Texterkennung (Tesseract/Poppler), Eingangsordner, Dokument-API. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
+> Stand: Schritt 5 von 7 – Oberfläche mit Live-Suche, PDF-Viewer, Tags und Papierkorb; Upload, Texterkennung, Eingangsordner, Dokument-API. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Starten (Entwicklung)
 
@@ -43,6 +43,11 @@ Ohne Tesseract werden Dokumente trotzdem gespeichert, nur ohne erkannten Text.
 
 Dateien nach `data/ingestion/<Organisations-ID>/` legen – sie werden übernommen und danach gelöscht.
 
+### Suche
+
+`rechnung zürich` · `"mobile abo"` · `name:swisscom` · `content:iban` · `tag:steuern` · `-tag:privat` · `has:tags` ·
+`type:pdf` · `created:2026` · `created:>2026-06-01` · `status:failed`
+
 ## Tests
 
 ```bash
@@ -50,6 +55,7 @@ cargo test
 ```
 
 - `tests/sqlcipher.rs` – Grundannahme: verschlüsselte Datei ohne lesbaren Inhalt, FTS5 mit Umlauten, falscher Schlüssel wird abgewiesen.
+- `tests/ui.rs` – Suchsyntax gegen die echte Datenbank (inkl. böser Eingaben), Liste und Live-Suche, Detailseite, alle Formular-Aktionen, Tags, Papierkorb mit Rechten, eingebettete Dateien.
 - `tests/documents.rs` – Aufnahme und Typen, Duplikate, Papierkorb, echte Texterkennung (Textebene, Scan, Bild – übersprungen ohne Tesseract), Warteschlange mit Volltextsuche, Eingangsordner, Upload mit Range, Dokument-API mit Berechtigungen.
 - `tests/web.rs` – Ersteinrichtung, Anmeldung, Sitzungen (auch nach Neustart), fremde Organisationen, CSRF, offene Redirects, Sicherheits-Header, Fehler als HTML/JSON, API-Keys mit Berechtigungen und Ablauf.
 - `tests/schema.rs` – Migrationen, Volltextindex (auch nach `VACUUM`), Löschketten, Eindeutigkeit, Prüfbedingungen, Modelle, verschlüsselte Dokument-Blöcke.

@@ -1,0 +1,25 @@
+[application]
+name = "nrzpaper-ui"
+default_platform = "web"
+asset_dir = "assets"
+
+[web.app]
+title = "nrzPaper"
+
+[web.resource]
+style = []
+script = []
+
+[web.resource.dev]
+style = []
+script = []
+
+# Beim Entwickeln (dx serve) gehen API, Dateien und Freigaben an den laufenden Rocket-Server.
+[[web.proxy]]
+backend = "http://localhost:8320/api/"
+
+[[web.proxy]]
+backend = "http://localhost:8320/static/"
+
+[[web.proxy]]
+backend = "http://localhost:8320/share/"

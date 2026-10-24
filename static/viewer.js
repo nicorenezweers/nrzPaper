@@ -23,11 +23,16 @@ function scrollWithin(container, el, block = "start") {
   }
 }
 
-for (const root of document.querySelectorAll("[data-viewer]")) {
+/** Viewer in einem Element mit data-viewer starten (auch mehrfach, z. B. aus der Dioxus-Oberfläche). */
+export function mountViewer(root) {
+  if (!root || root.dataset.mounted) return;
+  root.dataset.mounted = "1";
   const kind = root.dataset.kind;
   if (kind === "pdf") pdfViewer(root);
   else if (kind === "image") imageViewer(root);
 }
+
+for (const root of document.querySelectorAll("[data-viewer]")) mountViewer(root);
 
 // ------------------------------------------------------------------ PDF
 

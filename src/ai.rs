@@ -324,28 +324,6 @@ pub(crate) fn parse(v: &Value, tags: &[TagInfo], model: String) -> Analysis {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parses_model_answer() {
-        let v = extract_json("```json\n{\"title\":\"2026-10-15 Swisscom Rechnung\",\"tags\":[\"rechnung\",\"Neu\"],\"metadata\":{\"betrag\":79.9,\"absender\":\"Swisscom\",\"iban\":\"\"},\"summary\":\"Rechnung\"}\n```").unwrap();
-        let a = parse(
-            &v,
-            &[TagInfo {
-                name: "Rechnung".into(),
-                description: String::new(),
-            }],
-            "m".into(),
-        );
-        assert_eq!(a.title, "2026-10-15 Swisscom Rechnung");
-        assert_eq!(a.tags, vec!["Rechnung"]);
-        assert_eq!(a.metadata.get("betrag").map(String::as_str), Some("79.9"));
-        assert!(!a.metadata.contains_key("iban"));
-    }
-}
-
 /// Kostenlose Modelle von OpenRouter, die Bilder lesen können (für die Auswahl in den Einstellungen).
 pub async fn free_vision_models(ai: &AiConfig) -> Result<Vec<(String, String)>, String> {
     let resp = HTTP
@@ -379,4 +357,26 @@ pub async fn free_vision_models(ai: &AiConfig) -> Result<Vec<(String, String)>, 
         .collect();
     out.sort();
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_model_answer() {
+        let v = extract_json("```json\n{\"title\":\"2026-10-15 Swisscom Rechnung\",\"tags\":[\"rechnung\",\"Neu\"],\"metadata\":{\"betrag\":79.9,\"absender\":\"Swisscom\",\"iban\":\"\"},\"summary\":\"Rechnung\"}\n```").unwrap();
+        let a = parse(
+            &v,
+            &[TagInfo {
+                name: "Rechnung".into(),
+                description: String::new(),
+            }],
+            "m".into(),
+        );
+        assert_eq!(a.title, "2026-10-15 Swisscom Rechnung");
+        assert_eq!(a.tags, vec!["Rechnung"]);
+        assert_eq!(a.metadata.get("betrag").map(String::as_str), Some("79.9"));
+        assert!(!a.metadata.contains_key("iban"));
+    }
 }

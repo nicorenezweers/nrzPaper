@@ -33,6 +33,9 @@ pub struct Query {
     pub created_from: Option<i64>,
     pub created_until: Option<i64>,
     pub status: Option<OcrStatus>,
+    /// Ordner: Dokumente mit mindestens einem dieser Tags (IDs). Nicht Teil der Suchsyntax;
+    /// `Some(leer)` heisst: der Ordner hat keine Tags, also keine Dokumente.
+    pub any_tag_ids: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -218,6 +221,18 @@ fn push_filters(b: &mut QueryBuilder<Sqlite>, org: &str, q: &Query) {
         b.push(" AND EXISTS (SELECT 1 FROM document_tags dt JOIN tags t ON t.id = dt.tag_id WHERE dt.document_id = d.id AND t.name = ")
             .push_bind(tag.clone())
             .push(")");
+    }
+    if let Some(ids) = &q.any_tag_ids {
+        if ids.is_empty() {
+            b.push(" AND 0");
+        } else {
+            b.push(" AND EXISTS (SELECT 1 FROM document_tags dt WHERE dt.document_id = d.id AND dt.tag_id IN (");
+            let mut sep = b.separated(", ");
+            for id in ids {
+                sep.push_bind(id.clone());
+            }
+            b.push("))");
+        }
     }
     for tag in &q.not_tags {
         b.push(" AND NOT EXISTS (SELECT 1 FROM document_tags dt JOIN tags t ON t.id = dt.tag_id WHERE dt.document_id = d.id AND t.name = ")

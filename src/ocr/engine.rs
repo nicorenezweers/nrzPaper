@@ -200,7 +200,7 @@ fn clean(text: &str) -> String {
 }
 
 /// Programm starten, `input` über stdin geben, stdout zurückgeben – mit Zeitlimit.
-async fn run(program: &str, args: &[&str], input: &[u8]) -> Result<Vec<u8>, String> {
+pub(crate) async fn run(program: &str, args: &[&str], input: &[u8]) -> Result<Vec<u8>, String> {
     let mut child = Command::new(program)
         .args(args)
         .stdin(Stdio::piped())

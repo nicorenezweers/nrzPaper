@@ -11,6 +11,8 @@
     <p class="mt-0.5 text-sm text-zinc-500">{{ crate::templates::type_label(doc) }} · {{ crate::templates::human_size(doc.size) }}{% if let Some(n) = doc.page_count %} · {{ n }} {% if *n == 1 %}Seite{% else %}Seiten{% endif %}{% endif %} · <time data-ts="{{ doc.created_at }}"></time></p>
   </div>
   <div class="flex flex-wrap gap-2">
+    <button type="button" data-toggle-side title="Angaben ein- oder ausblenden – die Vorschau nutzt dann die ganze Breite" class="hidden rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 xl:inline-flex xl:items-center xl:gap-2">
+      <svg viewBox="0 0 20 20" class="h-4 w-4"><rect x="2.5" y="3.5" width="15" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12.5 3.5v13" stroke="currentColor" stroke-width="1.5"/></svg><span data-side-label>Angaben ausblenden</span></button>
     <a href="{{ self.file_url() }}?download=true" class="rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-700">Herunterladen</a>
     {% if doc.in_trash() %}
     <form method="post" action="{{ self.base_url() }}/restore"><button class="rounded-lg bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-white">Wiederherstellen</button></form>
@@ -21,7 +23,7 @@
 </div>
 {% if doc.in_trash() %}<div class="mb-4 rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-3 text-sm text-zinc-300">Dieses Dokument liegt im Papierkorb.</div>{% endif %}
 
-<div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
+<div data-detail-grid class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
   {% include "documents/_viewer.html" %}
 
   <!-- Angaben -->

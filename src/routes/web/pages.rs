@@ -8,21 +8,27 @@ use crate::db::models::User;
 use crate::error::{AppError, AppResult};
 use crate::ocr::OcrQueue;
 use crate::search;
-use crate::services::{documents, organizations, share_links, tags, users};
+use crate::services::{documents, folders, organizations, share_links, tags, users};
 use crate::templates::{
-    is_busy, render, ActivityRow, DetailPage, DocRow, DocumentsPage, ResultsPartial, Shell,
-    TagsPage, TrashPage,
+    is_busy, render, ActivityRow, DetailPage, DocRow, DocumentsPage, FoldersPage, ResultsPartial,
+    Shell, TagsPage, TrashPage,
 };
 use rocket::form::Form;
+use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::{get, post, routes, FromForm, Route, State};
 use sqlx::SqlitePool;
 
-const PAGE_SIZE: u32 = 25;
+const PAGE_SIZE: u32 = 24;
 
 pub fn routes() -> Vec<Route> {
     routes![
         list,
+        folder,
+        folders_page,
+        create_folder,
+        update_folder,
+        delete_folder,
         detail,
         rename,
         set_content,
@@ -54,6 +60,7 @@ pub(super) async fn shell(
     let (org, role) = organizations::membership(pool, &user.id, org).await?;
     let orgs = organizations::list_for_user(pool, &user.id).await?;
     let review_count = crate::services::inbox::open_count(pool, &org.id).await?;
+    let folders = crate::services::folders::tree(pool, &org.id).await?;
     Ok(Shell {
         user,
         org,
@@ -61,8 +68,10 @@ pub(super) async fn shell(
         orgs,
         active,
         query: query.to_string(),
-        live_search: active.is_empty(),
+        live_search: active.is_empty() || active == "folder",
         review_count,
+        folders,
+        folder_id: String::new(),
     })
 }
 
@@ -73,8 +82,13 @@ async fn results(
     org: &str,
     query: &str,
     page: u32,
+    view: &str,
+    folder_tags: Option<Vec<String>>,
+    base_url: String,
 ) -> AppResult<ResultsPartial> {
-    let parsed = search::parse(query);
+    let mut parsed = search::parse(query);
+    let in_folder = folder_tags.is_some();
+    parsed.any_tag_ids = folder_tags;
     let (docs, total) = search::search(pool, org, &parsed, page, PAGE_SIZE).await?;
     let ids: Vec<String> = docs.iter().map(|d| d.id.clone()).collect();
     let mut tag_map = tags::for_documents(pool, &ids).await?;
@@ -85,10 +99,13 @@ async fn results(
             doc,
         })
         .collect();
-    let any_documents =
-        total > 0 || !parsed.is_empty() && documents::list(pool, org, false, 0, 1).await?.1 > 0;
+    let any_documents = total > 0
+        || (in_folder || !parsed.is_empty())
+            && documents::list(pool, org, false, 0, 1).await?.1 > 0;
     Ok(ResultsPartial {
         org_id: org.to_string(),
+        view: view.to_string(),
+        base_url,
         rows,
         total,
         page,
@@ -98,31 +115,220 @@ async fn results(
     })
 }
 
-/// Dokumentliste. `?partial=1` liefert nur die Ergebnisse (Live-Suche).
-#[get("/organizations/<org>?<q>&<page>&<partial>")]
+const VIEW_COOKIE: &str = "nrzpaper_view";
+
+/// Ansicht aus `?view=` (wird gemerkt) oder dem Cookie; Standard sind Kacheln.
+fn pick_view(view: Option<&str>, cookies: &CookieJar<'_>) -> String {
+    match view.filter(|v| matches!(*v, "grid" | "list")) {
+        Some(v) => {
+            cookies.add(
+                rocket::http::Cookie::build((VIEW_COOKIE, v.to_string()))
+                    .path("/")
+                    .same_site(rocket::http::SameSite::Lax)
+                    .max_age(rocket::time::Duration::days(365)),
+            );
+            v.to_string()
+        }
+        None => cookies
+            .get(VIEW_COOKIE)
+            .map(|c| c.value().to_string())
+            .filter(|v| v == "list")
+            .unwrap_or_else(|| "grid".into()),
+    }
+}
+
+/// Dokumentliste. `?partial=true` liefert nur die Ergebnisse (Live-Suche).
+#[allow(clippy::too_many_arguments)]
+#[get("/organizations/<org>?<q>&<page>&<partial>&<view>")]
 async fn list(
     user: CurrentUser,
     org: &str,
     q: Option<&str>,
     page: Option<u32>,
     partial: Option<bool>,
+    view: Option<&str>,
+    cookies: &CookieJar<'_>,
     pool: &State<SqlitePool>,
 ) -> AppResult<Page> {
     let query = q.unwrap_or("").trim();
+    let view = pick_view(view, cookies);
     let shell = shell(pool, user.0, org, "", query).await?;
-    let results = results(pool, org, query, page.unwrap_or(0)).await?;
-    if partial.unwrap_or(false) {
+    let results = results(
+        pool,
+        org,
+        query,
+        page.unwrap_or(0),
+        &view,
+        None,
+        format!("/organizations/{org}"),
+    )
+    .await?;
+    documents_page(pool, shell, results, view, None, partial.unwrap_or(false)).await
+}
+
+async fn documents_page(
+    pool: &SqlitePool,
+    shell: crate::templates::Shell,
+    results: ResultsPartial,
+    view: String,
+    folder: Option<(crate::services::folders::Entry, Vec<crate::db::models::Tag>)>,
+    partial: bool,
+) -> AppResult<Page> {
+    if partial {
         return Ok(Page::Html(render(&results)?));
     }
-    let poll = query.is_empty() && results.rows.iter().any(|r| is_busy(&r.doc.ocr_status));
-    let tags = tags::list(pool, org).await?;
+    let poll = results.query.is_empty() && results.rows.iter().any(|r| is_busy(&r.doc.ocr_status));
+    let tags = tags::list(pool, &shell.org.id).await?;
     let results_html = askama::Template::render(&results)?;
     Ok(Page::Html(render(&DocumentsPage {
         shell,
         results_html,
         tags,
         poll,
+        view,
+        folder,
     })?))
+}
+
+// ------------------------------------------------------------------ Ordner
+
+/// Ein Ordner: alle Dokumente mit mindestens einem seiner Tags (Unterordner eingeschlossen).
+#[allow(clippy::too_many_arguments)]
+#[get("/organizations/<org>/folders/<id>?<q>&<page>&<partial>&<view>")]
+async fn folder(
+    user: CurrentUser,
+    org: &str,
+    id: &str,
+    q: Option<&str>,
+    page: Option<u32>,
+    partial: Option<bool>,
+    view: Option<&str>,
+    cookies: &CookieJar<'_>,
+    pool: &State<SqlitePool>,
+) -> AppResult<Page> {
+    let query = q.unwrap_or("").trim();
+    let view = pick_view(view, cookies);
+    let mut shell = shell(pool, user.0, org, "folder", query).await?;
+    let entry = shell
+        .folders
+        .iter()
+        .find(|f| f.id == id)
+        .cloned()
+        .ok_or(AppError::NotFound)?;
+    shell.folder_id = entry.id.clone();
+    let tag_ids = folders::subtree_tags(&shell.folders, id);
+    let all = tags::list(pool, org).await?;
+    let folder_tags = all
+        .into_iter()
+        .map(|(t, _)| t)
+        .filter(|t| entry.tag_ids.contains(&t.id))
+        .collect();
+    let base = format!("/organizations/{org}/folders/{id}");
+    let results = results(
+        pool,
+        org,
+        query,
+        page.unwrap_or(0),
+        &view,
+        Some(tag_ids),
+        base,
+    )
+    .await?;
+    documents_page(
+        pool,
+        shell,
+        results,
+        view,
+        Some((entry, folder_tags)),
+        partial.unwrap_or(false),
+    )
+    .await
+}
+
+#[get("/organizations/<org>/folders")]
+async fn folders_page(user: CurrentUser, org: &str, pool: &State<SqlitePool>) -> AppResult<Page> {
+    let shell = shell(pool, user.0, org, "folders", "").await?;
+    let tags = tags::list(pool, org).await?;
+    Ok(Page::Html(render(&FoldersPage {
+        shell,
+        tags,
+        error: None,
+    })?))
+}
+
+#[derive(FromForm)]
+struct FolderForm<'r> {
+    name: &'r str,
+    #[field(default = "")]
+    parent: &'r str,
+    #[field(default = Vec::new())]
+    tags: Vec<String>,
+}
+
+async fn folders_with_error(
+    pool: &SqlitePool,
+    user: User,
+    org: &str,
+    e: AppError,
+) -> AppResult<Page> {
+    let shell = shell(pool, user, org, "folders", "").await?;
+    let tags = tags::list(pool, org).await?;
+    let status = e.status();
+    let page = render(&FoldersPage {
+        shell,
+        tags,
+        error: Some(e.public_message()),
+    })?;
+    Ok(Page::Status(rocket::response::status::Custom(status, page)))
+}
+
+#[post("/organizations/<org>/folders", data = "<form>")]
+async fn create_folder(
+    user: CurrentUser,
+    org: &str,
+    form: Form<FolderForm<'_>>,
+    pool: &State<SqlitePool>,
+) -> AppResult<Page> {
+    organizations::membership(pool, &user.0.id, org).await?;
+    let parent = Some(form.parent).filter(|p| !p.is_empty());
+    match folders::create(pool, org, form.name, parent, &form.tags).await {
+        Ok(id) => Ok(Page::Redirect(Redirect::to(format!(
+            "/organizations/{org}/folders#f-{id}"
+        )))),
+        Err(e @ AppError::BadRequest(_)) => folders_with_error(pool, user.0, org, e).await,
+        Err(e) => Err(e),
+    }
+}
+
+#[post("/organizations/<org>/folders/<id>", data = "<form>")]
+async fn update_folder(
+    user: CurrentUser,
+    org: &str,
+    id: &str,
+    form: Form<FolderForm<'_>>,
+    pool: &State<SqlitePool>,
+) -> AppResult<Page> {
+    organizations::membership(pool, &user.0.id, org).await?;
+    let parent = Some(form.parent).filter(|p| !p.is_empty());
+    match folders::update(pool, org, id, form.name, parent, &form.tags).await {
+        Ok(()) => Ok(Page::Redirect(Redirect::to(format!(
+            "/organizations/{org}/folders#f-{id}"
+        )))),
+        Err(e @ AppError::BadRequest(_)) => folders_with_error(pool, user.0, org, e).await,
+        Err(e) => Err(e),
+    }
+}
+
+#[post("/organizations/<org>/folders/<id>/delete")]
+async fn delete_folder(
+    user: CurrentUser,
+    org: &str,
+    id: &str,
+    pool: &State<SqlitePool>,
+) -> AppResult<Redirect> {
+    organizations::membership(pool, &user.0.id, org).await?;
+    folders::delete(pool, org, id).await?;
+    Ok(Redirect::to(format!("/organizations/{org}/folders")))
 }
 
 // ------------------------------------------------------------------ Detail

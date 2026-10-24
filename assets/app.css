@@ -37,6 +37,9 @@
     border: 2px solid #d4d4d8; box-shadow: 0 20px 50px rgb(0 0 0 / 0.6);
     background-repeat: no-repeat; background-color: #09090b; pointer-events: none; z-index: 10;
   }
+  /* Dokumentseite: Angaben ausgeblendet → Vorschau über die ganze Breite */
+  [data-detail-grid].side-hidden { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-detail-grid].side-hidden > aside { display: none; }
   /* Einfügemarke beim Umsortieren der Seiten */
   .thumb.drop-before { box-shadow: -6px 0 0 -2px #e4e4e7; }
 }

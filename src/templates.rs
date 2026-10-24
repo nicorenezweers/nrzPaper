@@ -42,6 +42,10 @@ pub struct Shell {
     pub live_search: bool,
     /// Einträge der Prüfliste, die auf Prüfung warten (Zähler in der Navigation).
     pub review_count: i64,
+    /// Ordner der Organisation (Baum, flach) für die Seitenleiste
+    pub folders: Vec<crate::services::folders::Entry>,
+    /// Geöffneter Ordner (hervorgehoben)
+    pub folder_id: String,
 }
 
 impl Shell {
@@ -151,6 +155,19 @@ pub struct DocRow {
     pub tags: Vec<Tag>,
 }
 
+/// Link auf ein Dokument; mit Suchbegriff wird er in der Vorschau markiert (`?find=`).
+pub fn doc_href(org: &str, id: &str, query: &str) -> String {
+    let find = find_text(query);
+    if find.is_empty() {
+        format!("/organizations/{org}/documents/{id}")
+    } else {
+        format!(
+            "/organizations/{org}/documents/{id}?find={}",
+            urlencode(find)
+        )
+    }
+}
+
 /// Seitenzahlen für die Blätterleiste (0-basiert, `None` = Auslassung).
 pub fn page_window(page: &u32, pages: &u32) -> Vec<Option<u32>> {
     let (page, pages) = (*page, *pages);
@@ -195,6 +212,10 @@ pub fn find_text(query: &str) -> String {
 #[template(path = "documents/_results.html")]
 pub struct ResultsPartial {
     pub org_id: String,
+    /// "grid" (Kacheln) oder "list" (Tabelle)
+    pub view: String,
+    /// Adresse dieser Liste für die Blätterleiste (Dokumente oder ein Ordner)
+    pub base_url: String,
     pub rows: Vec<DocRow>,
     pub total: i64,
     pub page: u32,
@@ -211,9 +232,20 @@ pub struct DocumentsPage {
     pub results_html: String,
     pub tags: Vec<(Tag, i64)>,
     pub poll: bool,
+    pub view: String,
+    /// Geöffneter Ordner: (Name, Tags des Ordners)
+    pub folder: Option<(crate::services::folders::Entry, Vec<Tag>)>,
 }
 
 impl DocumentsPage {
+    /// Adresse dieser Liste (Dokumente oder Ordner), für Ansicht-Umschalter und Tag-Filter.
+    pub fn base_url(&self) -> String {
+        match &self.folder {
+            Some((f, _)) => format!("/organizations/{}/folders/{}", self.shell.org.id, f.id),
+            None => format!("/organizations/{}", self.shell.org.id),
+        }
+    }
+
     /// Ist dieser Tag schon als Filter in der Suche?
     pub fn tag_active(&self, name: &str) -> bool {
         crate::search::parse(&self.shell.query)
@@ -437,4 +469,18 @@ pub struct ScanPage {
 pub struct ReviewPage {
     pub shell: Shell,
     pub meta_fields: &'static [(&'static str, &'static str)],
+}
+
+#[derive(Template)]
+#[template(path = "folders/manage.html")]
+pub struct FoldersPage {
+    pub shell: Shell,
+    pub tags: Vec<(Tag, i64)>,
+    pub error: Option<String>,
+}
+
+impl FoldersPage {
+    pub fn tag_name(&self, id: &str) -> Option<&Tag> {
+        self.tags.iter().map(|(t, _)| t).find(|t| t.id == id)
+    }
 }

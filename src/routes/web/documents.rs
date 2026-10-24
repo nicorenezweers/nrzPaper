@@ -17,7 +17,7 @@ use rocket::{get, post, routes, Route, State};
 use sqlx::SqlitePool;
 
 pub fn routes() -> Vec<Route> {
-    routes![upload, file]
+    routes![upload, file, thumb]
 }
 
 /// Mehrere Dateien auf einmal; je Datei Erfolg oder Fehler.
@@ -95,4 +95,39 @@ async fn file(
 ) -> AppResult<FileReply> {
     organizations::membership(pool, &user.0.id, org).await?;
     serve(pool, org, id, range.0.as_deref(), download.unwrap_or(false)).await
+}
+
+/// Vorschaubild (JPEG) oder – wenn es keins gibt – ein Platzhalter (SVG).
+#[derive(rocket::Responder)]
+pub enum Thumb {
+    Jpeg(
+        Vec<u8>,
+        rocket::http::ContentType,
+        rocket::http::Header<'static>,
+    ),
+    Svg(
+        String,
+        rocket::http::ContentType,
+        rocket::http::Header<'static>,
+    ),
+}
+
+#[get("/organizations/<org>/documents/<id>/thumb")]
+async fn thumb(
+    user: CurrentUser,
+    org: &str,
+    id: &str,
+    pool: &State<SqlitePool>,
+) -> AppResult<Thumb> {
+    organizations::membership(pool, &user.0.id, org).await?;
+    let doc = documents::get(pool, org, id).await?;
+    let cache = rocket::http::Header::new("Cache-Control", "private, max-age=604800");
+    Ok(match crate::services::thumbnails::get(pool, &doc).await? {
+        Some(jpeg) => Thumb::Jpeg(jpeg, rocket::http::ContentType::JPEG, cache),
+        None => Thumb::Svg(
+            crate::services::thumbnails::placeholder(&crate::templates::type_label(&doc)),
+            rocket::http::ContentType::SVG,
+            rocket::http::Header::new("Cache-Control", "private, max-age=3600"),
+        ),
+    })
 }

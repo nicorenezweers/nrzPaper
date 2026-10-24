@@ -7,7 +7,7 @@ use rocket::{get, routes, Request, Route};
 use std::io::Cursor;
 
 pub fn routes() -> Vec<Route> {
-    routes![asset]
+    routes![asset, favicon]
 }
 
 /// Prüfsumme der eigenen Dateien – hängt als `?v=` an den Links. Ändert sich eine Datei,
@@ -64,6 +64,16 @@ fn lookup(path: &str) -> Option<Asset> {
             ContentType::WOFF2,
             true,
         ),
+        "icon.png" => (
+            include_bytes!("../../static/icon.png"),
+            ContentType::PNG,
+            false,
+        ),
+        "favicon-32.png" => (
+            include_bytes!("../../static/favicon-32.png"),
+            ContentType::PNG,
+            false,
+        ),
         _ => return None,
     };
     Some(Asset {
@@ -91,4 +101,10 @@ impl<'r> Responder<'r, 'static> for Asset {
 #[get("/static/<path..>")]
 fn asset(path: std::path::PathBuf) -> Option<Asset> {
     lookup(path.to_str()?)
+}
+
+/// Browser fragen ohne Link nach /favicon.ico – dasselbe Icon wie die Umbrel-App.
+#[get("/favicon.ico")]
+fn favicon() -> Option<Asset> {
+    lookup("favicon-32.png")
 }

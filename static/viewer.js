@@ -265,6 +265,16 @@ async function pdfViewer(root) {
   pageInput.onchange = () => setCurrent(Number(pageInput.value), true);
   $("[data-zoom-in]", root).onclick = () => step(1);
   $("[data-zoom-out]", root).onclick = () => step(-1);
+  // Strg/⌘ + Mausrad und Zwei-Finger-Zoom auf dem Trackpad (kommt als wheel mit ctrlKey)
+  let wheelAt = 0;
+  scroller.addEventListener("wheel", (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const t = performance.now();
+    if (t - wheelAt < 120) return;
+    wheelAt = t;
+    step(e.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
   zoomSelect.onchange = () => zoomSelect.value !== "custom" && setZoom(isNaN(zoomSelect.value) ? zoomSelect.value : Number(zoomSelect.value));
   $("[data-rotate]", root).onclick = () => {
     state.rotation = (state.rotation + 90) % 360;

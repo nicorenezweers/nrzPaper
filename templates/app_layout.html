@@ -24,6 +24,21 @@
       {% endif %}
       {% endfor %}
     </nav>
+    <div class="mt-6 flex items-center justify-between px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+      <span>Ordner</span>
+      <a href="/organizations/{{ shell.org.id }}/folders" title="Ordner verwalten" class="rounded px-1.5 py-0.5 normal-case tracking-normal {% if shell.active == "folders" %}bg-zinc-800 text-zinc-100{% else %}text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200{% endif %}">Verwalten</a>
+    </div>
+    <nav class="mt-1 min-h-0 space-y-0.5 overflow-y-auto text-sm">
+      {% for f in shell.folders %}
+      <a href="/organizations/{{ shell.org.id }}/folders/{{ f.id }}" style="padding-left: {{ 12 + f.depth * 14 }}px"
+         class="flex items-center gap-2 rounded-lg py-1.5 pr-3 {% if f.id == shell.folder_id %}bg-zinc-800 font-medium text-zinc-100{% else %}text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200{% endif %}">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 opacity-70"><path d="M2.5 5.5A1.5 1.5 0 014 4h3.6l1.6 1.8H16a1.5 1.5 0 011.5 1.5v7.2A1.5 1.5 0 0116 16H4a1.5 1.5 0 01-1.5-1.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        <span class="min-w-0 flex-1 truncate">{{ f.name }}</span><span class="text-[11px] text-zinc-600">{{ f.count }}</span>
+      </a>
+      {% else %}
+      <a href="/organizations/{{ shell.org.id }}/folders" class="block px-3 py-1.5 text-zinc-600 hover:text-zinc-300">+ Ordner anlegen</a>
+      {% endfor %}
+    </nav>
     <div class="mt-auto border-t border-zinc-800 pt-3 text-sm">
       <div class="flex items-center justify-between px-3 py-1.5">
         <a href="/organizations/{{ shell.org.id }}/account" class="truncate {% if shell.active == "account" %}text-zinc-100{% else %}text-zinc-400 hover:text-zinc-200{% endif %}" title="Konto und API-Keys">{{ shell.user.username }}{% if shell.user.is_admin %} · Admin{% endif %}</a>

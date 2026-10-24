@@ -13,6 +13,37 @@
   {% endif %}
 {% else %}
 <p class="mb-3 text-sm text-zinc-500">{{ total }} {% if total == 1 %}Dokument{% else %}Dokumente{% endif %}{% if !query.is_empty() %} für „{{ query }}“{% endif %}</p>
+{% if view == "grid" %}
+<div class="grid grid-cols-[repeat(auto-fill,minmax(12.5rem,1fr))] gap-4">
+{% for row in rows %}
+  {% let href = crate::templates::doc_href(org_id, row.doc.id, query) %}
+  <article class="group flex flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60 transition hover:border-zinc-600 hover:shadow-2xl hover:shadow-black/40">
+    <a href="{{ href }}" class="relative block aspect-[4/5] overflow-hidden border-b border-zinc-800 bg-zinc-950">
+      <img src="/organizations/{{ org_id }}/documents/{{ row.doc.id }}/thumb" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover object-top opacity-90 transition group-hover:opacity-100">
+      {% if !row.tags.is_empty() %}
+      <div class="absolute right-2 top-2 flex max-w-[85%] flex-col items-end gap-1">
+        {% for t in row.tags %}{% if loop.index <= 4 %}<span class="inline-flex max-w-full items-center gap-1.5 truncate rounded-full border border-zinc-700/80 bg-zinc-900/90 px-2 py-0.5 text-[11px] font-medium text-zinc-100 shadow backdrop-blur"><span class="h-1.5 w-1.5 shrink-0 rounded-full" style="background: {{ t.color }}"></span>{{ t.name }}</span>{% endif %}{% endfor %}
+        {% if row.tags.len() > 4 %}<span class="rounded-full bg-zinc-900/90 px-2 py-0.5 text-[11px] text-zinc-400">+{{ row.tags.len() - 4 }}</span>{% endif %}
+      </div>
+      {% endif %}
+      {% if crate::templates::is_busy(row.doc.ocr_status) %}<span class="absolute bottom-2 left-2 rounded-full bg-zinc-900/90 px-2 py-0.5 text-[11px] text-zinc-300">{{ crate::templates::ocr_label(row.doc.ocr_status) }} …</span>{% endif %}
+    </a>
+    <a href="{{ href }}" class="flex-1 px-3 pb-2 pt-3">
+      <h3 class="line-clamp-2 break-words text-sm font-medium leading-snug text-zinc-100">{{ row.doc.name }}</h3>
+    </a>
+    <div class="space-y-1 px-3 pb-3 text-xs text-zinc-500">
+      <p class="flex items-center gap-1.5"><svg viewBox="0 0 20 20" class="h-3.5 w-3.5"><rect x="3" y="4.5" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 8h14M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><time data-ts="{{ row.doc.created_at }}" data-date-only></time></p>
+      <p class="flex items-center gap-1.5"><svg viewBox="0 0 20 20" class="h-3.5 w-3.5"><path d="M5 2.5h6.5L15 6v11.5H5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>{{ crate::templates::type_label(row.doc) }}{% if let Some(n) = row.doc.page_count %} · {{ n }} {% if *n == 1 %}Seite{% else %}Seiten{% endif %}{% endif %} · {{ crate::templates::human_size(row.doc.size) }}</p>
+    </div>
+    <div class="grid grid-cols-3 divide-x divide-zinc-800 border-t border-zinc-800 text-zinc-400">
+      <a href="{{ href }}" title="Öffnen und bearbeiten" class="grid place-items-center py-2 hover:bg-zinc-800 hover:text-zinc-100"><svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M13.5 3.5l3 3L7 16H4v-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></a>
+      <button type="button" title="Vorschau" data-preview="/organizations/{{ org_id }}/documents/{{ row.doc.id }}/file" data-preview-kind="{{ crate::templates::preview_kind(row.doc) }}" data-preview-name="{{ row.doc.name }}" class="grid place-items-center py-2 hover:bg-zinc-800 hover:text-zinc-100"><svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2.3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+      <a href="/organizations/{{ org_id }}/documents/{{ row.doc.id }}/file?download=true" title="Herunterladen" class="grid place-items-center py-2 hover:bg-zinc-800 hover:text-zinc-100"><svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 16h12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </div>
+  </article>
+{% endfor %}
+</div>
+{% else %}
 <div class="overflow-hidden rounded-xl border border-zinc-800">
   <table class="w-full text-sm">
     <thead class="bg-zinc-900/70 text-left text-xs uppercase tracking-wider text-zinc-500">
@@ -44,11 +75,12 @@
     </tbody>
   </table>
 </div>
+{% endif %}
 {% if pages > 1 %}
 <nav class="mt-5 flex items-center justify-center gap-1 text-sm">
   {% for p in crate::templates::page_window(page, pages) %}
     {% if let Some(n) = p %}
-    <a href="/organizations/{{ org_id }}?q={{ crate::templates::urlencode(query) }}&page={{ n }}" class="min-w-9 rounded-lg px-3 py-1.5 text-center {% if *n == page %}bg-zinc-100 font-semibold text-zinc-900{% else %}text-zinc-400 hover:bg-zinc-800{% endif %}">{{ n + 1 }}</a>
+    <a href="{{ base_url }}?q={{ crate::templates::urlencode(query) }}&page={{ n }}" class="min-w-9 rounded-lg px-3 py-1.5 text-center {% if *n == page %}bg-zinc-100 font-semibold text-zinc-900{% else %}text-zinc-400 hover:bg-zinc-800{% endif %}">{{ n + 1 }}</a>
     {% else %}<span class="px-2 text-zinc-600">…</span>{% endif %}
   {% endfor %}
 </nav>

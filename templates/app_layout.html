@@ -26,7 +26,7 @@
     </nav>
     <div class="mt-auto border-t border-zinc-800 pt-3 text-sm">
       <div class="flex items-center justify-between px-3 py-1.5">
-        <span class="truncate text-zinc-400">{{ shell.user.username }}{% if shell.user.is_admin %} · Admin{% endif %}</span>
+        <a href="/organizations/{{ shell.org.id }}/account" class="truncate {% if shell.active == "account" %}text-zinc-100{% else %}text-zinc-400 hover:text-zinc-200{% endif %}" title="Konto und API-Keys">{{ shell.user.username }}{% if shell.user.is_admin %} · Admin{% endif %}</a>
         <form method="post" action="/logout"><button class="text-zinc-500 hover:text-zinc-200">Abmelden</button></form>
       </div>
     </div>
@@ -38,7 +38,8 @@
       {% for (key, label, ready) in shell.nav() %}{% if ready %}
       <a href="/organizations/{{ shell.org.id }}{% if key != "" %}/{{ key }}{% endif %}" class="shrink-0 rounded-md px-2.5 py-1 {% if key == shell.active %}bg-zinc-800 text-zinc-100{% else %}text-zinc-400{% endif %}">{{ label }}</a>
       {% endif %}{% endfor %}
-      <form method="post" action="/logout" class="ml-auto shrink-0"><button class="px-2 py-1 text-zinc-500">Abmelden</button></form>
+      <a href="/organizations/{{ shell.org.id }}/account" class="ml-auto shrink-0 rounded-md px-2.5 py-1 {% if shell.active == "account" %}bg-zinc-800 text-zinc-100{% else %}text-zinc-400{% endif %}">Konto</a>
+      <form method="post" action="/logout" class="shrink-0"><button class="px-2 py-1 text-zinc-500">Abmelden</button></form>
     </nav>
     <header class="flex items-center gap-3 border-b border-zinc-800/70 px-6 py-3">
       <form method="get" action="/organizations/{{ shell.org.id }}" class="flex w-full max-w-xl items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm focus-within:border-zinc-600">

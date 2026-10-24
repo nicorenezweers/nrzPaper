@@ -193,6 +193,41 @@ Skripte nur noch die eigene Seite und Tailwind zu.
 **Design**: nur Grautöne (Tailwind `zinc`), Tags dürfen eine Farbe tragen. Auf kleinen Bildschirmen ersetzt eine
 Leiste oben die Seitenleiste.
 
+## API, Konto, Webhooks, Freigaben (Schritt 6)
+
+**REST-API** (`src/routes/api/`) – JSON in camelCase wie Papra; jeder Endpunkt prüft Mitgliedschaft (sonst 404)
+und die Berechtigung des Keys (sonst 403). Mit Sitzung statt Key gelten alle Rechte des Kontos.
+
+| Endpunkt | Zweck | Recht |
+|----------|-------|-------|
+| `GET …/documents?pageIndex&pageSize&searchQuery` | Liste oder Suche (gleiche Syntax wie die Oberfläche), jeweils mit `tags` | `documents:read` |
+| `GET …/documents/statistics` | Anzahl, Grösse, Papierkorb, laufende Erkennung | `documents:read` |
+| `GET …/documents/<id>/activity` | Verlauf mit Benutzer und Daten | `documents:read` |
+| `POST …/documents/<id>/tags` `{tagId}` · `DELETE …/tags/<tag>` | Tag anhängen (201, schon da: 204) / entfernen | `documents:update` |
+| `GET/POST …/tags` · `PUT/DELETE …/tags/<id>` | Tags verwalten (mit `documentsCount`) | `tags:*` |
+| `GET/POST …/documents/<id>/share-links` · `DELETE …/<link>` | Freigabelinks; Token nur in der Antwort auf POST | `documents:read`/`update` |
+| `GET/POST …/webhooks` · `PATCH/DELETE …/<id>` · `GET …/<id>/deliveries` | Webhooks; nur Besitzer/Admin | `organizations:update` |
+| `PUT /organizations/<id>` · `DELETE` | umbenennen (Besitzer/Admin) / löschen (nur Besitzer) | `organizations:update`/`delete` |
+
+**Konto** (`/organizations/<org>/account`, Link über den Benutzernamen): API-Keys mit Rechten (lesende
+vorausgewählt) und Ablauf anlegen und löschen; Passwort ändern beendet alle Sitzungen, die aktuelle bekommt
+sofort eine neue. **Einstellungen** (`/organizations/<org>/settings`): Name, Mitglieder, Webhooks mit den letzten
+Zustellungen, Organisation löschen (Besitzer). Neue Geheimnisse (Key, Webhook-Secret, Freigabelink) stehen nur in
+der Antwort auf das Formular – nie in einer URL oder einem Cookie; danach setzt `app.js` die Adresse zurück,
+damit Neuladen nichts erneut absendet.
+
+**Webhooks** (`src/services/webhooks.rs`): Ereignisse `document:created|updated|deleted|restored` und
+`document:tag:added|removed` kommen aus den Diensten (Aufnahme, Umbenennen, Text, Papierkorb, Tags) und aus der
+Texterkennung (fertig → `document:updated`). Zustellung im Hintergrund nach „Standard Webhooks“: `webhook-id`
+(`msg_…`), `webhook-timestamp`, `webhook-signature: v1,Base64(HMAC-SHA256(secret, "id.timestamp.body"))`, Body
+`{type, timestamp, data}`. Drei Versuche (sofort, 5 s, 30 s), keine Weiterleitungen, 15 s Zeitlimit; jeder
+Versuch landet in `webhook_deliveries`. Lokale Ziele sind erlaubt (Selbst-Hosting im Heimnetz).
+
+**Freigabelinks** (`src/services/share_links.rs`): Token `sh_` + 32 Zeichen, in der DB nur als SHA-256.
+`/share/<token>` zeigt Name, Angaben und denselben Viewer wie die Detailseite (`templates/documents/_viewer.html`),
+`/share/<token>/file` liefert die Datei mit Range. Ungültig (→ 404) nach Ablauf, Widerruf, im Papierkorb oder
+wenn die Organisation gelöscht ist. Seitenaufrufe werden gezählt; `noindex`, `Referrer-Policy: same-origin`.
+
 ## Datenfluss
 
 ```
@@ -204,7 +239,7 @@ Upload (Web, API, Eingangsordner)
             sonst je Seite: pdftoppm fd://0 → PNG → tesseract stdin → Text
       Bild: tesseract stdin
   → documents.content + documents_fts aktualisieren  ── Status: fertig
-  → Tagging-Regeln anwenden → Webhooks „document:created“
+  → Webhooks „document:updated“ (angelegt: „document:created“ schon beim Upload)
 ```
 
 ## Funktionsumfang (wie Papra)
@@ -252,5 +287,5 @@ nrzPaper/
 3. **Rocket-Server** – Fairings, Request Guards, Anmeldung, Routing, Fehlerbehandlung, erste Seiten, `tests/web.rs`. ✅
 4. **Upload, Speicher, OCR, Eingangsordner** – `storage`, `ocr`, `ingestion`, `services::documents`, `tests/documents.rs`. ✅
 5. **Oberfläche** – Dokumentliste mit Live-Suche, Detailseite mit PDF-Viewer, Tags, Papierkorb, `tests/ui.rs`. ✅
-6. REST-API, Webhooks, Freigabelinks.
+6. **API, Konto, Webhooks, Freigaben** – restliche Endpunkte, API-Keys und Passwort in der Oberfläche, Einstellungen, signierte Webhooks, öffentliche Links, `tests/integrations.rs`. ✅
 7. Dockerfile (Multi-Stage, `debian:bookworm-slim` mit Tesseract und Poppler).

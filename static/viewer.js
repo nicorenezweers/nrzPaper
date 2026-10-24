@@ -8,6 +8,21 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const ZOOMS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+// Nur den Container scrollen (scrollIntoView würde auch die Seite verschieben).
+function scrollWithin(container, el, block = "start") {
+  const c = container.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  const top = r.top - c.top + container.scrollTop;
+  if (block === "nearest") {
+    if (r.top < c.top) container.scrollTop = top - 8;
+    else if (r.bottom > c.bottom) container.scrollTop = top - c.height + r.height + 8;
+  } else if (block === "center") {
+    container.scrollTop = top - (c.height - r.height) / 2;
+  } else {
+    container.scrollTop = top - 16;
+  }
+}
+
 for (const root of document.querySelectorAll("[data-viewer]")) {
   const kind = root.dataset.kind;
   if (kind === "pdf") pdfViewer(root);

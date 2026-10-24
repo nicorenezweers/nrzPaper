@@ -4,5 +4,7 @@
 pub mod documents;
 pub mod organizations;
 pub mod settings;
+pub mod share_links;
 pub mod tags;
 pub mod users;
+pub mod webhooks;

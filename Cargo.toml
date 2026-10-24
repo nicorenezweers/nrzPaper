@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "nrzPaper – selbst gehostete Dokumentenverwaltung in Rust (Rocket, SQLCipher, Tesseract)"
 license = "AGPL-3.0-or-later"
-rust-version = "1.80"
+rust-version = "1.85"
 
 [dependencies]
 # Web
@@ -37,6 +37,10 @@ rand = "0.8"
 sha2 = "0.10"
 hex = "0.4"
 base64 = "0.22"
+
+# Webhooks: ausgehende Anfragen (rustls, keine zweite OpenSSL) und HMAC-Signatur
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+hmac = "0.12"
 
 # Dateien
 notify = "8"

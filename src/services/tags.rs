@@ -1,8 +1,9 @@
 //! Tags einer Organisation und ihre Zuordnung zu Dokumenten.
 
-use crate::db::models::{new_id, now, Tag};
+use crate::db::models::{new_id, now, Tag, WebhookEvent};
 use crate::error::{AppError, AppResult};
 use crate::services::documents;
+use crate::services::webhooks;
 use sqlx::{QueryBuilder, Sqlite, SqlitePool};
 use std::collections::HashMap;
 
@@ -135,7 +136,7 @@ pub async fn add_to_document(
     tag_id: &str,
     user: Option<&str>,
 ) -> AppResult<bool> {
-    documents::get(pool, org, document_id).await?;
+    let doc = documents::get(pool, org, document_id).await?;
     let tag = get(pool, org, tag_id).await?;
     let added = sqlx::query(
         "INSERT OR IGNORE INTO document_tags (document_id, tag_id, created_at) VALUES (?, ?, ?)",
@@ -156,6 +157,8 @@ pub async fn add_to_document(
             serde_json::json!({ "tag": tag.name }),
         )
         .await?;
+        let data = serde_json::json!({ "documentId": doc.id, "organizationId": org, "tagId": tag.id, "tagName": tag.name });
+        webhooks::emit(pool, org, WebhookEvent::TagAdded, data).await;
     }
     Ok(added)
 }
@@ -167,7 +170,7 @@ pub async fn remove_from_document(
     tag_id: &str,
     user: Option<&str>,
 ) -> AppResult<bool> {
-    documents::get(pool, org, document_id).await?;
+    let doc = documents::get(pool, org, document_id).await?;
     let tag = get(pool, org, tag_id).await?;
     let removed = sqlx::query("DELETE FROM document_tags WHERE document_id = ? AND tag_id = ?")
         .bind(document_id)
@@ -185,6 +188,8 @@ pub async fn remove_from_document(
             serde_json::json!({ "tag": tag.name }),
         )
         .await?;
+        let data = serde_json::json!({ "documentId": doc.id, "organizationId": org, "tagId": tag.id, "tagName": tag.name });
+        webhooks::emit(pool, org, WebhookEvent::TagRemoved, data).await;
     }
     Ok(removed)
 }

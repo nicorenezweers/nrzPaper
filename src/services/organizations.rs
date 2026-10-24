@@ -101,3 +101,47 @@ pub async fn membership(
         role,
     ))
 }
+
+/// Darf diese Rolle die Organisation verwalten (Name, Webhooks)?
+pub fn can_manage(role: Role) -> bool {
+    matches!(role, Role::Owner | Role::Admin)
+}
+
+pub async fn rename(pool: &SqlitePool, org_id: &str, name: &str) -> AppResult<String> {
+    let name = validate_name(name)?;
+    sqlx::query(
+        "UPDATE organizations SET name = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+    )
+    .bind(&name)
+    .bind(now())
+    .bind(org_id)
+    .execute(pool)
+    .await?;
+    Ok(name)
+}
+
+/// Organisation ausblenden (die Daten bleiben bis zur Bereinigung erhalten).
+pub async fn delete(pool: &SqlitePool, org_id: &str) -> AppResult<()> {
+    sqlx::query("UPDATE organizations SET deleted_at = ?, updated_at = ? WHERE id = ?")
+        .bind(now())
+        .bind(now())
+        .bind(org_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Mitglieder mit Rolle, Besitzer zuerst.
+pub async fn members(
+    pool: &SqlitePool,
+    org_id: &str,
+) -> AppResult<Vec<(String, String, Role, i64)>> {
+    Ok(sqlx::query_as(
+        "SELECT u.id, u.username, m.role, m.created_at FROM organization_members m JOIN users u ON u.id = m.user_id
+         WHERE m.organization_id = ?
+         ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, u.username COLLATE NOCASE",
+    )
+    .bind(org_id)
+    .fetch_all(pool)
+    .await?)
+}

@@ -156,6 +156,7 @@ text_enum!(
 // ============================================================ Benutzer & Anmeldung
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: String,
     pub username: String,
@@ -179,6 +180,7 @@ pub struct Session {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ApiKey {
     pub id: String,
     pub user_id: String,
@@ -196,6 +198,7 @@ pub struct ApiKey {
 // ============================================================ Organisationen
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Organization {
     pub id: String,
     pub name: String,
@@ -205,6 +208,7 @@ pub struct Organization {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OrganizationMember {
     pub organization_id: String,
     pub user_id: String,
@@ -213,6 +217,7 @@ pub struct OrganizationMember {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Invitation {
     pub id: String,
     pub organization_id: String,
@@ -228,6 +233,7 @@ pub struct Invitation {
 
 /// Ein Dokument ohne Datei-Inhalt (der liegt in `document_chunks`).
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Document {
     #[serde(skip)]
     pub num: i64,
@@ -262,6 +268,7 @@ impl Document {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DocumentActivity {
     pub id: String,
     pub document_id: String,
@@ -274,6 +281,7 @@ pub struct DocumentActivity {
 // ============================================================ Tags & Regeln
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Tag {
     pub id: String,
     pub organization_id: String,
@@ -285,6 +293,7 @@ pub struct Tag {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TaggingRule {
     pub id: String,
     pub organization_id: String,
@@ -297,6 +306,7 @@ pub struct TaggingRule {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TaggingRuleCondition {
     pub id: String,
     pub rule_id: String,
@@ -309,6 +319,7 @@ pub struct TaggingRuleCondition {
 // ============================================================ Eigenschaften
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PropertyDefinition {
     pub id: String,
     pub organization_id: String,
@@ -323,6 +334,7 @@ pub struct PropertyDefinition {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PropertyOption {
     pub id: String,
     pub definition_id: String,
@@ -332,6 +344,7 @@ pub struct PropertyOption {
 
 /// Ein gespeicherter Wert; genau eine der Wert-Spalten ist gefüllt.
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PropertyValue {
     pub id: String,
     pub document_id: String,
@@ -348,6 +361,7 @@ pub struct PropertyValue {
 // ============================================================ Freigaben & Webhooks
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ShareLink {
     pub id: String,
     pub document_id: String,
@@ -367,6 +381,7 @@ impl ShareLink {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Webhook {
     pub id: String,
     pub organization_id: String,
@@ -381,6 +396,7 @@ pub struct Webhook {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct WebhookDelivery {
     pub id: String,
     pub webhook_id: String,

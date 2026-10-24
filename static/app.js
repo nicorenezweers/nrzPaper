@@ -31,6 +31,28 @@ function toast(text, kind = "") {
 }
 window.nrzToast = toast;
 
+// Relative Links als volle Adresse zeigen (<input data-absolute value="/share/…">)
+document.querySelectorAll("input[data-absolute]").forEach((i) => { i.value = new URL(i.value, location.origin).href; });
+
+// Nach einem Formular, das ein Geheimnis zeigt: Adresse auf die Seite selbst zurücksetzen,
+// damit Neuladen nichts erneut absendet (<div data-clean-url="/…">)
+const clean = $("[data-clean-url]");
+if (clean) history.replaceState(null, "", clean.dataset.cleanUrl);
+
+// In die Zwischenablage (<button data-copy="#feld">)
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-copy]");
+  if (!btn) return;
+  const field = $(btn.dataset.copy);
+  try {
+    await navigator.clipboard.writeText(field.value);
+    toast("Kopiert.");
+  } catch {
+    field.select();
+    toast("Bitte mit ⌘C kopieren.", "err");
+  }
+});
+
 // Rückfrage vor gefährlichen Formularen (<form data-confirm="…">)
 document.addEventListener("submit", (e) => {
   const msg = e.target.dataset?.confirm;

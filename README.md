@@ -3,7 +3,7 @@
 Selbst gehostete Dokumentenverwaltung im Funktionsumfang von [Papra](https://papra.app) – komplett in Rust.
 Alle Daten, auch die Dokumente selbst, liegen in **einer einzigen, mit SQLCipher verschlüsselten SQLite-Datei**.
 
-> Stand: Schritt 5 von 7 – Oberfläche mit Live-Suche, PDF-Viewer, Tags und Papierkorb; Upload, Texterkennung, Eingangsordner, Dokument-API. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
+> Stand: Schritt 6 von 7 – Oberfläche mit Live-Suche, PDF-Viewer, Tags und Papierkorb; Upload, Texterkennung, Eingangsordner; vollständige REST-API, API-Keys und Passwort in der Oberfläche, signierte Webhooks, öffentliche Freigabelinks. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Starten (Entwicklung)
 
@@ -48,6 +48,23 @@ Dateien nach `data/ingestion/<Organisations-ID>/` legen – sie werden übernomm
 `rechnung zürich` · `"mobile abo"` · `name:swisscom` · `content:iban` · `tag:steuern` · `-tag:privat` · `has:tags` ·
 `type:pdf` · `created:2026` · `created:>2026-06-01` · `status:failed`
 
+### API
+
+API-Key unter *Benutzername → Konto* anlegen (er wird nur einmal angezeigt), dann:
+
+```bash
+curl -H "Authorization: Bearer np_…" http://localhost:8320/api/v1/organizations
+curl -H "Authorization: Bearer np_…" -F file=@rechnung.pdf http://localhost:8320/api/v1/organizations/<org>/documents
+curl -H "Authorization: Bearer np_…" "http://localhost:8320/api/v1/organizations/<org>/documents?searchQuery=tag:steuern"
+```
+
+Alle Endpunkte: [ARCHITECTURE.md](ARCHITECTURE.md#api-konto-webhooks-freigaben-schritt-6).
+
+### Webhooks
+
+Unter *Einstellungen* (Besitzer/Admin). Prüfen beim Empfänger:
+`webhook-signature == "v1," + base64(hmac_sha256(secret, webhook-id + "." + webhook-timestamp + "." + body))`.
+
 ## Tests
 
 ```bash
@@ -58,4 +75,5 @@ cargo test
 - `tests/ui.rs` – Suchsyntax gegen die echte Datenbank (inkl. böser Eingaben), Liste und Live-Suche, Detailseite, alle Formular-Aktionen, Tags, Papierkorb mit Rechten, eingebettete Dateien.
 - `tests/documents.rs` – Aufnahme und Typen, Duplikate, Papierkorb, echte Texterkennung (Textebene, Scan, Bild – übersprungen ohne Tesseract), Warteschlange mit Volltextsuche, Eingangsordner, Upload mit Range, Dokument-API mit Berechtigungen.
 - `tests/web.rs` – Ersteinrichtung, Anmeldung, Sitzungen (auch nach Neustart), fremde Organisationen, CSRF, offene Redirects, Sicherheits-Header, Fehler als HTML/JSON, API-Keys mit Berechtigungen und Ablauf.
+- `tests/integrations.rs` – API (Tags, Suche, Statistik, Verlauf, Organisation), Rechte der Keys, Webhook an einen echten HTTP-Empfänger mit Signaturprüfung, Freigabelinks (öffentlich, Range, Ablauf, Papierkorb, Widerruf), Passwortwechsel.
 - `tests/schema.rs` – Migrationen, Volltextindex (auch nach `VACUUM`), Löschketten, Eindeutigkeit, Prüfbedingungen, Modelle, verschlüsselte Dokument-Blöcke.

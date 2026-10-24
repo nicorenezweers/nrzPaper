@@ -1,0 +1,80 @@
+{% extends "app_layout.html" %}
+{% block title %}Konto · nrzPaper{% endblock %}
+{% block content %}
+<div class="max-w-3xl">
+<h1 class="text-2xl font-semibold tracking-tight text-zinc-100">Konto</h1>
+<p class="mt-1 text-sm text-zinc-500">Angemeldet als <span class="text-zinc-300">{{ shell.user.username }}</span>{% if shell.user.is_admin %} · Administrator{% endif %}</p>
+{% if let Some(n) = notice %}<div class="mt-4 rounded-lg border border-zinc-700 bg-zinc-800/60 px-4 py-3 text-sm text-zinc-200">{{ n }}</div>{% endif %}
+{% if let Some(e) = error %}<div class="mt-4 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-3 text-sm text-zinc-100">{{ e }}</div>{% endif %}
+
+<section class="mt-8">
+  <h2 class="text-sm font-semibold text-zinc-200">API-Keys</h2>
+  <p class="mt-1 text-sm text-zinc-500">Für Skripte und andere Programme: <code class="text-zinc-300">Authorization: Bearer np_…</code> an <code class="text-zinc-300">/api/v1</code>. Ein Key darf nur, was angehakt ist – und nie mehr als dein Konto.</p>
+
+  {% if let Some(k) = new_key %}
+  <div data-clean-url="/organizations/{{ shell.org.id }}/account" class="mt-4 rounded-xl border border-zinc-600 bg-zinc-800/70 p-4">
+    <p class="text-sm font-medium text-zinc-100">Neuer Key – jetzt kopieren, er wird nicht wieder angezeigt:</p>
+    <div class="mt-2 flex gap-2">
+      <input readonly value="{{ k }}" data-new-key class="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none">
+      <button type="button" data-copy="[data-new-key]" class="rounded-lg bg-zinc-100 px-3 text-sm font-semibold text-zinc-900 hover:bg-white">Kopieren</button>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="mt-4 overflow-hidden rounded-xl border border-zinc-800">
+    {% for k in keys %}
+    <div class="flex flex-wrap items-center gap-3 border-b border-zinc-800/80 px-4 py-3 last:border-0">
+      <div class="min-w-0 flex-1">
+        <p class="font-medium text-zinc-100">{{ k.name }} <span class="ml-1 font-mono text-xs text-zinc-500">{{ k.prefix }}…</span></p>
+        <p class="mt-0.5 text-xs text-zinc-500">
+          {{ k.permissions.0.len() }} {% if k.permissions.0.len() == 1 %}Recht{% else %}Rechte{% endif %} ·
+          angelegt <time data-ts="{{ k.created_at }}" data-date-only></time> ·
+          {% if let Some(t) = k.last_used_at %}zuletzt benutzt <time data-ts="{{ t }}"></time>{% else %}nie benutzt{% endif %}
+          {% if let Some(t) = k.expires_at %} · läuft ab <time data-ts="{{ t }}" data-date-only></time>{% endif %}
+        </p>
+        <p class="mt-1 flex flex-wrap gap-1">{% for p in k.permissions.0 %}<span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[11px] text-zinc-400">{{ p }}</span>{% endfor %}</p>
+      </div>
+      <form method="post" action="/organizations/{{ shell.org.id }}/account/api-keys/{{ k.id }}/delete" data-confirm="API-Key „{{ k.name }}“ löschen? Programme, die ihn nutzen, verlieren den Zugang.">
+        <button class="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100">Löschen</button>
+      </form>
+    </div>
+    {% else %}
+    <p class="px-4 py-8 text-center text-sm text-zinc-500">Noch keine API-Keys.</p>
+    {% endfor %}
+  </div>
+
+  <details class="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/60" {% if keys.is_empty() %}open{% endif %}>
+    <summary class="cursor-pointer list-none px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-900">+ Neuer API-Key</summary>
+    <form method="post" action="/organizations/{{ shell.org.id }}/account/api-keys" class="space-y-4 border-t border-zinc-800 p-4">
+      <div class="grid gap-3 sm:grid-cols-[1fr_12rem]">
+        <label class="block text-sm"><span class="mb-1 block text-zinc-500">Name</span><input name="name" required maxlength="64" placeholder="z. B. Scanner im Büro" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+        <label class="block text-sm"><span class="mb-1 block text-zinc-500">Gültig</span>
+          <select name="expires_days" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none">
+            <option value="">unbegrenzt</option><option value="30">30 Tage</option><option value="90">90 Tage</option><option value="365">1 Jahr</option>
+          </select></label>
+      </div>
+      <fieldset>
+        <legend class="mb-2 text-sm text-zinc-500">Rechte</legend>
+        <div class="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+          {% for p in Permission::ALL %}
+          <label class="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" name="permissions" value="{{ p }}" {% if crate::templates::permission_default(p) %}checked{% endif %} class="accent-zinc-400"> {{ crate::templates::permission_label(p) }} <span class="hidden font-mono text-[11px] text-zinc-600 sm:inline">{{ p }}</span></label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <button class="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white">Key erzeugen</button>
+    </form>
+  </details>
+</section>
+
+<section class="mt-10">
+  <h2 class="text-sm font-semibold text-zinc-200">Passwort ändern</h2>
+  <p class="mt-1 text-sm text-zinc-500">Danach sind alle anderen Sitzungen abgemeldet.</p>
+  <form method="post" action="/organizations/{{ shell.org.id }}/account/password" class="mt-4 grid gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:grid-cols-3 sm:items-end">
+    <label class="block text-sm"><span class="mb-1 block text-zinc-500">Aktuelles Passwort</span><input type="password" name="current" required autocomplete="current-password" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-zinc-600"></label>
+    <label class="block text-sm"><span class="mb-1 block text-zinc-500">Neues Passwort</span><input type="password" name="new" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-zinc-600"></label>
+    <label class="block text-sm"><span class="mb-1 block text-zinc-500">Wiederholen</span><input type="password" name="confirm" required minlength="8" autocomplete="new-password" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-zinc-600"></label>
+    <div class="sm:col-span-3"><button class="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700">Passwort ändern</button></div>
+  </form>
+</section>
+</div>
+{% endblock %}

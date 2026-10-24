@@ -1,0 +1,57 @@
+{# Vorschau (PDF, Bild, Text) – braucht doc, kind und self.file_url(). #}
+  <!-- Vorschau -->
+  {% if kind == "pdf" %}
+  <section data-viewer data-kind="pdf" data-url="{{ self.file_url() }}" tabindex="-1" class="flex h-[calc(100vh-11rem)] min-h-[32rem] flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 outline-none">
+    <div class="flex flex-wrap items-center gap-1 border-b border-zinc-800 px-2 py-1.5 text-sm text-zinc-300">
+      <button data-toggle-thumbs title="Miniaturen" class="rounded-md p-1.5 hover:bg-zinc-800"><svg viewBox="0 0 20 20" class="h-4 w-4"><rect x="3" y="3" width="5" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11 5h6M11 10h6M11 15h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <span class="mx-1 h-5 w-px bg-zinc-800"></span>
+      <button data-prev title="Vorherige Seite (←)" class="rounded-md p-1.5 hover:bg-zinc-800"><svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M12 5l-5 5 5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      <input data-page-input type="number" min="1" value="1" class="w-12 rounded-md border border-zinc-800 bg-zinc-950 px-1.5 py-1 text-center text-zinc-100 outline-none focus:border-zinc-600">
+      <span class="text-zinc-500">/ <span data-page-count>–</span></span>
+      <button data-next title="Nächste Seite (→)" class="rounded-md p-1.5 hover:bg-zinc-800"><svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M8 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      <span class="mx-1 h-5 w-px bg-zinc-800"></span>
+      <button data-zoom-out title="Verkleinern (−)" class="rounded-md px-2 py-1 hover:bg-zinc-800">−</button>
+      <select data-zoom class="rounded-md border border-zinc-800 bg-zinc-950 px-1.5 py-1 text-zinc-200 outline-none">
+        <option value="width">Seitenbreite</option><option value="page">Ganze Seite</option>
+        <option value="0.5">50 %</option><option value="0.75">75 %</option><option value="1">100 %</option><option value="1.25">125 %</option><option value="1.5">150 %</option><option value="2">200 %</option><option value="3">300 %</option>
+        <option value="custom" hidden data-zoom-custom>–</option>
+      </select>
+      <button data-zoom-in title="Vergrössern (+)" class="rounded-md px-2 py-1 hover:bg-zinc-800">+</button>
+      <button data-rotate title="Drehen (R)" class="rounded-md p-1.5 hover:bg-zinc-800"><svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M15 9a5 5 0 10-1.5 4M15 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="ml-auto flex items-center gap-1">
+        <div class="flex items-center rounded-md border border-zinc-800 bg-zinc-950 focus-within:border-zinc-600">
+          <input data-search type="search" placeholder="Im Dokument suchen" class="w-40 bg-transparent px-2 py-1 text-zinc-100 placeholder-zinc-600 outline-none">
+          <span data-search-info class="px-1.5 text-xs text-zinc-500"></span>
+          <button data-search-prev title="Vorheriger Treffer" class="px-1.5 py-1 text-zinc-400 hover:text-zinc-100">↑</button>
+          <button data-search-next title="Nächster Treffer (Enter)" class="px-1.5 py-1 text-zinc-400 hover:text-zinc-100">↓</button>
+        </div>
+        <button data-fullscreen title="Vollbild" class="rounded-md p-1.5 hover:bg-zinc-800"><svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M4 8V4h4M16 8V4h-4M4 12v4h4M16 12v4h-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
+    <div class="flex min-h-0 flex-1">
+      <aside data-thumbs hidden class="w-40 shrink-0 space-y-1 overflow-y-auto border-r border-zinc-800 bg-zinc-900 p-2"></aside>
+      <div data-scroller tabindex="0" class="relative min-w-0 flex-1 overflow-auto bg-zinc-950 px-6 py-5 outline-none">
+        <p data-status hidden class="mb-3 text-center text-sm text-zinc-400"></p>
+        <div data-pages class="viewer-pages"></div>
+      </div>
+    </div>
+  </section>
+  {% else if kind == "image" %}
+  <section data-viewer data-kind="image" class="flex h-[calc(100vh-11rem)] min-h-[32rem] flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
+    <div class="flex items-center gap-1 border-b border-zinc-800 px-2 py-1.5 text-sm text-zinc-300">
+      <button data-zoom-out class="rounded-md px-2 py-1 hover:bg-zinc-800">−</button>
+      <button data-zoom-reset data-zoom-custom class="min-w-16 rounded-md px-2 py-1 hover:bg-zinc-800">100 %</button>
+      <button data-zoom-in class="rounded-md px-2 py-1 hover:bg-zinc-800">+</button>
+      <button data-rotate title="Drehen" class="rounded-md p-1.5 hover:bg-zinc-800"><svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M15 9a5 5 0 10-1.5 4M15 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button data-fullscreen title="Vollbild" class="ml-auto rounded-md p-1.5 hover:bg-zinc-800"><svg viewBox="0 0 20 20" class="h-4 w-4"><path d="M4 8V4h4M16 8V4h-4M4 12v4h4M16 12v4h-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="image-stage grid flex-1 place-items-center overflow-auto bg-zinc-950 p-6"><img src="{{ self.file_url() }}" alt="{{ doc.name }}" class="max-h-full rounded shadow-2xl shadow-black/60"></div>
+  </section>
+  {% else if kind == "text" %}
+  <section class="h-[calc(100vh-11rem)] overflow-auto rounded-xl border border-zinc-800 bg-zinc-900 p-6"><pre class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-zinc-200">{{ doc.content }}</pre></section>
+  {% else %}
+  <section class="grid place-items-center rounded-xl border border-dashed border-zinc-800 p-16 text-center">
+    <p class="font-medium text-zinc-300">Keine Vorschau für {{ doc.mime_type }}</p>
+    <a href="{{ self.file_url() }}?download=true" class="mt-4 rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700">Herunterladen</a>
+  </section>
+  {% endif %}

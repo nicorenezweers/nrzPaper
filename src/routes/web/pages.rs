@@ -8,7 +8,7 @@ use crate::db::models::User;
 use crate::error::{AppError, AppResult};
 use crate::ocr::OcrQueue;
 use crate::search;
-use crate::services::{documents, organizations, tags, users};
+use crate::services::{documents, organizations, share_links, tags, users};
 use crate::templates::{
     is_busy, render, ActivityRow, DetailPage, DocRow, DocumentsPage, ResultsPartial, Shell,
     TagsPage, TrashPage,
@@ -32,6 +32,8 @@ pub fn routes() -> Vec<Route> {
         restore,
         delete,
         reprocess,
+        create_share,
+        revoke_share,
         tags_page,
         create_tag,
         update_tag,
@@ -41,7 +43,7 @@ pub fn routes() -> Vec<Route> {
     ]
 }
 
-async fn shell(
+pub(super) async fn shell(
     pool: &SqlitePool,
     user: User,
     org: &str,
@@ -132,6 +134,8 @@ fn activity_label(event: &str, data: &serde_json::Value) -> String {
         "tag_removed" => format!("Tag „{tag}“ entfernt"),
         "deleted" => "In den Papierkorb gelegt".into(),
         "restored" => "Wiederhergestellt".into(),
+        "shared" => "Freigabelink erstellt".into(),
+        "share_revoked" => "Freigabelink widerrufen".into(),
         other => other.to_string(),
     }
 }
@@ -144,9 +148,21 @@ async fn detail(
     find: Option<&str>,
     pool: &State<SqlitePool>,
 ) -> AppResult<Page> {
-    let shell = shell(pool, user.0, org, "", "").await?;
+    let page = detail_page(pool, user.0, org, id, find.unwrap_or(""), None).await?;
+    Ok(Page::Html(render(&page)?))
+}
+
+async fn detail_page(
+    pool: &SqlitePool,
+    user: User,
+    org: &str,
+    id: &str,
+    find: &str,
+    new_share: Option<String>,
+) -> AppResult<DetailPage> {
+    let shell = shell(pool, user, org, "", "").await?;
     let doc = documents::get(pool, org, id).await?;
-    let tags = tags::for_documents(pool, &[doc.id.clone()])
+    let tags = tags::for_documents(pool, std::slice::from_ref(&doc.id))
         .await?
         .remove(&doc.id)
         .unwrap_or_default();
@@ -160,7 +176,7 @@ async fn detail(
          WHERE a.document_id = ? ORDER BY a.created_at DESC, a.id DESC LIMIT 50",
     )
     .bind(&doc.id)
-    .fetch_all(pool.inner())
+    .fetch_all(pool)
     .await?;
     let activity = rows
         .into_iter()
@@ -174,16 +190,18 @@ async fn detail(
         Some(uid) => users::by_id(pool, uid).await?.map(|u| u.username),
         None => None,
     };
-    let page = DetailPage {
+    let shares = share_links::list(pool, org, &doc.id).await?;
+    Ok(DetailPage {
         shell,
         doc,
+        shares,
+        new_share,
         tags,
         all_tags,
         activity,
         created_by,
-        find: find.unwrap_or("").to_string(),
-    };
-    Ok(Page::Html(render(&page)?))
+        find: find.to_string(),
+    })
 }
 
 fn back(org: &str, id: &str) -> Redirect {
@@ -303,6 +321,43 @@ async fn reprocess(
 ) -> AppResult<Redirect> {
     organizations::membership(pool, &user.0.id, org).await?;
     documents::reprocess(pool, queue, org, id).await?;
+    Ok(back(org, id))
+}
+
+// ------------------------------------------------------------------ Freigabe
+
+#[derive(FromForm)]
+struct ShareForm {
+    expires_days: Option<u32>,
+}
+
+/// Link anlegen und die Detailseite direkt mit dem Link zeigen – der Token steht so weder
+/// in einer URL noch in einem Cookie.
+#[post("/organizations/<org>/documents/<id>/share", data = "<form>")]
+async fn create_share(
+    user: CurrentUser,
+    org: &str,
+    id: &str,
+    form: Form<ShareForm>,
+    pool: &State<SqlitePool>,
+) -> AppResult<Page> {
+    organizations::membership(pool, &user.0.id, org).await?;
+    let (_, token) =
+        share_links::create(pool, org, id, Some(&user.0.id), form.expires_days).await?;
+    let page = detail_page(pool, user.0, org, id, "", Some(format!("/share/{token}"))).await?;
+    Ok(Page::Html(render(&page)?))
+}
+
+#[post("/organizations/<org>/documents/<id>/share/<link>/revoke")]
+async fn revoke_share(
+    user: CurrentUser,
+    org: &str,
+    id: &str,
+    link: &str,
+    pool: &State<SqlitePool>,
+) -> AppResult<Redirect> {
+    organizations::membership(pool, &user.0.id, org).await?;
+    share_links::revoke(pool, org, id, link, Some(&user.0.id)).await?;
     Ok(back(org, id))
 }
 

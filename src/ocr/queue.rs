@@ -83,6 +83,21 @@ pub async fn process(
     .bind(document_id)
     .execute(pool)
     .await?;
+    // Webhook: Text ist jetzt da (oder die Erkennung ist gescheitert).
+    let doc: Option<crate::db::models::Document> =
+        sqlx::query_as("SELECT * FROM documents WHERE id = ?")
+            .bind(document_id)
+            .fetch_optional(pool)
+            .await?;
+    if let Some(doc) = doc.filter(|_| status != OcrStatus::Skipped) {
+        crate::services::webhooks::emit(
+            pool,
+            &doc.organization_id,
+            crate::db::models::WebhookEvent::DocumentUpdated,
+            crate::services::documents::payload(&doc),
+        )
+        .await;
+    }
     match &error {
         Some(e) => tracing::warn!(document = document_id, "Texterkennung fehlgeschlagen: {e}"),
         None => tracing::info!(

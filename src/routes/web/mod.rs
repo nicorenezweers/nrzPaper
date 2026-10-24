@@ -6,6 +6,8 @@ mod auth;
 mod documents;
 mod organizations;
 mod pages;
+mod settings;
+mod share;
 
 use rocket::response::content::RawHtml;
 use rocket::response::status::Custom;
@@ -17,6 +19,8 @@ pub fn routes() -> Vec<Route> {
     r.extend(organizations::routes());
     r.extend(documents::routes());
     r.extend(pages::routes());
+    r.extend(settings::routes());
+    r.extend(share::routes());
     r
 }
 

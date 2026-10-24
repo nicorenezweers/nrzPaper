@@ -1,8 +1,9 @@
 //! Dokumente: aufnehmen (Web, API, Eingangsordner), lesen, ändern, Papierkorb.
 
-use crate::db::models::{new_id, now, Document, DocumentSource, OcrStatus};
+use crate::db::models::{new_id, now, Document, DocumentSource, OcrStatus, WebhookEvent};
 use crate::error::{AppError, AppResult};
 use crate::ocr::{engine::is_ocr_image, OcrQueue};
+use crate::services::webhooks;
 use crate::storage;
 use sha2::{Digest, Sha256};
 use sqlx::SqlitePool;
@@ -31,6 +32,23 @@ impl Ingested {
             Ingested::Created(d) | Ingested::Restored(d) => d,
         }
     }
+}
+
+/// Nutzlast für Webhooks.
+pub fn payload(doc: &Document) -> serde_json::Value {
+    serde_json::json!({
+        "documentId": doc.id,
+        "organizationId": doc.organization_id,
+        "name": doc.name,
+        "mimeType": doc.mime_type,
+        "size": doc.size,
+        "ocrStatus": doc.ocr_status,
+        "createdAt": doc.created_at,
+    })
+}
+
+async fn emit(pool: &SqlitePool, doc: &Document, event: WebhookEvent) {
+    webhooks::emit(pool, &doc.organization_id, event, payload(doc)).await;
 }
 
 /// Dateiname ohne Pfad und Steuerzeichen, höchstens 255 Zeichen.
@@ -94,9 +112,9 @@ pub async fn ingest(
             serde_json::json!({ "reason": "erneut hochgeladen" }),
         )
         .await?;
-        return Ok(Ingested::Restored(
-            get(pool, new.organization_id, &doc.id).await?,
-        ));
+        let doc = get(pool, new.organization_id, &doc.id).await?;
+        emit(pool, &doc, WebhookEvent::DocumentRestored).await;
+        return Ok(Ingested::Restored(doc));
     }
 
     let mime = detect_mime(&new.data);
@@ -152,9 +170,9 @@ pub async fn ingest(
         queue.wake();
     }
     tracing::info!(document = %id, organization = new.organization_id, mime = %mime, size = new.data.len(), source = %new.source, "Dokument aufgenommen");
-    Ok(Ingested::Created(
-        get(pool, new.organization_id, &id).await?,
-    ))
+    let doc = get(pool, new.organization_id, &id).await?;
+    emit(pool, &doc, WebhookEvent::DocumentCreated).await;
+    Ok(Ingested::Created(doc))
 }
 
 /// Dokument einer Organisation (auch im Papierkorb) – sonst 404.
@@ -226,7 +244,9 @@ pub async fn rename(
         serde_json::json!({ "from": doc.name, "to": name }),
     )
     .await?;
-    get(pool, organization_id, id).await
+    let doc = get(pool, organization_id, id).await?;
+    emit(pool, &doc, WebhookEvent::DocumentUpdated).await;
+    Ok(doc)
 }
 
 /// Erkannten Text von Hand ersetzen (fliesst in die Suche).
@@ -245,7 +265,9 @@ pub async fn set_content(
         .execute(pool)
         .await?;
     log(pool, id, "content_updated", user_id, serde_json::json!({})).await?;
-    get(pool, organization_id, id).await
+    let doc = get(pool, organization_id, id).await?;
+    emit(pool, &doc, WebhookEvent::DocumentUpdated).await;
+    Ok(doc)
 }
 
 /// Texterkennung erneut ausführen.
@@ -282,7 +304,9 @@ pub async fn trash(
         .bind(id)
         .execute(pool)
         .await?;
-    log(pool, id, "deleted", user_id, serde_json::json!({})).await
+    log(pool, id, "deleted", user_id, serde_json::json!({})).await?;
+    emit(pool, &doc, WebhookEvent::DocumentDeleted).await;
+    Ok(())
 }
 
 pub async fn restore(
@@ -302,7 +326,9 @@ pub async fn restore(
     .bind(id)
     .execute(pool)
     .await?;
-    log(pool, id, "restored", user_id, serde_json::json!({})).await
+    log(pool, id, "restored", user_id, serde_json::json!({})).await?;
+    emit(pool, &doc, WebhookEvent::DocumentRestored).await;
+    Ok(())
 }
 
 /// Endgültig löschen – nur aus dem Papierkorb. Blöcke und Suchindex verschwinden mit (Löschkette, Trigger).

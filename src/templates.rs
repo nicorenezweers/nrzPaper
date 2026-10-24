@@ -1,6 +1,9 @@
 //! Askama-Templates (Ordner `templates/`) – zur Übersetzungszeit geprüft.
 
-use crate::db::models::{Document, DocumentSource, OcrStatus, Organization, Role, Tag, User};
+use crate::db::models::{
+    ApiKey, Document, DocumentSource, OcrStatus, Organization, Permission, Role, ShareLink, Tag,
+    User, Webhook, WebhookDelivery, WebhookEvent,
+};
 use crate::error::AppResult;
 use askama::Template;
 use rocket::response::content::RawHtml;
@@ -50,11 +53,11 @@ impl Shell {
     }
 
     pub fn role_label(&self) -> &'static str {
-        match self.role {
-            Role::Owner => "Besitzer",
-            Role::Admin => "Admin",
-            Role::Member => "Mitglied",
-        }
+        role_label(&self.role)
+    }
+
+    pub fn can_manage(&self) -> bool {
+        crate::services::organizations::can_manage(self.role)
     }
 
     /// Menüpunkte: (Pfad unterhalb der Organisation, Bezeichnung, schon verfügbar)
@@ -65,7 +68,7 @@ impl Shell {
             ("tagging-rules", "Tagging-Regeln", false),
             ("properties", "Eigenschaften", false),
             ("trash", "Papierkorb", true),
-            ("settings", "Einstellungen", false),
+            ("settings", "Einstellungen", true),
         ]
     }
 }
@@ -247,6 +250,9 @@ pub struct ActivityRow {
 pub struct DetailPage {
     pub shell: Shell,
     pub doc: Document,
+    pub shares: Vec<ShareLink>,
+    /// Gerade angelegter Freigabelink (Pfad mit Token, nur einmal sichtbar).
+    pub new_share: Option<String>,
     pub tags: Vec<Tag>,
     pub all_tags: Vec<Tag>,
     pub activity: Vec<ActivityRow>,
@@ -305,5 +311,103 @@ impl TrashPage {
         ((end - crate::db::models::now()) as f64 / 86_400.0)
             .ceil()
             .max(0.0) as i64
+    }
+}
+
+pub fn role_label(role: &Role) -> &'static str {
+    match role {
+        Role::Owner => "Besitzer",
+        Role::Admin => "Admin",
+        Role::Member => "Mitglied",
+    }
+}
+
+pub fn permission_label(p: &Permission) -> &'static str {
+    match p {
+        Permission::OrganizationsRead => "Organisationen lesen",
+        Permission::OrganizationsCreate => "Organisationen anlegen",
+        Permission::OrganizationsUpdate => "Organisationen verwalten",
+        Permission::OrganizationsDelete => "Organisationen löschen",
+        Permission::DocumentsRead => "Dokumente lesen",
+        Permission::DocumentsCreate => "Dokumente hochladen",
+        Permission::DocumentsUpdate => "Dokumente ändern",
+        Permission::DocumentsDelete => "Dokumente löschen",
+        Permission::TagsRead => "Tags lesen",
+        Permission::TagsCreate => "Tags anlegen",
+        Permission::TagsUpdate => "Tags ändern",
+        Permission::TagsDelete => "Tags löschen",
+        Permission::PropertiesRead => "Eigenschaften lesen",
+        Permission::PropertiesCreate => "Eigenschaften anlegen",
+        Permission::PropertiesUpdate => "Eigenschaften ändern",
+        Permission::PropertiesDelete => "Eigenschaften löschen",
+    }
+}
+
+/// Lesende Rechte sind beim Anlegen eines Keys vorausgewählt.
+pub fn permission_default(p: &Permission) -> bool {
+    p.as_str().ends_with(":read")
+}
+
+pub fn event_label(e: &WebhookEvent) -> &'static str {
+    match e {
+        WebhookEvent::DocumentCreated => "Dokument angelegt",
+        WebhookEvent::DocumentUpdated => "Dokument geändert",
+        WebhookEvent::DocumentDeleted => "Dokument gelöscht",
+        WebhookEvent::DocumentRestored => "Dokument wiederhergestellt",
+        WebhookEvent::TagAdded => "Tag hinzugefügt",
+        WebhookEvent::TagRemoved => "Tag entfernt",
+    }
+}
+
+// ------------------------------------------------------------------ Konto & Einstellungen
+
+#[derive(Template)]
+#[template(path = "account.html")]
+pub struct AccountPage {
+    pub shell: Shell,
+    pub keys: Vec<ApiKey>,
+    /// Gerade erzeugter Key (nur dieses eine Mal sichtbar).
+    pub new_key: Option<String>,
+    pub notice: Option<String>,
+    pub error: Option<String>,
+}
+
+pub struct HookRow {
+    pub hook: Webhook,
+    pub events: Vec<WebhookEvent>,
+    pub deliveries: Vec<WebhookDelivery>,
+}
+
+pub struct MemberRow {
+    pub username: String,
+    pub role: Role,
+    pub since: i64,
+}
+
+#[derive(Template)]
+#[template(path = "orgs/settings.html")]
+pub struct SettingsPage {
+    pub shell: Shell,
+    pub members: Vec<MemberRow>,
+    pub hooks: Vec<HookRow>,
+    /// (Name des Webhooks, Geheimnis) direkt nach dem Anlegen.
+    pub new_secret: Option<(String, String)>,
+    pub error: Option<String>,
+}
+
+// ------------------------------------------------------------------ Öffentliche Freigabe
+
+#[derive(Template)]
+#[template(path = "share.html")]
+pub struct SharePage {
+    pub doc: Document,
+    pub token: String,
+    pub link: ShareLink,
+    pub find: String,
+}
+
+impl SharePage {
+    pub fn file_url(&self) -> String {
+        format!("/share/{}/file", self.token)
     }
 }

@@ -2,6 +2,8 @@
 //! Sitzung; jeder Endpunkt prüft die passende Berechtigung.
 
 mod documents;
+mod tags;
+mod webhooks;
 
 use crate::auth::guards::ApiUser;
 use crate::db::models::Permission;
@@ -9,7 +11,7 @@ use crate::error::{AppError, AppResult};
 use crate::services::organizations;
 use rocket::http::Status;
 use rocket::serde::json::{json, Json, Value};
-use rocket::{get, post, routes, Route, State};
+use rocket::{delete, get, post, put, routes, Route, State};
 use serde::Deserialize;
 use sqlx::SqlitePool;
 
@@ -19,9 +21,13 @@ pub fn routes() -> Vec<Route> {
         current_key,
         list_organizations,
         create_organization,
-        get_organization
+        get_organization,
+        update_organization,
+        delete_organization
     ];
     r.extend(documents::routes());
+    r.extend(tags::routes());
+    r.extend(webhooks::routes());
     r
 }
 
@@ -83,4 +89,40 @@ async fn get_organization(api: ApiUser, id: &str, pool: &State<SqlitePool>) -> A
         .await
         .map_err(|_| AppError::NotFound)?;
     Ok(json!({ "organization": org, "role": role }))
+}
+
+/// Organisation umbenennen (Besitzer und Admins).
+#[put("/organizations/<id>", data = "<body>")]
+async fn update_organization(
+    api: ApiUser,
+    id: &str,
+    body: Json<NewOrganization>,
+    pool: &State<SqlitePool>,
+) -> AppResult<Value> {
+    api.require(Permission::OrganizationsUpdate)?;
+    if !organizations::can_manage(member(pool, &api, id).await?) {
+        return Err(AppError::Forbidden(
+            "Nur Besitzer und Admins dürfen das.".into(),
+        ));
+    }
+    organizations::rename(pool, id, &body.name).await?;
+    let (org, role) = organizations::membership(pool, &api.user.id, id).await?;
+    Ok(json!({ "organization": org, "role": role }))
+}
+
+/// Organisation löschen (nur Besitzer).
+#[delete("/organizations/<id>")]
+async fn delete_organization(
+    api: ApiUser,
+    id: &str,
+    pool: &State<SqlitePool>,
+) -> AppResult<Status> {
+    api.require(Permission::OrganizationsDelete)?;
+    if member(pool, &api, id).await? != crate::db::models::Role::Owner {
+        return Err(AppError::Forbidden(
+            "Nur der Besitzer darf die Organisation löschen.".into(),
+        ));
+    }
+    organizations::delete(pool, id).await?;
+    Ok(Status::NoContent)
 }

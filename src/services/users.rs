@@ -97,3 +97,29 @@ pub async fn authenticate(
     let ok = password::verify(password_plain.to_string(), hash).await;
     Ok(user.filter(|_| ok))
 }
+
+/// Passwort ändern (altes Passwort nötig). Danach sind alle Sitzungen des Kontos ungültig;
+/// wer gerade ändert, bekommt vom Aufrufer eine neue.
+pub async fn change_password(
+    pool: &SqlitePool,
+    user: &User,
+    current: &str,
+    new: &str,
+    confirm: &str,
+) -> AppResult<()> {
+    if !password::verify(current.to_string(), user.password_hash.clone()).await {
+        return Err(AppError::bad("Das aktuelle Passwort stimmt nicht."));
+    }
+    if new != confirm {
+        return Err(AppError::bad("Die neuen Passwörter stimmen nicht überein."));
+    }
+    password::check_strength(new)?;
+    let hash = password::hash(new.to_string()).await?;
+    sqlx::query("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?")
+        .bind(hash)
+        .bind(now())
+        .bind(&user.id)
+        .execute(pool)
+        .await?;
+    crate::auth::session::destroy_all(pool, &user.id).await
+}

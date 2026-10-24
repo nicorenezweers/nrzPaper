@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.10
 # nrzPaper – Multi-Stage-Build für amd64 und arm64.
-#   Oberfläche zuerst: in ui/ `dx build --release` und den Ordner
-#     ui/target/dx/nrzpaper-ui/release/web/public
-#   nach ui/dist/public kopieren (build.rs bettet ihn ein).
+#   Oberfläche zuerst: scripts/ui.sh (baut ui/ nach ui/dist/public, build.rs bettet ihn ein).
+#   Releases immer mit `--no-cache-filter build` und dem Secret bauen: BuildKit nimmt Secrets
+#   nicht in den Cache-Schlüssel – sonst kann ein alter Stand ohne KI-Schlüssel herauskommen.
 #   docker build -t nrzpaper .
 #   docker run -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 # Beide Architekturen (Rust wird quer-kompiliert, nicht emuliert):
@@ -40,8 +40,7 @@ COPY migrations migrations
 COPY src src
 COPY static static
 COPY assets assets
-# Fertige Oberfläche (Dioxus, ui/): vor dem Image-Bau mit `dx build --release` in ui/
-# übersetzen und nach ui/dist/public kopieren. build.rs bettet den Ordner ins Programm
+# Fertige Oberfläche (Dioxus, ui/): vor dem Image-Bau mit scripts/ui.sh bauen. build.rs bettet den Ordner ins Programm
 # ein (Text und WebAssembly gzip) – der Server braucht dafür keine Dateien mehr.
 COPY ui/dist/public ui/dist/public
 # Der eingebaute OpenRouter-Schlüssel (KI beim Scannen) kommt als Build-Secret – nie in den
@@ -50,8 +49,12 @@ COPY ui/dist/public ui/dist/public
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/src/target,id=nrzpaper-target-$TARGETARCH \
     --mount=type=secret,id=openrouter,env=NRZ_OPENROUTER_KEY \
-    env $(cat /cross-env) cargo build --release --locked --target "$(cat /rust-target)" \
+    echo "Eingebauter KI-Schlüssel: $([ -n "${NRZ_OPENROUTER_KEY:-}" ] && echo ja || echo nein)" \
+ && env $(cat /cross-env) cargo build --release --locked --target "$(cat /rust-target)" \
  && cp "target/$(cat /rust-target)/release/nrzpaper" /nrzpaper \
+ && if [ -n "${NRZ_OPENROUTER_KEY:-}" ] && ! grep -qF "$NRZ_OPENROUTER_KEY" /nrzpaper; then \
+      echo "Der KI-Schlüssel fehlt im Programm (alter Stand aus dem Cache?)" >&2; exit 1; \
+    fi \
  && mkdir /data-empty
 
 # ---------------------------------------------------------------- Texterkennung

@@ -13,7 +13,11 @@ use std::time::Duration;
 
 /// Eingebauter Schlüssel (beim Bauen als Secret gesetzt, nie im Quelltext), damit die App
 /// ohne Einrichtung taggt.
-pub const BUILTIN_KEY: Option<&str> = option_env!("NRZ_OPENROUTER_KEY");
+/// Ein leerer Wert zählt als „keiner“: BuildKit setzt die Variable bei fehlendem Secret auf "".
+pub const BUILTIN_KEY: Option<&str> = match option_env!("NRZ_OPENROUTER_KEY") {
+    Some(k) if !k.is_empty() => Some(k),
+    _ => None,
+};
 
 static HTTP: std::sync::LazyLock<reqwest::Client> = std::sync::LazyLock::new(|| {
     reqwest::Client::builder()

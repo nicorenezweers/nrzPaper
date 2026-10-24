@@ -1,6 +1,6 @@
 [package]
 name = "nrzpaper-ui"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2024"
 description = "Oberfläche von nrzPaper – Dioxus 0.7 (WebAssembly) mit Komponenten von rust-ui"
 license = "MIT"

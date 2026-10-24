@@ -1,8 +1,8 @@
 //! Askama-Templates (Ordner `templates/`) – zur Übersetzungszeit geprüft.
 
 use crate::db::models::{
-    ApiKey, Document, DocumentSource, OcrStatus, Organization, Permission, Role, ShareLink, Tag,
-    User, Webhook, WebhookDelivery, WebhookEvent,
+    ApiKey, Document, DocumentSource, OcrStatus, Organization, Permission, PropertyType, Role,
+    ScanSettings, ShareLink, Tag, User, Webhook, WebhookDelivery, WebhookEvent,
 };
 use crate::error::AppResult;
 use askama::Template;
@@ -40,6 +40,8 @@ pub struct Shell {
     pub active: &'static str,
     pub query: String,
     pub live_search: bool,
+    /// Einträge der Prüfliste, die auf Prüfung warten (Zähler in der Navigation).
+    pub review_count: i64,
 }
 
 impl Shell {
@@ -64,6 +66,8 @@ impl Shell {
     pub fn nav(&self) -> Vec<(&'static str, &'static str, bool)> {
         vec![
             ("", "Dokumente", true),
+            ("scan", "Scannen", true),
+            ("review", "Prüfen", true),
             ("tags", "Tags", true),
             ("tagging-rules", "Tagging-Regeln", false),
             ("properties", "Eigenschaften", false),
@@ -259,6 +263,8 @@ pub struct DetailPage {
     pub created_by: Option<String>,
     /// Suchtext aus der Liste – wird im PDF markiert.
     pub find: String,
+    /// Benutzerdefinierte Eigenschaften (z. B. Metadaten aus dem Scan)
+    pub properties: Vec<crate::services::properties::Shown>,
 }
 
 impl DetailPage {
@@ -365,6 +371,10 @@ pub fn event_label(e: &WebhookEvent) -> &'static str {
 #[template(path = "account.html")]
 pub struct AccountPage {
     pub shell: Shell,
+    pub scan: ScanSettings,
+    /// KI verfügbar (Schlüssel eingebaut oder gesetzt) und welches Modell
+    pub ai_available: bool,
+    pub ai_model: String,
     pub keys: Vec<ApiKey>,
     /// Gerade erzeugter Key (nur dieses eine Mal sichtbar).
     pub new_key: Option<String>,
@@ -410,4 +420,21 @@ impl SharePage {
     pub fn file_url(&self) -> String {
         format!("/share/{}/file", self.token)
     }
+}
+
+// ------------------------------------------------------------------ Scannen & Prüfen
+
+#[derive(Template)]
+#[template(path = "scan/scan.html")]
+pub struct ScanPage {
+    pub shell: Shell,
+    pub settings: ScanSettings,
+    pub ai_available: bool,
+}
+
+#[derive(Template)]
+#[template(path = "scan/review.html")]
+pub struct ReviewPage {
+    pub shell: Shell,
+    pub meta_fields: &'static [(&'static str, &'static str)],
 }

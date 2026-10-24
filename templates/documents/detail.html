@@ -52,6 +52,26 @@
       <p class="mt-1.5 text-xs text-zinc-600">Neue Namen werden als Tag angelegt.</p>
     </section>
 
+    {% if !properties.is_empty() %}
+    <section class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 text-sm">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Eigenschaften</h2>
+      <div class="mt-2 space-y-1.5">
+        {% for p in properties %}
+        <form method="post" action="{{ self.base_url() }}/properties/{{ p.definition_id }}" class="grid grid-cols-[7.5rem_1fr_auto] items-center gap-2">
+          <label for="prop-{{ p.definition_id }}" class="truncate text-zinc-500" title="{{ p.name }}">{{ p.name }}</label>
+          {% if p.name == "Zusammenfassung" %}
+          <textarea id="prop-{{ p.definition_id }}" name="value" rows="2" class="min-w-0 rounded-md border border-transparent bg-transparent px-2 py-1 text-zinc-200 outline-none hover:border-zinc-800 focus:border-zinc-600 focus:bg-zinc-950">{{ p.value }}</textarea>
+          {% else %}
+          <input id="prop-{{ p.definition_id }}" name="value" value="{{ p.value }}" {% if p.kind == PropertyType::Date %}type="date"{% else if p.kind == PropertyType::Number %}inputmode="decimal"{% endif %} class="min-w-0 rounded-md border border-transparent bg-transparent px-2 py-1 text-zinc-200 outline-none hover:border-zinc-800 focus:border-zinc-600 focus:bg-zinc-950">
+          {% endif %}
+          <button class="rounded-md px-1.5 py-1 text-xs text-zinc-600 hover:bg-zinc-800 hover:text-zinc-200" title="Speichern">✓</button>
+        </form>
+        {% endfor %}
+      </div>
+      <p class="mt-2 text-xs text-zinc-600">Leeren und speichern entfernt den Wert.</p>
+    </section>
+    {% endif %}
+
     <section class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 text-sm"{% if new_share.is_some() %} id="freigabe"{% endif %}>
       <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Freigabe</h2>
       {% if let Some(path) = new_share %}

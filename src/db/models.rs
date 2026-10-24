@@ -407,3 +407,57 @@ pub struct WebhookDelivery {
     pub error: Option<String>,
     pub created_at: i64,
 }
+
+// ============================================================ Scannen & Prüfen
+
+text_enum!(
+    /// Zustand eines Eintrags der Prüfliste.
+    InboxStatus {
+        Analyse = "analyse",
+        Pruefen = "pruefen",
+        Import = "import",
+        Fertig = "fertig",
+        Fehler = "fehler",
+    }
+);
+
+#[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanSettings {
+    pub user_id: String,
+    pub scanner_url: String,
+    pub color: bool,
+    pub dpi: i64,
+    pub updated_at: i64,
+}
+
+/// Gescanntes oder importiertes Dokument vor der Freigabe.
+#[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InboxItem {
+    pub id: String,
+    pub organization_id: String,
+    pub user_id: Option<String>,
+    pub name: String,
+    /// Kein eigener Name eingegeben – die KI darf ihn setzen.
+    pub auto_name: bool,
+    pub status: InboxStatus,
+    pub step: String,
+    pub error: String,
+    pub warning: String,
+    pub tags: sqlx::types::Json<Vec<String>>,
+    pub metadata: sqlx::types::Json<std::collections::BTreeMap<String, String>>,
+    pub summary: String,
+    pub model: String,
+    pub page_count: i64,
+    pub document_id: Option<String>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+impl InboxItem {
+    /// Darf noch bearbeitet und freigegeben werden.
+    pub fn editable(&self) -> bool {
+        matches!(self.status, InboxStatus::Pruefen | InboxStatus::Fehler)
+    }
+}

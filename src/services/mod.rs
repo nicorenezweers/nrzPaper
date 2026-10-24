@@ -2,7 +2,10 @@
 //! benutzerdefinierte Eigenschaften, Freigabelinks, Webhooks, Aktivitätsprotokoll.
 
 pub mod documents;
+pub mod inbox;
 pub mod organizations;
+pub mod properties;
+pub mod scan;
 pub mod settings;
 pub mod share_links;
 pub mod tags;

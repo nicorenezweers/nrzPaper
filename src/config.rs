@@ -25,6 +25,17 @@ pub struct Config {
     pub cookie_secure: bool,
     /// Hintergrundarbeiten (OCR, Eingangsordner, Aufräumen) starten. Tests schalten sie aus.
     pub background: bool,
+    /// Voreingestellter Scanner (eSCL/AirScan) für neue Benutzer, z. B. "http://192.168.0.70".
+    pub scanner_url: String,
+    /// Netze, in denen "Scanner suchen" sucht (Komma-getrennt, je /24).
+    pub scan_subnets: String,
+    /// OpenRouter-Schlüssel; fehlt er, gilt der beim Bauen eingebaute (NRZ_OPENROUTER_KEY).
+    pub openrouter_key: Option<String>,
+    pub openrouter_model: String,
+    /// Basis-Adresse der OpenRouter-API (Tests setzen einen eigenen Server).
+    pub openrouter_url: String,
+    /// So viele Tage bleiben nicht freigegebene Einträge der Prüfliste liegen.
+    pub inbox_keep_days: u32,
 }
 
 impl Default for Config {
@@ -38,6 +49,12 @@ impl Default for Config {
             registration_open: false,
             cookie_secure: false,
             background: true,
+            scanner_url: String::new(),
+            scan_subnets: "192.168.0.0/24,192.168.1.0/24".into(),
+            openrouter_key: None,
+            openrouter_model: "openrouter/free".into(),
+            openrouter_url: "https://openrouter.ai/api/v1".into(),
+            inbox_keep_days: 7,
         }
     }
 }

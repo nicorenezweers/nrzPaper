@@ -37,6 +37,7 @@ pub fn routes() -> Vec<Route> {
 
 async fn account_page(
     pool: &SqlitePool,
+    config: &Config,
     user: User,
     org: &str,
     new_key: Option<String>,
@@ -44,9 +45,14 @@ async fn account_page(
     error: Option<&AppError>,
 ) -> AppResult<Page> {
     let keys = api_key::list(pool, &user.id).await?;
+    let scan = crate::services::scan::settings(pool, config, &user.id).await?;
+    let ai = crate::ai::AiConfig::from(config);
     let shell = shell(pool, user, org, "account", "").await?;
     let page = render(&AccountPage {
         shell,
+        scan,
+        ai_available: ai.available(),
+        ai_model: ai.model,
         keys,
         new_key,
         notice,
@@ -59,8 +65,13 @@ async fn account_page(
 }
 
 #[get("/organizations/<org>/account")]
-async fn account(user: CurrentUser, org: &str, pool: &State<SqlitePool>) -> AppResult<Page> {
-    account_page(pool, user.0, org, None, None, None).await
+async fn account(
+    user: CurrentUser,
+    org: &str,
+    pool: &State<SqlitePool>,
+    config: &State<Config>,
+) -> AppResult<Page> {
+    account_page(pool, config, user.0, org, None, None, None).await
 }
 
 #[derive(FromForm)]
@@ -88,10 +99,10 @@ async fn change_password(
             let token = session::create(pool, &user.0.id, &ua.0).await?;
             session::set_cookie(cookies, token, config.cookie_secure);
             let notice = "Passwort geändert. Andere Geräte sind abgemeldet.".to_string();
-            account_page(pool, user.0, org, None, Some(notice), None).await
+            account_page(pool, config, user.0, org, None, Some(notice), None).await
         }
         Err(e @ AppError::BadRequest(_)) => {
-            account_page(pool, user.0, org, None, None, Some(&e)).await
+            account_page(pool, config, user.0, org, None, None, Some(&e)).await
         }
         Err(e) => Err(e),
     }
@@ -111,6 +122,7 @@ async fn create_key(
     org: &str,
     form: Form<KeyForm<'_>>,
     pool: &State<SqlitePool>,
+    config: &State<Config>,
 ) -> AppResult<Page> {
     organizations::membership(pool, &user.0.id, org).await?;
     let permissions: Vec<Permission> = form
@@ -123,9 +135,9 @@ async fn create_key(
         .filter(|d| (1..=3650).contains(d))
         .map(|d| now() + d as i64 * 86_400);
     match api_key::create(pool, &user.0.id, form.name, &permissions, expires).await {
-        Ok((_, key)) => account_page(pool, user.0, org, Some(key), None, None).await,
+        Ok((_, key)) => account_page(pool, config, user.0, org, Some(key), None, None).await,
         Err(e @ AppError::BadRequest(_)) => {
-            account_page(pool, user.0, org, None, None, Some(&e)).await
+            account_page(pool, config, user.0, org, None, None, Some(&e)).await
         }
         Err(e) => Err(e),
     }

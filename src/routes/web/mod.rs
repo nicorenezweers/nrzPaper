@@ -6,6 +6,7 @@ mod auth;
 mod documents;
 mod organizations;
 mod pages;
+mod scan;
 mod settings;
 mod share;
 
@@ -19,6 +20,7 @@ pub fn routes() -> Vec<Route> {
     r.extend(organizations::routes());
     r.extend(documents::routes());
     r.extend(pages::routes());
+    r.extend(scan::routes());
     r.extend(settings::routes());
     r.extend(share::routes());
     r

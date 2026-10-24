@@ -15,7 +15,7 @@ pub fn routes() -> Vec<Route> {
 pub static VERSION: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
     use sha2::{Digest, Sha256};
     let mut h = Sha256::new();
-    for path in ["app.css", "app.js", "viewer.js", "viewer.css"] {
+    for path in ["app.css", "app.js", "scan.js", "viewer.js", "viewer.css"] {
         h.update(lookup(path).map(|a| a.body).unwrap_or_default());
     }
     hex::encode(h.finalize())[..12].to_string()
@@ -37,6 +37,7 @@ fn lookup(path: &str) -> Option<Asset> {
             false,
         ),
         "app.js" => (include_bytes!("../../static/app.js"), js, false),
+        "scan.js" => (include_bytes!("../../static/scan.js"), js, false),
         "viewer.js" => (include_bytes!("../../static/viewer.js"), js, false),
         "viewer.css" => (
             include_bytes!("../../static/viewer.css"),

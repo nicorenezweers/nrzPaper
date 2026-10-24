@@ -1,5 +1,6 @@
 //! nrzPaper – selbst gehostete Dokumentenverwaltung. Aufbau: siehe ARCHITECTURE.md.
 
+pub mod ai;
 pub mod auth;
 pub mod config;
 pub mod db;
@@ -8,6 +9,7 @@ pub mod fairings;
 pub mod ingestion;
 pub mod ocr;
 pub mod routes;
+pub mod scan;
 pub mod search;
 pub mod services;
 pub mod storage;

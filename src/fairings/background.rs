@@ -1,11 +1,11 @@
 //! Startet beim Hochfahren (Liftoff) die Hintergrundarbeiten:
 //! OCR-Worker, Eingangsordner, Papierkorb-Leerung (täglich) und das Aufräumen
-//! abgelaufener Sitzungen (stündlich). Alle enden mit dem Server.
+//! abgelaufener Sitzungen und alter Einträge der Prüfliste (stündlich). Alle enden mit dem Server.
 
 use crate::auth::session;
 use crate::config::Config;
 use crate::ocr::{queue, Engine, OcrQueue};
-use crate::services::documents;
+use crate::services::{documents, inbox};
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::{Orbit, Rocket};
 use sqlx::SqlitePool;
@@ -50,6 +50,15 @@ impl Fairing for Background {
             rocket.shutdown(),
         );
 
+        // Prüfliste: nach einem Neustart hängende Analysen/Ablagen auflösen
+        match inbox::recover(&pool).await {
+            Ok(n) if n > 0 => {
+                tracing::info!("{n} unterbrochene Einträge der Prüfliste zurückgesetzt")
+            }
+            Err(e) => tracing::warn!("Prüfliste: {e}"),
+            _ => {}
+        }
+
         // Eingangsordner
         crate::ingestion::spawn(pool.clone(), ocr, &config, rocket.shutdown());
 
@@ -61,6 +70,11 @@ impl Fairing for Background {
                 match session::purge_expired(&pool).await {
                     Ok(n) if n > 0 => tracing::info!("{n} abgelaufene Sitzungen gelöscht"),
                     Err(e) => tracing::warn!("Sitzungen aufräumen: {e}"),
+                    _ => {}
+                }
+                match inbox::purge(&pool, config.inbox_keep_days).await {
+                    Ok(n) if n > 0 => tracing::info!("{n} alte Einträge der Prüfliste gelöscht"),
+                    Err(e) => tracing::warn!("Prüfliste aufräumen: {e}"),
                     _ => {}
                 }
                 if round % 24 == 0 {

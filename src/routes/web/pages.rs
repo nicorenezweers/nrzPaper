@@ -34,6 +34,7 @@ pub fn routes() -> Vec<Route> {
         reprocess,
         create_share,
         revoke_share,
+        set_property,
         tags_page,
         create_tag,
         update_tag,
@@ -52,6 +53,7 @@ pub(super) async fn shell(
 ) -> AppResult<Shell> {
     let (org, role) = organizations::membership(pool, &user.id, org).await?;
     let orgs = organizations::list_for_user(pool, &user.id).await?;
+    let review_count = crate::services::inbox::open_count(pool, &org.id).await?;
     Ok(Shell {
         user,
         org,
@@ -60,6 +62,7 @@ pub(super) async fn shell(
         active,
         query: query.to_string(),
         live_search: active.is_empty(),
+        review_count,
     })
 }
 
@@ -135,6 +138,10 @@ fn activity_label(event: &str, data: &serde_json::Value) -> String {
         "deleted" => "In den Papierkorb gelegt".into(),
         "restored" => "Wiederhergestellt".into(),
         "shared" => "Freigabelink erstellt".into(),
+        "reviewed" => match data["model"].as_str().filter(|m| !m.is_empty()) {
+            Some(m) => format!("Gescannt und geprüft (KI: {m})"),
+            None => "Gescannt und geprüft".into(),
+        },
         "share_revoked" => "Freigabelink widerrufen".into(),
         other => other.to_string(),
     }
@@ -191,6 +198,7 @@ async fn detail_page(
         None => None,
     };
     let shares = share_links::list(pool, org, &doc.id).await?;
+    let properties = crate::services::properties::for_document(pool, &doc.id).await?;
     Ok(DetailPage {
         shell,
         doc,
@@ -201,6 +209,7 @@ async fn detail_page(
         activity,
         created_by,
         find: find.to_string(),
+        properties,
     })
 }
 
@@ -321,6 +330,34 @@ async fn reprocess(
 ) -> AppResult<Redirect> {
     organizations::membership(pool, &user.0.id, org).await?;
     documents::reprocess(pool, queue, org, id).await?;
+    Ok(back(org, id))
+}
+
+// ------------------------------------------------------------------ Eigenschaften
+
+#[derive(FromForm)]
+struct ValueForm<'r> {
+    #[field(default = "")]
+    value: &'r str,
+}
+
+/// Eigenschaft ändern (leer = entfernen).
+#[post(
+    "/organizations/<org>/documents/<id>/properties/<def>",
+    data = "<form>"
+)]
+async fn set_property(
+    user: CurrentUser,
+    org: &str,
+    id: &str,
+    def: &str,
+    form: Form<ValueForm<'_>>,
+    pool: &State<SqlitePool>,
+) -> AppResult<Redirect> {
+    organizations::membership(pool, &user.0.id, org).await?;
+    documents::get(pool, org, id).await?;
+    let kind = crate::services::properties::definition(pool, org, def).await?;
+    crate::services::properties::set(pool, id, def, kind, form.value).await?;
     Ok(back(org, id))
 }
 

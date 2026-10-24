@@ -66,6 +66,39 @@
   </details>
 </section>
 
+<section class="mt-10" id="scanner" data-account-scan>
+  <h2 class="text-sm font-semibold text-zinc-200">Scanner</h2>
+  <p class="mt-1 text-sm text-zinc-500">Netzwerk-Scanner mit eSCL/AirScan (z. B. Canon, HP, Epson, Brother). Gilt für dein Konto in allen Organisationen.</p>
+  <form method="post" action="/scanner/settings" class="mt-4 space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+    <input type="hidden" name="next" value="/organizations/{{ shell.org.id }}/account#scanner">
+    <div class="grid gap-3 sm:grid-cols-[1fr_9rem_9rem] sm:items-end">
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Adresse</span><input name="scanner_url" data-scanner-url value="{{ scan.scanner_url }}" placeholder="http://192.168.0.70" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Auflösung</span>
+        <select name="dpi" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none">{% for d in [150, 300, 600] %}<option value="{{ d }}" {% if scan.dpi == *d %}selected{% endif %}>{{ d }} dpi</option>{% endfor %}</select></label>
+      <label class="flex items-center gap-2 py-2 text-sm text-zinc-300"><input type="checkbox" name="color" value="true" {% if scan.color %}checked{% endif %} class="accent-zinc-400"> Farbe</label>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button class="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white">Speichern</button>
+      <button type="button" data-discover class="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-700">Scanner im Netz suchen</button>
+      <span data-scanner-status class="ml-auto inline-flex items-center gap-2 text-xs text-zinc-400"><span class="h-2 w-2 rounded-full bg-zinc-700" data-dot></span><span data-label>…</span></span>
+    </div>
+    <details class="text-sm"><summary class="cursor-pointer text-zinc-500">Netze für die Suche</summary>
+      <input data-subnets placeholder="leer = voreingestellt, z. B. 192.168.0.0/24, 10.0.0.0/24" class="mt-2 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></details>
+    <div data-discover-result class="space-y-1.5 text-sm"></div>
+  </form>
+</section>
+
+<section class="mt-10">
+  <h2 class="text-sm font-semibold text-zinc-200">KI (OpenRouter)</h2>
+  <p class="mt-1 text-sm text-zinc-500">Liest bei Scans Name, Tags und Metadaten. {% if ai_available %}Eingerichtet, Modell <code class="text-zinc-300">{{ ai_model }}</code>.{% else %}Kein Schlüssel vorhanden – über <code class="text-zinc-300">NRZPAPER_OPENROUTER_KEY</code> setzen.{% endif %}</p>
+  {% if ai_available %}
+  <div class="mt-3 flex flex-wrap items-center gap-3">
+    <button type="button" data-ai-test class="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-700">KI testen</button>
+    <span data-ai-result class="text-sm"></span>
+  </div>
+  {% endif %}
+</section>
+
 <section class="mt-10">
   <h2 class="text-sm font-semibold text-zinc-200">Passwort ändern</h2>
   <p class="mt-1 text-sm text-zinc-500">Danach sind alle anderen Sitzungen abgemeldet.</p>
@@ -77,4 +110,5 @@
   </form>
 </section>
 </div>
+<script type="module" src="/static/scan.js?v={{ crate::templates::asset_version() }}"></script>
 {% endblock %}

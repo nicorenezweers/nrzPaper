@@ -307,6 +307,9 @@ async function pdfViewer(root) {
   }).observe(scroller);
 
   layout();
+  // Erste Seite sofort zeichnen – nicht erst, wenn der Beobachter meldet (der kann in
+  // Hintergrund-Tabs ausbleiben).
+  renderPage(1);
   setCurrent(1, false);
   if (thumbsEl && !thumbsEl.hidden) renderThumbs();
   // Suche aus der Dokumentliste übernehmen (?q=…)

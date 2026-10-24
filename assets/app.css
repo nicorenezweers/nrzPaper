@@ -29,3 +29,14 @@
   /* hidden muss gegen Tailwind-Klassen wie grid/flex gewinnen */
   [hidden] { display: none !important; }
 }
+
+@layer components {
+  /* Lupe über einer Seite (Scannen, Prüfen) */
+  .loupe {
+    display: none; position: absolute; width: 240px; height: 240px; border-radius: 9999px;
+    border: 2px solid #d4d4d8; box-shadow: 0 20px 50px rgb(0 0 0 / 0.6);
+    background-repeat: no-repeat; background-color: #09090b; pointer-events: none; z-index: 10;
+  }
+  /* Einfügemarke beim Umsortieren der Seiten */
+  .thumb.drop-before { box-shadow: -6px 0 0 -2px #e4e4e7; }
+}

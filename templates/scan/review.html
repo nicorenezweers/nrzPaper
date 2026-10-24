@@ -1,0 +1,15 @@
+{% extends "app_layout.html" %}
+{% block title %}Prüfen · {{ shell.org.name }} · nrzPaper{% endblock %}
+{% block content %}
+<div data-review-page data-org="{{ shell.org.id }}">
+  <div class="mb-5">
+    <h1 class="text-2xl font-semibold tracking-tight text-zinc-100">Prüfen</h1>
+    <p class="mt-1 text-sm text-zinc-500">Bevor etwas abgelegt wird: Name, Tags und Metadaten ansehen, anpassen und freigeben.</p>
+  </div>
+  <div class="grid gap-5 lg:grid-cols-[15rem_minmax(0,1fr)] 2xl:grid-cols-[18rem_minmax(0,1fr)]">
+    <nav data-queue class="space-y-1 self-start rounded-xl border border-zinc-800 bg-zinc-900/40 p-2 text-sm"><p class="px-2 py-3 text-zinc-500">Lade …</p></nav>
+    <div data-detail></div>
+  </div>
+</div>
+<script type="module" src="/static/scan.js?v={{ crate::templates::asset_version() }}"></script>
+{% endblock %}

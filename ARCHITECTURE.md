@@ -260,6 +260,26 @@ Upload (Web, API, Eingangsordner)
   → Webhooks „document:updated“ (angelegt: „document:created“ schon beim Upload)
 ```
 
+## Scannen & Prüfen (aus nrzDocsScanner)
+
+nrzDocsScanner (eigene App: scannen → KI → Papra) ist in nrzPaper aufgegangen; Ziel ist jetzt nrzPaper selbst,
+alles Papra-Spezifische (Instanzen, Papra-Keys, Ablageziele) entfällt.
+
+- **Schema** `migrations/0002_scan.sql`: `scan_settings` (Scanner, Farbe, dpi je Benutzer), `scan_sessions` und
+  `scan_pages` (laufender Scan je Benutzer und Organisation, Seiten als JPEG-BLOB), `inbox_items` und
+  `inbox_files` (Prüfliste mit PDF und Seitenbildern). Alles in der verschlüsselten Datenbank, keine Dateien.
+- **Scanner** `src/scan/`: eSCL (`ScannerStatus`, `ScanJobs`, `NextDocument` mit Warten auf 503), Suche aller
+  Adressen eines /24-Netzes nach `ScannerCapabilities`, PDF aus JPEG-Seiten ohne Neukodierung (DCTDecode).
+  Ein globaler Lock lässt Scans nacheinander laufen.
+- **KI** `src/ai.rs`: OpenRouter Chat Completions, Seiten als Bilder (bis 4) oder das PDF als Datei; Antwort als
+  JSON (title, tags nur aus der Tag-Liste der Organisation, metadata, summary). Bei `openrouter/free` wird das
+  freie Routing zweimal und danach eine Reihe kostenloser Bild-Modelle probiert.
+- **Dienste** `services::scan` (Sitzung), `services::inbox` (anlegen → KI im Hintergrund → prüfen → freigeben;
+  nach Neustart werden hängende Einträge zurückgesetzt, alte stündlich gelöscht), `services::properties`
+  (Metadaten als benutzerdefinierte Eigenschaften: Datum als Datum, Betrag als Zahl, Rest als Text).
+- **Oberfläche** `templates/scan/`, `static/scan.js`: Seiten „Scannen“ und „Prüfen“ (Zähler in der Navigation),
+  Scanner und KI-Test im Konto, Eigenschaften auf der Dokumentseite (änderbar).
+
 ## Funktionsumfang (wie Papra)
 
 - **Konten & Anmeldung** – Argon2id, Sitzungen in der DB (Cookie mit Zufalls-Token, privat signiert), CSRF-Schutz für Formulare.
@@ -307,3 +327,4 @@ nrzPaper/
 5. **Oberfläche** – Dokumentliste mit Live-Suche, Detailseite mit PDF-Viewer, Tags, Papierkorb, `tests/ui.rs`. ✅
 6. **API, Konto, Webhooks, Freigaben** – restliche Endpunkte, API-Keys und Passwort in der Oberfläche, Einstellungen, signierte Webhooks, öffentliche Links, `tests/integrations.rs`. ✅
 7. **Docker & Tailwind-Build** – Multi-Stage-`Dockerfile` (`debian:bookworm-slim` mit Tesseract und Poppler), Tailwind-CSS beim Build, Schrift eingebettet, `tests/assets.rs`. ✅
+8. **Scannen & Prüfen** – nrzDocsScanner integriert: eSCL-Scanner, KI-Vorschläge, Prüfliste, Eigenschaften, `tests/scanning.rs`. ✅

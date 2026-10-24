@@ -18,7 +18,7 @@
     <nav class="space-y-0.5 text-sm">
       {% for (key, label, ready) in shell.nav() %}
       {% if ready %}
-      <a href="/organizations/{{ shell.org.id }}{% if key != "" %}/{{ key }}{% endif %}" class="flex items-center gap-3 rounded-lg px-3 py-2 {% if key == shell.active %}bg-zinc-800 font-medium text-zinc-100{% else %}text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200{% endif %}">{{ label }}</a>
+      <a href="/organizations/{{ shell.org.id }}{% if key != "" %}/{{ key }}{% endif %}" class="flex items-center gap-3 rounded-lg px-3 py-2 {% if key == shell.active %}bg-zinc-800 font-medium text-zinc-100{% else %}text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200{% endif %}">{{ label }}{% if key == "review" && shell.review_count > 0 %}<span data-review-count class="ml-auto rounded-full bg-zinc-200 px-1.5 py-px text-[11px] font-semibold text-zinc-900">{{ shell.review_count }}</span>{% endif %}</a>
       {% else %}
       <span class="flex items-center justify-between rounded-lg px-3 py-2 text-zinc-600">{{ label }}<span class="text-[11px]">bald</span></span>
       {% endif %}
@@ -36,7 +36,7 @@
     <nav class="flex items-center gap-1 overflow-x-auto border-b border-zinc-800 px-3 py-2 text-sm md:hidden">
       <a href="/organizations/{{ shell.org.id }}" class="mr-2 shrink-0 font-semibold text-zinc-100">{{ shell.org.name }}</a>
       {% for (key, label, ready) in shell.nav() %}{% if ready %}
-      <a href="/organizations/{{ shell.org.id }}{% if key != "" %}/{{ key }}{% endif %}" class="shrink-0 rounded-md px-2.5 py-1 {% if key == shell.active %}bg-zinc-800 text-zinc-100{% else %}text-zinc-400{% endif %}">{{ label }}</a>
+      <a href="/organizations/{{ shell.org.id }}{% if key != "" %}/{{ key }}{% endif %}" class="shrink-0 rounded-md px-2.5 py-1 {% if key == shell.active %}bg-zinc-800 text-zinc-100{% else %}text-zinc-400{% endif %}">{{ label }}{% if key == "review" && shell.review_count > 0 %} <span class="rounded-full bg-zinc-200 px-1.5 text-[11px] font-semibold text-zinc-900">{{ shell.review_count }}</span>{% endif %}</a>
       {% endif %}{% endfor %}
       <a href="/organizations/{{ shell.org.id }}/account" class="ml-auto shrink-0 rounded-md px-2.5 py-1 {% if shell.active == "account" %}bg-zinc-800 text-zinc-100{% else %}text-zinc-400{% endif %}">Konto</a>
       <form method="post" action="/logout" class="shrink-0"><button class="px-2 py-1 text-zinc-500">Abmelden</button></form>

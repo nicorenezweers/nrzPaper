@@ -3,7 +3,7 @@
 Selbst gehostete Dokumentenverwaltung im Funktionsumfang von [Papra](https://papra.app) – komplett in Rust.
 Alle Daten, auch die Dokumente selbst, liegen in **einer einzigen, mit SQLCipher verschlüsselten SQLite-Datei**.
 
-> Stand: alle 7 Schritte – Oberfläche mit Live-Suche, PDF-Viewer, Tags und Papierkorb; Upload, Texterkennung, Eingangsordner; vollständige REST-API, API-Keys und Passwort in der Oberfläche, signierte Webhooks, öffentliche Freigabelinks; Docker-Image mit Tesseract, Tailwind beim Build. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
+> Stand: alle 7 Schritte – Oberfläche mit Live-Suche, PDF-Viewer, Tags und Papierkorb; Upload, Texterkennung, Eingangsordner; vollständige REST-API, API-Keys und Passwort in der Oberfläche, signierte Webhooks, öffentliche Freigabelinks; **Scannen mit KI** (aus nrzDocsScanner: Netzwerk-Scanner, KI-Vorschläge, Prüfen vor dem Ablegen); Docker-Image mit Tesseract, Tailwind beim Build. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Starten mit Docker
 
@@ -53,6 +53,11 @@ Beim ersten Start entsteht `data/nrzpaper.db` (verschlüsselt) und `data/nrzpape
 | `NRZPAPER_REGISTRATION_OPEN` | `false` | Selbst-Registrierung nach dem ersten Konto |
 | `NRZPAPER_COOKIE_SECURE` | `false` | Cookies nur über HTTPS (hinter HTTPS einschalten) |
 | `NRZPAPER_LOG` | `info` (Rocket-Details gedämpft) | Log-Filter (`tracing`), z. B. `debug` |
+| `NRZPAPER_SCANNER_URL` | – | Voreingestellter Scanner (eSCL/AirScan) für alle, die keinen eigenen eintragen |
+| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Netze für „Scanner suchen“ |
+| `NRZPAPER_OPENROUTER_KEY` | eingebaut, falls beim Bauen gesetzt | Schlüssel für die KI (OpenRouter) |
+| `NRZPAPER_OPENROUTER_MODEL` | `openrouter/free` | Modell; bei `openrouter/free` werden kostenlose Bild-Modelle als Ersatz probiert |
+| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | So lange bleiben nicht freigegebene Scans in der Prüfliste |
 
 ### Oberfläche (CSS)
 
@@ -62,6 +67,22 @@ Das CSS wird aus den Templates erzeugt. Nach Änderungen an Klassen in `template
 scripts/tailwind.sh          # einmal (lädt beim ersten Mal die Tailwind-CLI nach .tools/)
 scripts/tailwind.sh --watch  # während der Arbeit
 ```
+
+### Scannen und Prüfen
+
+Übernommen aus nrzDocsScanner, jetzt direkt in nrzPaper:
+
+1. **Scannen** – Seiten vom Netzwerk-Scanner (eSCL/AirScan, z. B. Canon TS4100i) oder als Fotos, Lupe,
+   Reihenfolge per Drag & Drop, Tags vorgeben. Auch PDFs lassen sich zur Prüfung importieren.
+2. **KI** – liest Name („JJJJ-MM-TT Absender Dokumentart Thema“), passende Tags der Organisation und
+   Metadaten (Absender, Empfänger, Datum, Betrag, Währung, Referenz, Kundennummer, Fälligkeit, IBAN).
+3. **Prüfen** – alles ändern, neue Tags eintippen, in eine andere Organisation verschieben, neu analysieren
+   oder verwerfen. Erst **Freigeben** legt das Dokument an: mit Tags (fehlende werden angelegt), den Metadaten
+   als Eigenschaften und Texterkennung. Seiten und PDF liegen bis dahin verschlüsselt in der Datenbank.
+
+Scanner unter *Benutzername → Konto → Scanner* eintragen oder im Netz suchen. Die KI braucht einen
+OpenRouter-Schlüssel – beim Docker-Build als Secret eingebaut (`--secret id=openrouter,env=NRZ_OPENROUTER_KEY`)
+oder über `NRZPAPER_OPENROUTER_KEY`.
 
 ### Texterkennung
 
@@ -111,5 +132,6 @@ cargo test
 - `tests/documents.rs` – Aufnahme und Typen, Duplikate, Papierkorb, echte Texterkennung (Textebene, Scan, Bild – übersprungen ohne Tesseract), Warteschlange mit Volltextsuche, Eingangsordner, Upload mit Range, Dokument-API mit Berechtigungen.
 - `tests/web.rs` – Ersteinrichtung, Anmeldung, Sitzungen (auch nach Neustart), fremde Organisationen, CSRF, offene Redirects, Sicherheits-Header, Fehler als HTML/JSON, API-Keys mit Berechtigungen und Ablauf.
 - `tests/integrations.rs` – API (Tags, Suche, Statistik, Verlauf, Organisation), Rechte der Keys, Webhook an einen echten HTTP-Empfänger mit Signaturprüfung, Freigabelinks (öffentlich, Range, Ablauf, Papierkorb, Widerruf), Passwortwechsel.
+- `tests/scanning.rs` – Scannen gegen einen Schein-Scanner (eSCL), KI gegen ein Schein-OpenRouter, Prüfen, Verschieben, Freigeben mit Tags und Eigenschaften, Duplikate, Fehlerfälle.
 - `tests/assets.rs` – `static/app.css` passt zu den Templates, nur lokale Schriften.
 - `tests/schema.rs` – Migrationen, Volltextindex (auch nach `VACUUM`), Löschketten, Eindeutigkeit, Prüfbedingungen, Modelle, verschlüsselte Dokument-Blöcke.

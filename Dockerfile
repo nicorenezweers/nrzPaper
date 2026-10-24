@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.10
 # nrzPaper – Multi-Stage-Build für amd64 und arm64.
 #   docker build -t nrzpaper .
 #   docker run -p 8320:8320 -v nrzpaper-data:/data nrzpaper

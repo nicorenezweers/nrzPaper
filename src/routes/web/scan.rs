@@ -288,6 +288,8 @@ async fn import_pdfs(
                 Some(&user.0.id),
                 &f.name,
                 true,
+                "import",
+                "",
                 Vec::new(),
                 f.data,
                 Vec::new(),

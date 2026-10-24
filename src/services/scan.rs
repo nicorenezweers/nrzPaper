@@ -259,6 +259,8 @@ pub async fn finish(
         Some(user),
         &s.name,
         s.name.trim().is_empty(),
+        "scan",
+        "",
         s.hint_tags.clone(),
         pdf,
         jpegs,

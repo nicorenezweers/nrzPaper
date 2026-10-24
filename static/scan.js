@@ -267,7 +267,7 @@ function reviewPage(root) {
     const row = (i) => `
       <button data-item="${i.id}" class="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left ${i.id === st.current ? "bg-zinc-800" : "hover:bg-zinc-800/50"}">
         <span class="mt-0.5 w-4 shrink-0">${["analyse", "import"].includes(i.status) ? spinner : ""}</span>
-        <span class="min-w-0 flex-1"><span class="block truncate text-zinc-100">${esc(i.name)}</span><span class="text-xs text-zinc-500">${fmtDate(i.createdAt)}${i.pageCount ? ` · ${i.pageCount} S.` : ""}</span></span>
+        <span class="min-w-0 flex-1"><span class="block truncate text-zinc-100">${esc(i.name)}</span><span class="block truncate text-xs text-zinc-500">${i.source === "mail" ? "✉ " : ""}${fmtDate(i.createdAt)}${i.pageCount ? ` · ${i.pageCount} S.` : ""}</span></span>
         ${badge(i.status)}
       </button>`;
     $("[data-queue]", root).innerHTML = `
@@ -302,7 +302,7 @@ function reviewPage(root) {
     const box = $("[data-detail]", root);
     const item = st.items.find((i) => i.id === st.current);
     if (!item) {
-      box.innerHTML = `<div class="grid min-h-[24rem] place-items-center rounded-xl border border-dashed border-zinc-800 p-10 text-center text-zinc-500">Alles erledigt. Neue Scans landen hier.</div>`;
+      box.innerHTML = `<div class="grid min-h-[24rem] place-items-center rounded-xl border border-dashed border-zinc-800 p-10 text-center text-zinc-500">Alles erledigt. Neue Scans, Importe und E-Mail-Anhänge landen hier.</div>`;
       return;
     }
     const editable = item.status === "pruefen" || item.status === "fehler";
@@ -328,6 +328,7 @@ function reviewPage(root) {
         <section class="flex min-h-[28rem] flex-col self-start overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 xl:sticky xl:top-4">${preview}</section>
         <div class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
           <div class="flex items-start justify-between gap-3"><h2 class="min-w-0 break-words font-semibold text-zinc-100">${esc(item.name)}</h2>${badge(item.status)}</div>
+          ${item.sourceInfo ? `<p class="text-xs text-zinc-500">${item.source === "mail" ? "✉ " : ""}${esc(item.sourceInfo)}</p>` : ""}
           ${busy ? `<p class="flex items-center gap-2 rounded-lg border border-zinc-800 px-3 py-2 text-sm text-zinc-300">${spinner}${esc(item.step || "Bitte warten …")}</p>` : ""}
           ${item.error ? `<p class="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100">${esc(item.error)}</p>` : ""}
           ${item.warning ? `<p class="rounded-lg border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-sm text-zinc-300">${esc(item.warning)}</p>` : ""}
@@ -459,8 +460,30 @@ function accountTools() {
   scannerStatus();
 }
 
+// ================================================================ Konto: E-Mail-Eingang
+
+function mailTools() {
+  $$("[data-preset]").forEach((b) => b.onclick = () => {
+    const form = b.closest("form");
+    $("[data-mail-host]", form).value = b.dataset.preset;
+    $("[data-mail-port]", form).value = 993;
+    $("[data-mail-security]", form).value = "tls";
+  });
+  const act = (attr, path, ok) => $$(`[${attr}]`).forEach((b) => b.onclick = () => run(b, async () => {
+    const id = b.getAttribute(attr), out = $(`[data-mail-result="${id}"]`);
+    out.innerHTML = `<span class="flex items-center gap-2">${spinner} Verbinde …</span>`;
+    try { out.textContent = ok(await api("POST", `/mail/${id}/${path}`)); }
+    catch (e) { out.textContent = e.message; }
+  }));
+  act("data-mail-test", "test", () => "Verbindung und Anmeldung in Ordnung.");
+  act("data-mail-fetch", "fetch", (r) => r.report.documents
+    ? `${r.report.documents} Dokument(e) aus ${r.report.messages} Mail(s) in die Inbox gelegt.`
+    : r.report.messages ? `${r.report.messages} neue Mail(s), aber keine PDFs oder Bilder.` : "Keine neuen Mails.");
+}
+
 const scanRoot = $("[data-scan-page]");
 if (scanRoot) scanPage(scanRoot);
 const reviewRoot = $("[data-review-page]");
 if (reviewRoot) reviewPage(reviewRoot);
 if ($("[data-account-scan]")) accountTools();
+if ($("[data-account-mail]")) mailTools();

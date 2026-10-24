@@ -71,7 +71,7 @@ impl Shell {
         vec![
             ("", "Dokumente", true),
             ("scan", "Scannen", true),
-            ("review", "Prüfen", true),
+            ("review", "Inbox", true),
             ("tags", "Tags", true),
             ("tagging-rules", "Tagging-Regeln", false),
             ("properties", "Eigenschaften", false),
@@ -407,6 +407,7 @@ pub struct AccountPage {
     /// KI verfügbar (Schlüssel eingebaut oder gesetzt) und welches Modell
     pub ai_available: bool,
     pub ai_model: String,
+    pub mail_accounts: Vec<crate::db::models::MailAccount>,
     pub keys: Vec<ApiKey>,
     /// Gerade erzeugter Key (nur dieses eine Mal sichtbar).
     pub new_key: Option<String>,

@@ -99,6 +99,91 @@
   {% endif %}
 </section>
 
+<section class="mt-10" id="mail" data-account-mail>
+  <h2 class="text-sm font-semibold text-zinc-200">E-Mail-Eingang</h2>
+  <p class="mt-1 text-sm text-zinc-500">Nur Empfang (IMAP). PDFs und Bilder aus Anhängen landen mit den vorgegebenen Tags und den Vorschlägen der KI in der <span class="text-zinc-300">Inbox</span> und warten dort auf deine Freigabe. Abgeholt wird alles ab dem Einrichten; Mails werden nie gelöscht.</p>
+
+  <div class="mt-4 space-y-3">
+    {% for a in mail_accounts %}
+    <details id="mail-{{ a.id }}" class="group rounded-xl border border-zinc-800 bg-zinc-900/40">
+      <summary class="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3 hover:bg-zinc-900/70">
+        <span class="h-2 w-2 rounded-full {% if !a.enabled %}bg-zinc-700{% else if a.last_error.is_empty() %}bg-zinc-200{% else %}bg-zinc-500{% endif %}"></span>
+        <span class="font-medium text-zinc-100">{{ a.name }}</span>
+        <span class="font-mono text-xs text-zinc-500">{{ a.username }} @ {{ a.host }}</span>
+        <span class="ml-auto text-xs text-zinc-500">{% if let Some(t) = a.last_check_at %}abgerufen <time data-ts="{{ t }}"></time> · {% endif %}{{ a.imported_count }} Dokumente</span>
+      </summary>
+      <div class="space-y-4 border-t border-zinc-800 p-4">
+        {% if !a.last_error.is_empty() %}<p class="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100">{{ a.last_error }}</p>{% endif %}
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" data-mail-fetch="{{ a.id }}" class="rounded-lg bg-zinc-100 px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-white">Jetzt abrufen</button>
+          <button type="button" data-mail-test="{{ a.id }}" class="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-700">Verbindung testen</button>
+          <span data-mail-result="{{ a.id }}" class="text-sm text-zinc-400"></span>
+        </div>
+        <form method="post" action="/organizations/{{ shell.org.id }}/account/mail/{{ a.id }}" class="space-y-3">
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Name</span><input name="name" value="{{ a.name }}" placeholder="z. B. Privat-Mail" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Ablage in</span><select name="organization_id" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600">{% for (o, _) in shell.orgs %}<option value="{{ o.id }}" {% if o.id == a.organization_id %}selected{% endif %}>{{ o.name }}</option>{% endfor %}</select></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">IMAP-Server</span><input name="host" data-mail-host value="{{ a.host }}" required placeholder="imap.gmail.com" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600 font-mono"></label>
+      <div class="grid grid-cols-[6rem_1fr] gap-3">
+        <label class="block text-sm"><span class="mb-1 block text-zinc-500">Port</span><input name="port" data-mail-port type="number" min="1" max="65535" value="{{ a.port }}" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+        <label class="block text-sm"><span class="mb-1 block text-zinc-500">Verschlüsselung</span><select name="security" data-mail-security class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"><option value="tls" {% if a.security == "tls" %}selected{% endif %}>SSL/TLS</option><option value="starttls" {% if a.security == "starttls" %}selected{% endif %}>STARTTLS</option><option value="none" {% if a.security == "none" %}selected{% endif %}>keine (nur im LAN)</option></select></label>
+      </div>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Benutzername</span><input name="username" value="{{ a.username }}" required autocomplete="off" placeholder="name@example.ch" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Passwort (leer = unverändert)</span><input name="password" type="password" autocomplete="new-password"  placeholder="••••••••" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Ordner</span><input name="folder" value="{{ a.folder }}" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600 font-mono"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Tags vorgeben (Komma-getrennt)</span><input name="tags" value="{{ a.tags.0.join(", ") }}" placeholder="z. B. E-Mail, Rechnung" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Abruf alle … Minuten</span><input name="interval_minutes" type="number" min="1" max="1440" value="{{ a.interval_minutes }}" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <div class="flex flex-col justify-end gap-2 pb-1 text-sm text-zinc-300">
+        <label class="flex items-center gap-2"><input type="checkbox" name="enabled" value="true" {% if a.enabled %}checked{% endif %} class="accent-zinc-400"> Automatisch abrufen</label>
+        <label class="flex items-center gap-2"><input type="checkbox" name="mark_seen" value="true" {% if a.mark_seen %}checked{% endif %} class="accent-zinc-400"> Abgeholte Mails als gelesen markieren</label>
+      </div>
+    </div>
+          <button class="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700">Speichern</button>
+        </form>
+        <form method="post" action="/organizations/{{ shell.org.id }}/account/mail/{{ a.id }}/delete" data-confirm="Postfach „{{ a.name }}“ entfernen? Mails im Postfach bleiben unberührt.">
+          <button class="text-sm text-zinc-500 hover:text-zinc-200">Postfach entfernen</button>
+        </form>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+
+  <details class="mt-3 rounded-xl border border-zinc-800 bg-zinc-900/60" {% if mail_accounts.is_empty() %}open{% endif %}>
+    <summary class="cursor-pointer list-none px-4 py-3 text-sm font-medium text-zinc-200 hover:bg-zinc-900">+ Postfach hinzufügen</summary>
+    <form method="post" action="/organizations/{{ shell.org.id }}/account/mail" class="space-y-3 border-t border-zinc-800 p-4">
+      <div class="flex flex-wrap gap-1.5 text-xs" data-mail-presets>
+        <span class="py-1 text-zinc-500">Vorlage:</span>
+        <button type="button" data-preset="imap.gmail.com" class="rounded-full border border-zinc-700 px-2.5 py-1 text-zinc-300 hover:border-zinc-500">Gmail</button>
+        <button type="button" data-preset="outlook.office365.com" class="rounded-full border border-zinc-700 px-2.5 py-1 text-zinc-300 hover:border-zinc-500">Outlook / Microsoft 365</button>
+        <button type="button" data-preset="imap.mail.me.com" class="rounded-full border border-zinc-700 px-2.5 py-1 text-zinc-300 hover:border-zinc-500">iCloud</button>
+        <button type="button" data-preset="imap.gmx.net" class="rounded-full border border-zinc-700 px-2.5 py-1 text-zinc-300 hover:border-zinc-500">GMX</button>
+        <button type="button" data-preset="imap.web.de" class="rounded-full border border-zinc-700 px-2.5 py-1 text-zinc-300 hover:border-zinc-500">WEB.DE</button>
+        <button type="button" data-preset="imaps.bluewin.ch" class="rounded-full border border-zinc-700 px-2.5 py-1 text-zinc-300 hover:border-zinc-500">Bluewin</button>
+        <button type="button" data-preset="imap.ionos.de" class="rounded-full border border-zinc-700 px-2.5 py-1 text-zinc-300 hover:border-zinc-500">IONOS</button>
+      </div>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Name</span><input name="name" value="" placeholder="z. B. Privat-Mail" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Ablage in</span><select name="organization_id" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600">{% for (o, _) in shell.orgs %}<option value="{{ o.id }}" {% if o.id == shell.org.id %}selected{% endif %}>{{ o.name }}</option>{% endfor %}</select></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">IMAP-Server</span><input name="host" data-mail-host value="" required placeholder="imap.gmail.com" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600 font-mono"></label>
+      <div class="grid grid-cols-[6rem_1fr] gap-3">
+        <label class="block text-sm"><span class="mb-1 block text-zinc-500">Port</span><input name="port" data-mail-port type="number" min="1" max="65535" value="993" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+        <label class="block text-sm"><span class="mb-1 block text-zinc-500">Verschlüsselung</span><select name="security" data-mail-security class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"><option value="tls" {% if true %}selected{% endif %}>SSL/TLS</option><option value="starttls" {% if false %}selected{% endif %}>STARTTLS</option><option value="none" {% if false %}selected{% endif %}>keine (nur im LAN)</option></select></label>
+      </div>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Benutzername</span><input name="username" value="" required autocomplete="off" placeholder="name@example.ch" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Passwort</span><input name="password" type="password" autocomplete="new-password" required placeholder="bei Gmail/iCloud/Outlook: App-Passwort" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Ordner</span><input name="folder" value="INBOX" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600 font-mono"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Tags vorgeben (Komma-getrennt)</span><input name="tags" value="" placeholder="z. B. E-Mail, Rechnung" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <label class="block text-sm"><span class="mb-1 block text-zinc-500">Abruf alle … Minuten</span><input name="interval_minutes" type="number" min="1" max="1440" value="5" class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-600"></label>
+      <div class="flex flex-col justify-end gap-2 pb-1 text-sm text-zinc-300">
+        <label class="flex items-center gap-2"><input type="checkbox" name="enabled" value="true" checked class="accent-zinc-400"> Automatisch abrufen</label>
+        <label class="flex items-center gap-2"><input type="checkbox" name="mark_seen" value="true" checked class="accent-zinc-400"> Abgeholte Mails als gelesen markieren</label>
+      </div>
+    </div>
+      <button class="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white">Postfach hinzufügen</button>
+    </form>
+  </details>
+</section>
+
 <section class="mt-10">
   <h2 class="text-sm font-semibold text-zinc-200">Passwort ändern</h2>
   <p class="mt-1 text-sm text-zinc-500">Danach sind alle anderen Sitzungen abgemeldet.</p>

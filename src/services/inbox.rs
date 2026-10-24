@@ -50,6 +50,8 @@ pub async fn create(
     user: Option<&str>,
     name: &str,
     auto_name: bool,
+    source: &str,
+    source_info: &str,
     hint_tags: Vec<String>,
     pdf: Vec<u8>,
     pages: Vec<Vec<u8>>,
@@ -61,8 +63,8 @@ pub async fn create(
     let ts = now();
     let mut tx = pool.begin().await?;
     sqlx::query(
-        "INSERT INTO inbox_items (id, organization_id, user_id, name, auto_name, status, step, tags, page_count, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'analyse', 'KI liest das Dokument …', ?, ?, ?, ?)",
+        "INSERT INTO inbox_items (id, organization_id, user_id, name, auto_name, status, step, tags, page_count, source, source_info, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 'analyse', 'KI liest das Dokument …', ?, ?, ?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(org)
@@ -71,6 +73,8 @@ pub async fn create(
     .bind(auto_name)
     .bind(sqlx::types::Json(&hint_tags))
     .bind(pages.len() as i64)
+    .bind(source)
+    .bind(source_info.chars().take(300).collect::<String>())
     .bind(ts)
     .bind(ts)
     .execute(&mut *tx)

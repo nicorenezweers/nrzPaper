@@ -280,6 +280,22 @@ alles Papra-Spezifische (Instanzen, Papra-Keys, Ablageziele) entfällt.
 - **Oberfläche** `templates/scan/`, `static/scan.js`: Seiten „Scannen“ und „Prüfen“ (Zähler in der Navigation),
   Scanner und KI-Test im Konto, Eigenschaften auf der Dokumentseite (änderbar).
 
+## Inbox, E-Mail, Ordner, Kacheln
+
+- **Schema** `migrations/0003_mail_folders_thumbnails.sql`: `document_thumbnails` (JPEG der ersten Seite),
+  `folders` + `folder_tags`, `mail_accounts` + `mail_seen` (UIDVALIDITY:UID), Herkunft der Inbox-Einträge.
+- **E-Mail** `services::mail`: `async-imap` über rustls (eingebaute Wurzelzertifikate) oder STARTTLS/ohne;
+  `UID SEARCH SINCE <Einrichtungsdatum>`, `BODY.PEEK[]` (nur lesen), danach optional `\Seen`. Anhänge über
+  `mail-parser`: PDFs direkt, Bilder (ab 15 KB, eingebettete ab 100 KB) als JPEG-Seite in ein PDF. Jeder Fund wird ein
+  Inbox-Eintrag mit den Tags des Postfachs; die KI liest wie beim Scan. Ein Hintergrund-Task prüft jede Minute,
+  welche Postfächer fällig sind; Fehler stehen am Postfach.
+- **Ordner** `services::folders`: Baum je Organisation; ein Ordner filtert über `search::Query::any_tag_ids`
+  (Tags des Ordners und aller Unterordner, ODER-verknüpft).
+- **Vorschaubilder** `services::thumbnails`: beim ersten Abruf erzeugt (PDF: `pdftocairo -jpeg`, Bilder: `image`),
+  höchstens zwei gleichzeitig; ohne Vorschau gibt es einen SVG-Platzhalter.
+- **Oberfläche**: Kacheln wie Paperless-ngx im eigenen Grau-Design, Vorschau-Fenster mit PDF.js, grössere
+  Dokumentansicht (Angaben ausblendbar, Zoom per Mausrad/Trackpad), Favicon aus dem Umbrel-Icon.
+
 ## Funktionsumfang (wie Papra)
 
 - **Konten & Anmeldung** – Argon2id, Sitzungen in der DB (Cookie mit Zufalls-Token, privat signiert), CSRF-Schutz für Formulare.
@@ -328,3 +344,4 @@ nrzPaper/
 6. **API, Konto, Webhooks, Freigaben** – restliche Endpunkte, API-Keys und Passwort in der Oberfläche, Einstellungen, signierte Webhooks, öffentliche Links, `tests/integrations.rs`. ✅
 7. **Docker & Tailwind-Build** – Multi-Stage-`Dockerfile` (`debian:bookworm-slim` mit Tesseract und Poppler), Tailwind-CSS beim Build, Schrift eingebettet, `tests/assets.rs`. ✅
 8. **Scannen & Prüfen** – nrzDocsScanner integriert: eSCL-Scanner, KI-Vorschläge, Prüfliste, Eigenschaften, `tests/scanning.rs`. ✅
+9. **Inbox, E-Mail, Ordner, Kacheln** – IMAP-Eingang, Ordner aus Tags, Kachelansicht mit Vorschaubildern, grosse Vorschau, Favicon, `tests/mail.rs`. ✅

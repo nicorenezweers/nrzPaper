@@ -29,7 +29,12 @@ pub fn routes() -> Vec<Route> {
         delete_org,
         create_webhook,
         toggle_webhook,
-        delete_webhook
+        delete_webhook,
+        create_mail,
+        update_mail,
+        delete_mail,
+        fetch_mail,
+        test_mail
     ]
 }
 
@@ -47,12 +52,14 @@ async fn account_page(
     let keys = api_key::list(pool, &user.id).await?;
     let scan = crate::services::scan::settings(pool, config, &user.id).await?;
     let ai = crate::ai::AiConfig::from(config);
+    let mail_accounts = crate::services::mail::list(pool, &user.id).await?;
     let shell = shell(pool, user, org, "account", "").await?;
     let page = render(&AccountPage {
         shell,
         scan,
         ai_available: ai.available(),
         ai_model: ai.model,
+        mail_accounts,
         keys,
         new_key,
         notice,
@@ -298,4 +305,136 @@ async fn delete_webhook(
     require_manager(pool, &user.0, org).await?;
     webhooks::delete(pool, org, id).await?;
     Ok(Redirect::to(format!("/organizations/{org}/settings")))
+}
+
+// ------------------------------------------------------------------ E-Mail-Eingang
+
+#[derive(FromForm)]
+struct MailForm<'r> {
+    #[field(default = "")]
+    name: &'r str,
+    organization_id: &'r str,
+    host: &'r str,
+    #[field(default = 993)]
+    port: i64,
+    #[field(default = "tls")]
+    security: &'r str,
+    username: &'r str,
+    #[field(default = "")]
+    password: &'r str,
+    #[field(default = "INBOX")]
+    folder: &'r str,
+    #[field(default = false)]
+    mark_seen: bool,
+    #[field(default = "")]
+    tags: &'r str,
+    #[field(default = false)]
+    enabled: bool,
+    #[field(default = 5)]
+    interval_minutes: i64,
+}
+
+impl MailForm<'_> {
+    fn input(&self) -> crate::services::mail::AccountInput {
+        crate::services::mail::AccountInput {
+            name: self.name.into(),
+            organization_id: self.organization_id.into(),
+            host: self.host.into(),
+            port: self.port,
+            security: self.security.into(),
+            username: self.username.into(),
+            password: self.password.into(),
+            folder: self.folder.into(),
+            mark_seen: self.mark_seen,
+            tags: vec![self.tags.to_string()],
+            enabled: self.enabled,
+            interval_minutes: self.interval_minutes,
+        }
+    }
+}
+
+#[post("/organizations/<org>/account/mail", data = "<form>")]
+async fn create_mail(
+    user: CurrentUser,
+    org: &str,
+    form: Form<MailForm<'_>>,
+    pool: &State<SqlitePool>,
+    config: &State<Config>,
+) -> AppResult<Page> {
+    organizations::membership(pool, &user.0.id, org).await?;
+    organizations::membership(pool, &user.0.id, form.organization_id).await?;
+    match crate::services::mail::create(pool, &user.0.id, &form.input()).await {
+        Ok(_) => Ok(Page::Redirect(Redirect::to(format!(
+            "/organizations/{org}/account#mail"
+        )))),
+        Err(e @ AppError::BadRequest(_)) => {
+            account_page(pool, config, user.0, org, None, None, Some(&e)).await
+        }
+        Err(e) => Err(e),
+    }
+}
+
+#[post("/organizations/<org>/account/mail/<id>", data = "<form>")]
+async fn update_mail(
+    user: CurrentUser,
+    org: &str,
+    id: &str,
+    form: Form<MailForm<'_>>,
+    pool: &State<SqlitePool>,
+    config: &State<Config>,
+) -> AppResult<Page> {
+    organizations::membership(pool, &user.0.id, org).await?;
+    organizations::membership(pool, &user.0.id, form.organization_id).await?;
+    match crate::services::mail::update(pool, &user.0.id, id, &form.input()).await {
+        Ok(_) => Ok(Page::Redirect(Redirect::to(format!(
+            "/organizations/{org}/account#mail-{id}"
+        )))),
+        Err(e @ AppError::BadRequest(_)) => {
+            account_page(pool, config, user.0, org, None, None, Some(&e)).await
+        }
+        Err(e) => Err(e),
+    }
+}
+
+#[post("/organizations/<org>/account/mail/<id>/delete")]
+async fn delete_mail(
+    user: CurrentUser,
+    org: &str,
+    id: &str,
+    pool: &State<SqlitePool>,
+) -> AppResult<Redirect> {
+    crate::services::mail::delete(pool, &user.0.id, id).await?;
+    Ok(Redirect::to(format!("/organizations/{org}/account#mail")))
+}
+
+/// Jetzt abholen (statt auf den nächsten Durchlauf zu warten).
+#[post("/mail/<id>/fetch")]
+async fn fetch_mail(
+    user: CurrentUser,
+    id: &str,
+    pool: &State<SqlitePool>,
+    config: &State<Config>,
+) -> AppResult<rocket::serde::json::Value> {
+    let account = crate::services::mail::get(pool, &user.0.id, id).await?;
+    let ai = crate::ai::AiConfig::from(config);
+    let report = crate::services::mail::run(pool, &ai, &account)
+        .await
+        .map_err(AppError::bad)?;
+    Ok(rocket::serde::json::json!({ "report": report }))
+}
+
+/// Verbindung testen: anmelden und den Ordner öffnen, nichts abholen.
+#[post("/mail/<id>/test")]
+async fn test_mail(
+    user: CurrentUser,
+    id: &str,
+    pool: &State<SqlitePool>,
+    config: &State<Config>,
+) -> AppResult<rocket::serde::json::Value> {
+    let account = crate::services::mail::get(pool, &user.0.id, id).await?;
+    let ai = crate::ai::AiConfig::from(config);
+    crate::services::mail::fetch(pool, &ai, &account, true)
+        .await
+        .map_err(AppError::bad)?;
+    Ok(rocket::serde::json::json!({ "ok": true }))
 }

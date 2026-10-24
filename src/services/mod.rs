@@ -4,6 +4,7 @@
 pub mod documents;
 pub mod folders;
 pub mod inbox;
+pub mod mail;
 pub mod organizations;
 pub mod properties;
 pub mod scan;

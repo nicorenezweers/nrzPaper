@@ -453,6 +453,10 @@ pub struct InboxItem {
     pub document_id: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
+    /// scan, import oder mail
+    pub source: String,
+    /// z. B. "E-Mail von … · Betreff"
+    pub source_info: String,
 }
 
 impl InboxItem {
@@ -460,4 +464,30 @@ impl InboxItem {
     pub fn editable(&self) -> bool {
         matches!(self.status, InboxStatus::Pruefen | InboxStatus::Fehler)
     }
+}
+
+/// E-Mail-Postfach (nur Empfang). Das Passwort wird nie serialisiert.
+#[derive(Debug, Clone, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MailAccount {
+    pub id: String,
+    pub user_id: String,
+    pub organization_id: String,
+    pub name: String,
+    pub host: String,
+    pub port: i64,
+    pub security: String,
+    pub username: String,
+    #[serde(skip)]
+    pub password: String,
+    pub folder: String,
+    pub mark_seen: bool,
+    pub tags: sqlx::types::Json<Vec<String>>,
+    pub enabled: bool,
+    pub interval_minutes: i64,
+    pub last_check_at: Option<i64>,
+    pub last_error: String,
+    pub imported_count: i64,
+    pub created_at: i64,
+    pub updated_at: i64,
 }

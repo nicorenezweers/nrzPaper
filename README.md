@@ -3,7 +3,7 @@
 Selbst gehostete Dokumentenverwaltung im Funktionsumfang von [Papra](https://papra.app) – komplett in Rust.
 Alle Daten, auch die Dokumente selbst, liegen in **einer einzigen, mit SQLCipher verschlüsselten SQLite-Datei**.
 
-> Stand: alle 7 Schritte – Oberfläche mit Live-Suche, PDF-Viewer, Tags und Papierkorb; Upload, Texterkennung, Eingangsordner; vollständige REST-API, API-Keys und Passwort in der Oberfläche, signierte Webhooks, öffentliche Freigabelinks; **Scannen mit KI** (aus nrzDocsScanner: Netzwerk-Scanner, KI-Vorschläge, Prüfen vor dem Ablegen); Docker-Image mit Tesseract, Tailwind beim Build. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
+> Stand: alle 7 Schritte – Oberfläche mit Live-Suche, PDF-Viewer, Tags und Papierkorb; Upload, Texterkennung, Eingangsordner; vollständige REST-API, API-Keys und Passwort in der Oberfläche, signierte Webhooks, öffentliche Freigabelinks; **Scannen mit KI** (aus nrzDocsScanner: Netzwerk-Scanner, KI-Vorschläge, Prüfen vor dem Ablegen); **E-Mail-Eingang** (IMAP), **Ordner** aus Tags, Kachelansicht mit Vorschaubildern; Docker-Image mit Tesseract, Tailwind beim Build. Aufbau und Plan: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Starten mit Docker
 
@@ -84,6 +84,19 @@ Scanner unter *Benutzername → Konto → Scanner* eintragen oder im Netz suchen
 OpenRouter-Schlüssel – beim Docker-Build als Secret eingebaut (`--secret id=openrouter,env=NRZ_OPENROUTER_KEY`)
 oder über `NRZPAPER_OPENROUTER_KEY`.
 
+### Inbox, E-Mail-Eingang und Ordner
+
+- **Inbox** – alles, was noch abgenommen werden muss: Scans, importierte PDFs und E-Mail-Anhänge.
+- **E-Mail-Eingang** – unter *Benutzername → Konto → E-Mail-Eingang* Postfächer eintragen (nur Empfang, IMAP mit
+  SSL/TLS, STARTTLS oder ohne; Vorlagen für Gmail, Outlook, iCloud, GMX, WEB.DE, Bluewin, IONOS). Neue Mails werden
+  regelmässig abgeholt (alles ab dem Einrichten, nichts doppelt, nie gelöscht); PDFs und Bilder aus den Anhängen
+  kommen mit den vorgegebenen Tags und den KI-Vorschlägen in die Inbox. Bei Gmail, iCloud und Outlook braucht es ein
+  App-Passwort.
+- **Ordner** – unter *Ordner → Verwalten* (auch verschachtelt). Ein Ordner fasst mehrere Tags zusammen und zeigt
+  jedes Dokument mit mindestens einem davon, Unterordner eingeschlossen.
+- **Kacheln** – Dokumente als Karten mit Vorschaubild der ersten Seite, Tags und Datum; umschaltbar auf Liste.
+  Das Auge öffnet eine grosse Vorschau mit Zoom (+/−, Strg/⌘ + Mausrad).
+
 ### Texterkennung
 
 Braucht Tesseract und Poppler (im Docker-Image enthalten). Auf dem Mac:
@@ -133,5 +146,6 @@ cargo test
 - `tests/web.rs` – Ersteinrichtung, Anmeldung, Sitzungen (auch nach Neustart), fremde Organisationen, CSRF, offene Redirects, Sicherheits-Header, Fehler als HTML/JSON, API-Keys mit Berechtigungen und Ablauf.
 - `tests/integrations.rs` – API (Tags, Suche, Statistik, Verlauf, Organisation), Rechte der Keys, Webhook an einen echten HTTP-Empfänger mit Signaturprüfung, Freigabelinks (öffentlich, Range, Ablauf, Papierkorb, Widerruf), Passwortwechsel.
 - `tests/scanning.rs` – Scannen gegen einen Schein-Scanner (eSCL), KI gegen ein Schein-OpenRouter, Prüfen, Verschieben, Freigeben mit Tags und Eigenschaften, Duplikate, Fehlerfälle.
+- `tests/mail.rs` – E-Mail-Eingang gegen einen Schein-IMAP-Server (Anmeldung, Abruf, keine Duplikate, gelesen markieren, Abnahme mit Tags), Ordner, Vorschaubilder, Kachelansicht.
 - `tests/assets.rs` – `static/app.css` passt zu den Templates, nur lokale Schriften.
 - `tests/schema.rs` – Migrationen, Volltextindex (auch nach `VACUUM`), Löschketten, Eindeutigkeit, Prüfbedingungen, Modelle, verschlüsselte Dokument-Blöcke.

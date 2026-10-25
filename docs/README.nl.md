@@ -4,7 +4,7 @@
 
 # nrzPaper
 
-**Zelf gehost documentbeheer in Rust: je papierwerk scannen, herkennen, taggen en terugvinden, versleuteld in één bestand.**
+**A Rust-powered document management tool.**
 
 [English](../README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md)
 

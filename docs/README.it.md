@@ -4,7 +4,7 @@
 
 # nrzPaper
 
-**Gestione documentale self-hosted in Rust: scansiona, riconosci, etichetta e ritrova i tuoi documenti, cifrati in un unico file.**
+**A Rust-powered document management tool.**
 
 [English](../README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md)
 

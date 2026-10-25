@@ -4,7 +4,7 @@
 
 # nrzPaper
 
-**Self-hosted document management in Rust: scan, recognize, tag and find your paperwork, encrypted in one file.**
+**A Rust-powered document management tool.**
 
 [Deutsch](docs/README.de.md) · [Français](docs/README.fr.md) · [Italiano](docs/README.it.md) · [Español](docs/README.es.md) · [Português](docs/README.pt.md) · [Nederlands](docs/README.nl.md) · [English](README.md) · [中文 (Chinese)](docs/README.zh.md) · [日本語 (Japanese)](docs/README.ja.md) · [Polski](docs/README.pl.md) · [Русский](docs/README.ru.md) · [العربية (Arabic)](docs/README.ar.md) · [한국어 (Korean)](docs/README.ko.md) · [Türkçe](docs/README.tr.md) · [Bahasa Indonesia](docs/README.id.md) · [Hindi (हिन्दी)](docs/README.hi.md) · [Vietnamese (Tiếng Việt)](docs/README.vi.md) · [Thai (ไทย)](docs/README.th.md) · [Українська (Ukrainian)](docs/README.uk.md) · [Čeština (Czech)](docs/README.cs.md) · [Română (Romanian)](docs/README.ro.md) · [Magyar (Hungarian)](docs/README.hu.md) · [Ελληνικά (Greek)](docs/README.el.md) · [Svenska (Swedish)](docs/README.sv.md) · [Norsk (Norwegian)](docs/README.nb.md) · [Dansk (Danish)](docs/README.da.md) · [Suomi (Finnish)](docs/README.fi.md) · [עברית (Hebrew)](docs/README.he.md) · [বাংলা (Bengali)](docs/README.bn.md) · [فارسی (Persian)](docs/README.fa.md)
 

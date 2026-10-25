@@ -4,7 +4,7 @@
 
 # nrzPaper
 
-**Selbst gehostete Dokumentenverwaltung in Rust: Papierkram scannen, erkennen, taggen und finden – verschlüsselt in einer Datei.**
+**A Rust-powered document management tool.**
 
 [English](../README.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md)
 

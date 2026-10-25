@@ -4,7 +4,7 @@
 
 # nrzPaper
 
-**Gestion documentaire auto-hébergée en Rust : numériser, reconnaître, étiqueter et retrouver vos papiers, chiffrés dans un seul fichier.**
+**A Rust-powered document management tool.**
 
 [English](../README.md) · [Deutsch](README.de.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md)
 

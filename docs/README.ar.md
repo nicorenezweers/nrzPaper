@@ -1,55 +1,49 @@
-<!--
-Übersetzungsvorlage für العربية (Arabic).
-Bitte den Inhalt unten in die jeweilige Sprache übersetzen.
--->
-
-<div align="center">
+<div align="center" dir="rtl">
 
 <img src="../static/icon.png" width="96" alt="nrzPaper">
 
 # nrzPaper
 
-**Selbst gehostete Dokumentenverwaltung in Rust: Papierkram scannen, erkennen, taggen und finden – verschlüsselt in einer Datei.**
+**إدارة مستندات مستضافة ذاتيًا بلغة Rust: امسح وتعرّف ووسّم واعثر على أوراقك، مشفّرة في ملف واحد.**
 
-[English](../README.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md)
+[English](../README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md) · [中文](README.zh.md) · [日本語](README.ja.md) · [Polski](README.pl.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [한국어](README.ko.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [हिन्दी](README.hi.md) · [Tiếng Việt](README.vi.md) · [ไทย](README.th.md) · [Українська](README.uk.md) · [Čeština](README.cs.md) · [Română](README.ro.md) · [Magyar](README.hu.md) · [Ελληνικά](README.el.md) · [Svenska](README.sv.md) · [Norsk](README.nb.md) · [Dansk](README.da.md) · [Suomi](README.fi.md) · [עברית](README.he.md) · [বাংলা](README.bn.md) · [فارسی](README.fa.md)
 
-![Dokumente mit Zeitleiste](screenshots/documents.png)
+![مستندات مع خط زمني](screenshots/documents.png)
 
 </div>
 
-nrzPaper ist ein einziges Programm ohne externe Datenbank. Alles liegt in einer SQLCipher-verschlüsselten SQLite-Datei, auch die Dateien selbst. Es erkennt Text mit Tesseract, scannt direkt von Netzwerkscannern, holt E-Mail-Anhänge ab und lässt eine KI deiner Wahl Titel, Tags und Metadaten vorschlagen. **Dieter**, der eingebaute Assistent, beantwortet Fragen zu deinen Dokumenten und verlinkt die Quellen. Die Oberfläche ist eine Rust/WebAssembly-App (Dioxus) in ruhigem Dunkelgrau und funktioniert auch am Handy.
+nrzPaper برنامج واحد بدون قاعدة بيانات خارجية. كل شيء موجود في ملف SQLite واحد مشفّر بـ SQLCipher، بما في ذلك الملفات نفسها. يقوم بتعرّف ضوئي (OCR) باستخدام Tesseract، والمسح مباشرة من ماسحات الشبكة، ويجلب مرفقات البريد الإلكتروني، ويسمح لأي ذكاء اصطناعي تختاره باقتراح العناوين والوسوم والبيانات الوصفية. المساعد المدمج **Dieter** يجيب عن الأسئلة المتعلقة بمستنداتك ويربط المصادر. واجهة الويب تطبيق Rust/WebAssembly (Dioxus) بسمة داكنة هادئة وتعمل أيضًا على الهواتف.
 
-## Funktionen
-
-| | |
-|---|---|
-| **Erfassen** | Drag & Drop, Upload, **Netzwerkscanner** (eSCL/AirScan: Canon, HP, Epson, Brother …), **E-Mail-Postfächer** (IMAP, mehrere Konten), **überwachte Ordner** (z. B. der Scan-Ordner auf dem NAS), REST-API |
-| **Inbox** | Scans, Mails, Ordner-Importe und Uploads warten auf die Abnahme: Die KI schlägt Name, Tags und Felder vor, du gibst einzeln oder **alle auf einmal** frei. Filter nach Quelle (Scanner, jedes Postfach, jeder Ordner, Upload). |
-| **Erkennen** | Tesseract und Poppler im Hintergrund, auch für gescannte PDFs und Fotos. Volltextsuche mit Wortanfängen, Wortfolgen und Filtern (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
-| **Ordnen** | Farbige Tags, **Ordner aus Tags** (verschachtelt), **Tagging-Regeln** („enthält Northwind → Rechnung“), eigene **Eigenschaften** (Text, Zahl, Datum, Ja/Nein, Auswahl, Mehrfachauswahl, Benutzer, Verweis auf ein Dokument) |
-| **Zeitleiste** | Senkrechte Zeitleiste neben den Dokumenten: oben heute, darunter jeder Tag mit Post und die Lücken dazwischen („12 Tage ohne Dokumente“). Filter nach Tag, Art und Text. |
-| **Erinnerungen** | „Erinnere mich in 10 Tagen“ an jedem Dokument, mit Notiz. Fällige Erinnerungen stehen in der Seitenleiste und oben in der Zeitleiste. |
-| **Drucken** | Auf jedem **IPP-Netzwerkdrucker** (AirPrint, IPP Everywhere, Mopria, CUPS), den der Server findet. PDFs gehen direkt, an Drucker, die nur JPEG annehmen, als Seitenbilder. |
-| **KI, jeder Anbieter** | OpenRouter (kostenlose Modelle eingebaut), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** oder jede OpenAI-kompatible Adresse. Modelle ohne Bildeingang bekommen den erkannten Text. |
-| **Dieter** | Chat-Assistent unten rechts: *„Wie lautet meine Versicherungsnummer?“*, *„Alle Lohnabrechnungen von Fabrikam 2026“*. Er sucht, liest die passenden Stellen und antwortet mit Links zu den Dokumenten. |
-| **Teams** | Mehrere Organisationen, **mehrere Konten je Organisation** (Einladungen, Rollen Besitzer/Admin/Mitglied, Besitz übergeben), API-Keys mit Rechten, Webhooks (Standard-Webhooks-Signatur), öffentliche Freigabelinks |
-| **Sprachen** | Deutsch, English, Français, Italiano, Español, Português, Nederlands (weitere über `locales/<code>.json`) |
-| **Sicher** | Eine verschlüsselte Datei, Argon2-Passwörter, CSP ohne Inline-Skripte, CSRF-Schutz, Dateien nur über die API |
-
-## Bilder
+## الميزات
 
 | | |
 |---|---|
-| ![Dieter](screenshots/dieter.png) | ![Inbox](screenshots/inbox.png) |
-| **Dieter** antwortet mit Quellen | **Inbox**: prüfen und freigeben, nach Quelle filtern |
-| ![Dokument](screenshots/document.png) | ![KI-Anbieter](screenshots/settings-ai.png) |
-| **Dokument**: PDF-Ansicht, Tags, Erinnerungen, Drucken | **KI & Modelle**: jeder Anbieter, lokal oder Cloud |
-| ![Erinnerungen](screenshots/reminders.png) | ![Mitglieder](screenshots/members.png) |
-| **Erinnerungen** | **Mitglieder** und Einladungen |
+| **الالتقاط** | السحب والإفلات، الرفع، **ماسحات الشبكة** (eSCL/AirScan: Canon وHP وEpson وBrother …)، **صناديق البريد الإلكتروني** (IMAP، عدة حسابات)، **المجلدات المراقبة** (مثل مجلد المسح على NAS)، واجهة REST API |
+| **الوارد** | عمليات المسح والرسائل واستيراد المجلدات والملفات المرفوعة تنتظر المراجعة: يقترح الذكاء الاصطناعي الاسم والوسوم والحقول، وتوافق على عنصر واحد أو **الكل دفعة واحدة**. تصفية حسب المصدر (الماسح، كل صندوق بريد، كل مجلد، الرفع). |
+| **التعرّف** | Tesseract وPoppler في الخلفية، أيضًا لملفات PDF الممسوحة والصور؛ بحث نصي كامل بالبادئات والعبارات والمرشحات (`tag:`، `-tag:`، `type:`، `created:>2026-06-01` …) |
+| **التنظيم** | وسوم ملوّنة، **مجلدات من الوسوم** (متداخلة)، **قواعد الوسم** («يحتوي على Northwind → فاتورة»)، **خصائص** مخصصة (نص، رقم، تاريخ، نعم/لا، اختيار، اختيار متعدد، مستخدم، رابط مستند) |
+| **الخط الزمني** | خط زمني عمودي بجانب المستندات: اليوم في الأعلى، تحته كل يوم مع البريد، والفراغات الهادئة بينها («12 يومًا بدون مستندات»). تصفية حسب الوسم والنوع والنص. |
+| **التذكيرات** | «ذكّرني بعد 10 أيام» على أي مستند، مع ملاحظة؛ تظهر التذكيرات المستحقة في الشريط الجانبي وأعلى الخط الزمني. |
+| **الطباعة** | اطبع المستندات على أي **طابعة شبكة IPP** (AirPrint وIPP Everywhere وMopria وCUPS) يجدها الخادم. تُرسل ملفات PDF مباشرة، أو كصور صفحات للطابعات التي تقبل JPEG فقط. |
+| **الذكاء الاصطناعي، أي مزوّد** | OpenRouter (نماذج مجانية مدمجة)، OpenAI، Anthropic، Google Gemini، Mistral، Groq، xAI، DeepSeek، Together، Fireworks، Perplexity، Cohere، NVIDIA، Hugging Face، Qwen، Azure OpenAI، **Ollama وLM Studio وvLLM/LocalAI** أو أي عنوان متوافق مع OpenAI. تحصل النماذج النصية على النص المتعرَّف عليه بدلًا من الصور. |
+| **Dieter** | مساعد محادثة (أسفل اليمين): *«ما رقم تأميني؟»*، *«كل كشوف الرواتب من Fabrikam في 2026»*. يبحث ويقرأ المقاطع المطابقة ويجيب مع روابط للمستندات. |
+| **الفرق** | عدة مؤسسات، **عدة حسابات لكل مؤسسة** (دعوة، أدوار: مالك، مسؤول، عضو؛ نقل الملكية)، مفاتيح API بصلاحيات، ويب هوكس (توقيعات Standard Webhooks)، روابط مشاركة عامة |
+| **آمن افتراضيًا** | ملف مشفّر واحد، كلمات مرور Argon2، CSP بدون سكربتات مضمّنة، حماية CSRF، الملفات عبر API فقط |
 
-## Schnellstart
+## لقطات الشاشة
 
-Du brauchst Docker. Das Image enthält Programm, Oberfläche, Tesseract (Deutsch, Englisch) und Poppler.
+| | |
+|---|---|
+| ![Dieter، المساعد](screenshots/dieter.png) | ![الوارد مع اقتراحات الذكاء الاصطناعي](screenshots/inbox.png) |
+| **Dieter** يجيب مع المصادر | **الوارد**: مراجعة وموافقة، تصفية حسب المصدر |
+| ![عرض المستند](screenshots/document.png) | ![مزوّدو الذكاء الاصطناعي](screenshots/settings-ai.png) |
+| **المستند**: عارض PDF، وسوم، تذكيرات، طباعة | **الذكاء الاصطناعي والنماذج**: كل مزوّد، محلي أو سحابي |
+| ![التذكيرات](screenshots/reminders.png) | ![الأعضاء](screenshots/members.png) |
+| **التذكيرات** | **الأعضاء** والدعوات |
+
+## البدء السريع
+
+تحتاج إلى Docker. تحتوي الصورة على البرنامج وواجهة الويب وTesseract (الألمانية والإنجليزية) وPoppler.
 
 ```bash
 git clone https://github.com/nicorenezweers/nrzPaper.git
@@ -58,26 +52,26 @@ docker build -t nrzpaper .
 docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 ```
 
-<http://localhost:8320> öffnen. Das erste Konto wird Administrator. Danach ist die Registrierung zu, bis du sie unter *Einstellungen → Registrierung & Benutzer* öffnest. Dort legst du auch Konten für andere an.
+افتح <http://localhost:8320>. يصبح أول حساب تنشئه هو المسؤول. بعد ذلك يُغلق التسجيل حتى تفتحه في *الإعدادات → التسجيل والمستخدمون*، حيث يمكنك أيضًا إنشاء حسابات للآخرين.
 
 ### Docker Compose
 
 ```yaml
 services:
   nrzpaper:
-    build: .                      # oder: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # أو: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:
       - "8320:8320"
     volumes:
-      - nrzpaper-data:/data       # verschlüsselte Datenbank + Schlüsseldatei
-      - /srv/scans:/scans         # optional: Ordner für den Ordner-Eingang
+      - nrzpaper-data:/data       # قاعدة البيانات المشفّرة + ملف المفتاح
+      - /srv/scans:/scans         # اختياري: مجلد للوارد من المجلدات
     environment:
       TZ: Europe/Zurich
-      # NRZPAPER_DB_KEY: "ein-langes-geheimnis"   # sonst wird /data/nrzpaper.key erzeugt
-      # NRZPAPER_COOKIE_SECURE: "true"            # hinter HTTPS
-      # NRZPAPER_AI_PROVIDER: "openai"            # oder in der Oberfläche einstellen
+      # NRZPAPER_DB_KEY: "a-long-secret"     # وإلا يُنشأ /data/nrzpaper.key
+      # NRZPAPER_COOKIE_SECURE: "true"       # عند التقديم عبر HTTPS
+      # NRZPAPER_AI_PROVIDER: "openai"       # أو اضبطه في واجهة الويب
       # NRZPAPER_AI_KEY: "sk-…"
 
 volumes:
@@ -88,101 +82,121 @@ volumes:
 docker compose up -d
 ```
 
-> **Sichere `/data`.** Dort liegen `nrzpaper.db` (alles, verschlüsselt) und `nrzpaper.key`. Ohne den Schlüssel lässt sich die Datenbank nicht öffnen. Wenn du `NRZPAPER_DB_KEY` setzt, bewahre stattdessen diesen Wert gut auf.
+> **انسخ احتياطيًا `/data`.** يحتوي على `nrzpaper.db` (كل شيء، مشفّرًا) و`nrzpaper.key`. بدون المفتاح لا يمكن فتح قاعدة البيانات. إذا ضبطت `NRZPAPER_DB_KEY`، فاحفظ هذه القيمة بأمان بدلًا من ذلك.
 
-### Beide Architekturen
+### كلتا المعماريتين
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/nrzpaper:1.0.0 --push .
 ```
 
-## Erste Schritte
+يُترجم Rust ترجمةً متقاطعة لا محاكاةً، لذا بناء arm64 سريع على جهاز x86 والعكس صحيح.
 
-1. **Hochladen**: ein paar PDFs oder Fotos. Der Text wird im Hintergrund erkannt.
-2. **Tags** anlegen (z. B. *Rechnung*, *Versicherung*) und beschreiben. Die KI vergibt sie anhand der Beschreibung.
-3. **KI** (*Einstellungen → KI & Modelle*): Anbieter wählen, Schlüssel eintragen (oder die eingebauten kostenlosen OpenRouter-Modelle bzw. ein lokales Ollama nutzen), *Modelle laden*, *Verbindung testen*.
-4. **Scanner** (*Profil → Scanner*): *Scanner im Netz suchen* findet eSCL/AirScan-Geräte, dann *Scannen* in der Seitenleiste.
-5. **E-Mail** (*Profil → E-Mail-Eingang*): ein oder mehrere IMAP-Postfächer. PDFs und Bilder aus Anhängen landen in der Inbox.
-6. **Ordner-Eingang** (*Einstellungen → Ordner-Eingang*, Admins): einen Server-Ordner wie `/scans` überwachen (vorher in den Container einbinden).
-7. **Drucker** (*Einstellungen → Drucker*, Admins): *Im Netz suchen* oder `ipp://drucker/ipp/print` eintragen. Danach druckt jedes Mitglied von der Dokumentseite aus.
+## الخطوات الأولى
 
-## Einstellungen
+1. **ارفع** بعض ملفات PDF أو الصور: يُتعرّف على النص في الخلفية.
+2. **الوسوم**: أنشئ وسومًا مثل *فاتورة* أو *تأمين* وأضف وصفًا. يستخدمه الذكاء الاصطناعي لتعيين الوسوم.
+3. **الذكاء الاصطناعي** (*الإعدادات → الذكاء الاصطناعي والنماذج*): اختر مزوّدًا، والصق مفتاحًا (أو استخدم نماذج OpenRouter المجانية المدمجة أو Ollama محليًا)، ثم *تحميل النماذج* و*اختبار الاتصال*.
+4. **الماسح** (*الملف الشخصي → الماسح*): *البحث في الشبكة* يجد ماسحات eSCL/AirScan؛ ثم *مسح* في الشريط الجانبي.
+5. **البريد الإلكتروني** (*الملف الشخصي → وارد البريد*): أضف صندوق بريد IMAP واحدًا أو أكثر؛ تصل ملفات PDF والصور من المرفقات إلى الوارد.
+6. **وارد المجلدات** (*الإعدادات → وارد المجلدات*، المسؤولون): راقب مجلد خادم مثل `/scans` (اربطه في الحاوية أولًا).
+7. **الطابعات** (*الإعدادات → الطابعات*، المسؤولون): *البحث في الشبكة* أو أدخل `ipp://printer/ipp/print`؛ بعدها يمكن لكل عضو الطباعة من صفحة المستند.
 
-Jede Einstellung geht als Umgebungsvariable mit dem Präfix `NRZPAPER_` (oder in `Rocket.toml`).
+## الإعدادات
 
-| Variable | Vorgabe | Bedeutung |
+يمكن إعطاء كل إعداد كمتغير بيئة بالبادئة `NRZPAPER_` (أو في `Rocket.toml`).
+
+| المتغير | الافتراضي | المعنى |
 |---|---|---|
-| `NRZPAPER_DATA_DIR` | `/data` (Image) | Datenbank, Schlüsseldatei, Eingangsordner |
-| `NRZPAPER_DB_KEY` | – | Datenbankschlüssel. Fehlt er, wird `nrzpaper.key` im Datenordner erzeugt |
-| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Wo der Server lauscht |
-| `NRZPAPER_COOKIE_SECURE` | `false` | Hinter HTTPS auf `true` |
-| `NRZPAPER_REGISTRATION_OPEN` | `false` | Selbst registrieren erlauben (auch in der Oberfläche umschaltbar) |
-| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Tesseract-Sprachen (das Image bringt `deu` und `eng` mit) |
-| `NRZPAPER_OCR_WORKERS` | `2` | Gleichzeitige Texterkennungen |
-| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Tage im Papierkorb |
-| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | So lange bleiben nicht freigegebene Inbox-Einträge |
-| `NRZPAPER_SCANNER_URL` | – | Voreingestellter Scanner für neue Konten, z. B. `http://192.168.1.50` |
-| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Netze für die Scanner- und Druckersuche |
-| `NRZPAPER_AI_PROVIDER` | `openrouter` | `openai`, `anthropic`, `gemini`, `mistral`, `groq`, `ollama`, `custom`, … |
-| `NRZPAPER_AI_KEY` / `_URL` / `_MODEL` | – | Schlüssel, Adresse und Modell für diesen Anbieter |
-| `NRZPAPER_OPENROUTER_KEY` | – | OpenRouter-Schlüssel (Alternative zu oben) |
-| `NRZPAPER_LOG` | `info` | Protokoll, z. B. `debug` |
+| `NRZPAPER_DATA_DIR` | `/data` (الصورة) | قاعدة البيانات وملف المفتاح ومجلدات الاستقبال |
+| `NRZPAPER_DB_KEY` | – | مفتاح قاعدة البيانات؛ إن لم يُضبط يُنشأ `nrzpaper.key` في مجلد البيانات |
+| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | حيث يستمع الخادم |
+| `NRZPAPER_COOKIE_SECURE` | `false` | اضبطه على `true` خلف HTTPS |
+| `NRZPAPER_REGISTRATION_OPEN` | `false` | السماح بالتسجيل الذاتي (يمكن تبديله في الواجهة أيضًا) |
+| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | لغات Tesseract (تحتوي الصورة على `deu` و`eng`) |
+| `NRZPAPER_OCR_WORKERS` | `2` | مهام OCR المتوازية |
+| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | أيام في سلة المهملات قبل الحذف النهائي |
+| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | أيام الاحتفاظ بعناصر الوارد غير الموافَق عليها |
+| `NRZPAPER_SCANNER_URL` | – | ماسح مُعدّ مسبقًا للمستخدمين الجدد، مثل `http://192.168.1.50` |
+| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | الشبكات التي يُبحث فيها عن الماسحات والطابعات |
+| `NRZPAPER_AI_PROVIDER` | `openrouter` | `openai`، `anthropic`، `gemini`، `mistral`، `groq`، `ollama`، `custom` … |
+| `NRZPAPER_AI_KEY` / `NRZPAPER_AI_URL` / `NRZPAPER_AI_MODEL` | – | المفتاح وعنوان URL الأساسي والنموذج لذلك المزوّد |
+| `NRZPAPER_OPENROUTER_KEY` | – | مفتاح OpenRouter (بديل عمّا سبق) |
+| `NRZPAPER_LOG` | `info` | مرشح السجل، مثل `debug` |
 
-Was in der Oberfläche eingestellt wird (KI-Anbieter, Schlüssel, Modelle, Registrierung), liegt verschlüsselt in der Datenbank und hat Vorrang vor der Umgebung.
+الإعدادات التي تُجرى في واجهة الويب (مزوّد الذكاء الاصطناعي، المفاتيح، النماذج، التسجيل) تُخزَّن في قاعدة البيانات المشفّرة ولها الأولوية على متغيرات البيئة.
 
-### KI-Anbieter
+### مزوّدو الذكاء الاصطناعي
 
-| Anbieter | Adresse | Hinweis |
+| المزوّد | العنوان | ملاحظات |
 |---|---|---|
-| OpenRouter | eingebaut | Kostenlose Bild-Modelle, eigener Schlüssel optional |
-| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | eingebaut | API-Schlüssel des Anbieters |
-| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Modell = Name der Bereitstellung |
-| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` usw. | Kein Schlüssel nötig |
-| Alles OpenAI-Kompatible | eigene Adresse | Schlüssel optional |
+| OpenRouter | مدمج | نماذج رؤية مجانية؛ المفتاح الخاص اختياري |
+| OpenAI وAnthropic وGoogle Gemini وMistral وGroq وxAI وDeepSeek وTogether وFireworks وPerplexity وCohere وNVIDIA وHugging Face وQwen | مدمج | مفتاح API من المزوّد |
+| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | النموذج = اسم النشر |
+| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` إلخ | لا حاجة لمفتاح |
+| أي شيء متوافق مع OpenAI | عنوانك | مفتاح اختياري |
 
-Modelle ohne Bildeingang: *„Modell liest keine Bilder – erkannten Text schicken“* anhaken. Anbieter ohne PDF-Eingang bekommen automatisch die ersten Seiten als Bilder. Die Sprache von Titel und Zusammenfassung stellst du unter *Sprache der Vorschläge* ein.
+النماذج التي لا تقرأ الصور: ضع علامة على *«النموذج لا يقرأ الصور – أرسل النص المتعرَّف عليه»*. المزوّدون الذين لا يقبلون PDF يحصلون تلقائيًا على الصفحات الأولى كصور. لغة العناوين والملخصات المقترحة تُضبط في *لغة الاقتراحات*.
 
-## REST-API
+## واجهة REST API
 
-API-Key unter *Profil → API-Keys* anlegen (Rechte wählen). Alles liegt unter `/api/v1` mit `Authorization: Bearer np_…`.
+أنشئ مفتاح API في *الملف الشخصي → مفاتيح API* (اختر الصلاحيات). كل نقاط النهاية تحت `/api/v1` وتقبل `Authorization: Bearer np_…`.
 
 ```bash
-TOKEN=np_dein_key
+TOKEN=np_your_key
 BASE=http://localhost:8320/api/v1
 
-curl -H "Authorization: Bearer $TOKEN" $BASE/organizations                     # Organisationen
-curl -H "Authorization: Bearer $TOKEN" -F file=@rechnung.pdf \
-     $BASE/organizations/$ORG/documents                                          # hochladen
+# المؤسسات
+curl -H "Authorization: Bearer $TOKEN" $BASE/organizations
+
+# الرفع (عدة ملفات دفعة واحدة بعدة -F)
+curl -H "Authorization: Bearer $TOKEN" -F file=@invoice.pdf \
+     $BASE/organizations/$ORG/documents
+
+# البحث: نفس الصياغة كما في الواجهة
 curl -H "Authorization: Bearer $TOKEN" -G $BASE/organizations/$ORG/documents \
-     --data-urlencode 'searchQuery=northwind tag:rechnung created:2026'          # suchen
-curl -H "Authorization: Bearer $TOKEN" -o datei.pdf \
-     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"                 # herunterladen
+     --data-urlencode 'searchQuery=northwind tag:invoice created:2026'
+
+# تنزيل الملف
+curl -H "Authorization: Bearer $TOKEN" -o out.pdf \
+     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"
+
+# إضافة وسم
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags        # Tag setzen
+     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags
+
+# رابط مشاركة عام صالح لمدة 7 أيام
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links # Freigabelink
-curl $BASE/health                                                                 # Zustand
+     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links
+
+# فحص الحالة (لا حاجة لمفتاح)
+curl $BASE/health
 ```
 
-Webhooks (*Einstellungen → Webhooks*) schicken signiertes JSON (`webhook-id`, `webhook-timestamp`, `webhook-signature`) für `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` und `document:tag:removed`.
+الويب هوكس (*الإعدادات → الويب هوكس*) ترسل JSON موقّعًا (`webhook-id`، `webhook-timestamp`، `webhook-signature`) لـ `document:created` و`document:updated` و`document:deleted` و`document:restored` و`document:tag:added` و`document:tag:removed`.
 
-Der Eingangsordner `data/ingestion/<Organisations-ID>/` übernimmt Dateien direkt als Dokumente. Überwachte Ordner (*Ordner-Eingang*) legen sie zuerst zur Prüfung in die Inbox.
+مجلد الاستقبال `data/ingestion/<organization-id>/` يستورد الملفات مباشرة كمستندات. المجلدات المراقبة (*وارد المجلدات*) ترسلها أولًا إلى الوارد للمراجعة.
 
-## Entwicklung
+## التطوير
 
 ```bash
-cargo run                         # Server, http://localhost:8320
+# الخادم الخلفي (Rust 1.85+ وTesseract وPoppler لـ OCR)
+cargo run                         # http://localhost:8320
 cargo test
 
+# واجهة الويب مع إعادة التحميل الفوري (dx = dioxus-cli 0.7)
 rustup target add wasm32-unknown-unknown
 cargo install dioxus-cli --version 0.7.10 --locked
-cd ui && dx serve                 # Oberfläche mit Hot Reload, http://localhost:8080
+cd ui && dx serve                 # http://localhost:8080، يمرر /api إلى :8320
 
-scripts/ui.sh && cargo build --release   # Oberfläche ins Programm einbetten
+# تضمين الواجهة في البرنامج
+scripts/ui.sh && cargo build --release
 ```
 
-Übersetzungen liegen in `locales/<sprache>.json` (deutscher Text → Übersetzung). `scripts/i18n_extract.py` erneuert `locales/strings.json` und zeigt, was je Sprache fehlt. Aufbau: [ARCHITECTURE.md](../ARCHITECTURE.md).
+توجد الترجمات في `locales/<language>.json` (النص الألماني المصدر → الترجمة). يحدّث `scripts/i18n_extract.py` ملف `locales/strings.json` ويبلّغ عن المدخلات الناقصة لكل لغة.
 
-## Lizenz
+تفاصيل المعمارية: [ARCHITECTURE.md](../ARCHITECTURE.md).
 
-AGPL-3.0-or-later. Oberflächen-Bausteine nach [rust-ui](https://github.com/rust-ui/ui) (MIT), PDF-Ansicht mit [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), Schrift [Inter](https://rsms.me/inter/) (OFL).
+## الترخيص
+
+AGPL-3.0-or-later. مكوّنات الواجهة مبنية على [rust-ui](https://github.com/rust-ui/ui) (MIT)، وعارض PDF على [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0)، والخط هو [Inter](https://rsms.me/inter/) (OFL).

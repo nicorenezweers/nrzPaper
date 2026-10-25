@@ -1,55 +1,49 @@
-<!--
-Übersetzungsvorlage für Vietnamese (Tiếng Việt).
-Bitte den Inhalt unten in die jeweilige Sprache übersetzen.
--->
-
 <div align="center">
 
 <img src="../static/icon.png" width="96" alt="nrzPaper">
 
 # nrzPaper
 
-**Selbst gehostete Dokumentenverwaltung in Rust: Papierkram scannen, erkennen, taggen und finden – verschlüsselt in einer Datei.**
+**Quản lý tài liệu tự lưu trữ bằng Rust: quét, nhận dạng, gắn thẻ và tìm giấy tờ của bạn — được mã hóa trong một tệp duy nhất.**
 
-[English](../README.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md)
+[English](../README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md) · [中文](README.zh.md) · [日本語](README.ja.md) · [Polski](README.pl.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [한국어](README.ko.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [हिन्दी](README.hi.md) · [Tiếng Việt](README.vi.md) · [ไทย](README.th.md) · [Українська](README.uk.md) · [Čeština](README.cs.md) · [Română](README.ro.md) · [Magyar](README.hu.md) · [Ελληνικά](README.el.md) · [Svenska](README.sv.md) · [Norsk](README.nb.md) · [Dansk](README.da.md) · [Suomi](README.fi.md) · [עברית](README.he.md) · [বাংলা](README.bn.md) · [فارسی](README.fa.md)
 
-![Dokumente mit Zeitleiste](screenshots/documents.png)
+![Tài liệu với dòng thời gian](screenshots/documents.png)
 
 </div>
 
-nrzPaper ist ein einziges Programm ohne externe Datenbank. Alles liegt in einer SQLCipher-verschlüsselten SQLite-Datei, auch die Dateien selbst. Es erkennt Text mit Tesseract, scannt direkt von Netzwerkscannern, holt E-Mail-Anhänge ab und lässt eine KI deiner Wahl Titel, Tags und Metadaten vorschlagen. **Dieter**, der eingebaute Assistent, beantwortet Fragen zu deinen Dokumenten und verlinkt die Quellen. Die Oberfläche ist eine Rust/WebAssembly-App (Dioxus) in ruhigem Dunkelgrau und funktioniert auch am Handy.
+nrzPaper là một chương trình duy nhất không có cơ sở dữ liệu bên ngoài. Mọi thứ nằm trong một tệp SQLite được mã hóa bằng SQLCipher, kể cả bản thân các tệp. Nó thực hiện OCR bằng Tesseract, quét trực tiếp từ máy quét mạng, lấy tệp đính kèm email và cho phép AI bạn chọn đề xuất tiêu đề, thẻ và siêu dữ liệu. Trợ lý tích hợp **Dieter** trả lời câu hỏi về tài liệu của bạn và liên kết nguồn. Giao diện web là ứng dụng Rust/WebAssembly (Dioxus) với chủ đề tối dịu mắt và cũng hoạt động trên điện thoại.
 
-## Funktionen
-
-| | |
-|---|---|
-| **Erfassen** | Drag & Drop, Upload, **Netzwerkscanner** (eSCL/AirScan: Canon, HP, Epson, Brother …), **E-Mail-Postfächer** (IMAP, mehrere Konten), **überwachte Ordner** (z. B. der Scan-Ordner auf dem NAS), REST-API |
-| **Inbox** | Scans, Mails, Ordner-Importe und Uploads warten auf die Abnahme: Die KI schlägt Name, Tags und Felder vor, du gibst einzeln oder **alle auf einmal** frei. Filter nach Quelle (Scanner, jedes Postfach, jeder Ordner, Upload). |
-| **Erkennen** | Tesseract und Poppler im Hintergrund, auch für gescannte PDFs und Fotos. Volltextsuche mit Wortanfängen, Wortfolgen und Filtern (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
-| **Ordnen** | Farbige Tags, **Ordner aus Tags** (verschachtelt), **Tagging-Regeln** („enthält Northwind → Rechnung“), eigene **Eigenschaften** (Text, Zahl, Datum, Ja/Nein, Auswahl, Mehrfachauswahl, Benutzer, Verweis auf ein Dokument) |
-| **Zeitleiste** | Senkrechte Zeitleiste neben den Dokumenten: oben heute, darunter jeder Tag mit Post und die Lücken dazwischen („12 Tage ohne Dokumente“). Filter nach Tag, Art und Text. |
-| **Erinnerungen** | „Erinnere mich in 10 Tagen“ an jedem Dokument, mit Notiz. Fällige Erinnerungen stehen in der Seitenleiste und oben in der Zeitleiste. |
-| **Drucken** | Auf jedem **IPP-Netzwerkdrucker** (AirPrint, IPP Everywhere, Mopria, CUPS), den der Server findet. PDFs gehen direkt, an Drucker, die nur JPEG annehmen, als Seitenbilder. |
-| **KI, jeder Anbieter** | OpenRouter (kostenlose Modelle eingebaut), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** oder jede OpenAI-kompatible Adresse. Modelle ohne Bildeingang bekommen den erkannten Text. |
-| **Dieter** | Chat-Assistent unten rechts: *„Wie lautet meine Versicherungsnummer?“*, *„Alle Lohnabrechnungen von Fabrikam 2026“*. Er sucht, liest die passenden Stellen und antwortet mit Links zu den Dokumenten. |
-| **Teams** | Mehrere Organisationen, **mehrere Konten je Organisation** (Einladungen, Rollen Besitzer/Admin/Mitglied, Besitz übergeben), API-Keys mit Rechten, Webhooks (Standard-Webhooks-Signatur), öffentliche Freigabelinks |
-| **Sprachen** | Deutsch, English, Français, Italiano, Español, Português, Nederlands (weitere über `locales/<code>.json`) |
-| **Sicher** | Eine verschlüsselte Datei, Argon2-Passwörter, CSP ohne Inline-Skripte, CSRF-Schutz, Dateien nur über die API |
-
-## Bilder
+## Tính năng
 
 | | |
 |---|---|
-| ![Dieter](screenshots/dieter.png) | ![Inbox](screenshots/inbox.png) |
-| **Dieter** antwortet mit Quellen | **Inbox**: prüfen und freigeben, nach Quelle filtern |
-| ![Dokument](screenshots/document.png) | ![KI-Anbieter](screenshots/settings-ai.png) |
-| **Dokument**: PDF-Ansicht, Tags, Erinnerungen, Drucken | **KI & Modelle**: jeder Anbieter, lokal oder Cloud |
-| ![Erinnerungen](screenshots/reminders.png) | ![Mitglieder](screenshots/members.png) |
-| **Erinnerungen** | **Mitglieder** und Einladungen |
+| **Thu thập** | Kéo & thả, tải lên, **máy quét mạng** (eSCL/AirScan: Canon, HP, Epson, Brother …), **hộp thư email** (IMAP, nhiều tài khoản), **thư mục được theo dõi** (ví dụ thư mục quét trên NAS), REST API |
+| **Hộp thư đến** | Bản quét, email, nhập từ thư mục và tải lên chờ xem xét: AI đề xuất tên, thẻ và trường, bạn phê duyệt từng mục hoặc **tất cả cùng lúc**. Lọc theo nguồn (máy quét, từng hộp thư, từng thư mục, tải lên). |
+| **Nhận dạng** | Tesseract và Poppler chạy nền, cả cho PDF quét và ảnh; tìm kiếm toàn văn với tiền tố, cụm từ và bộ lọc (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
+| **Tổ chức** | Thẻ màu, **thư mục tạo từ thẻ** (lồng nhau), **quy tắc gắn thẻ** ("chứa Northwind → Hóa đơn"), **thuộc tính** tùy chỉnh (văn bản, số, ngày, có/không, chọn, chọn nhiều, người dùng, liên kết tài liệu) |
+| **Dòng thời gian** | Dòng thời gian dọc bên cạnh tài liệu: hôm nay ở trên cùng, bên dưới mỗi ngày có email và những khoảng lặng ở giữa ("12 ngày không có tài liệu"). Lọc theo thẻ, loại và văn bản. |
+| **Nhắc nhở** | "Nhắc tôi sau 10 ngày" trên bất kỳ tài liệu nào, kèm ghi chú; nhắc nhở đến hạn hiển thị ở thanh bên và đầu dòng thời gian. |
+| **In** | In tài liệu trên bất kỳ **máy in mạng IPP** nào (AirPrint, IPP Everywhere, Mopria, CUPS) mà máy chủ tìm thấy. PDF được gửi trực tiếp, hoặc dưới dạng ảnh trang cho máy in chỉ nhận JPEG. |
+| **AI, mọi nhà cung cấp** | OpenRouter (mô hình miễn phí tích hợp), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** hoặc bất kỳ URL tương thích OpenAI. Mô hình chỉ văn bản nhận văn bản OCR thay vì hình ảnh. |
+| **Dieter** | Trợ lý trò chuyện (góc dưới bên phải): *"Số bảo hiểm của tôi là gì?"*, *"Tất cả phiếu lương từ Fabrikam năm 2026"*. Anh ấy tìm kiếm, đọc các đoạn phù hợp và trả lời kèm liên kết đến tài liệu. |
+| **Nhóm** | Nhiều tổ chức, **nhiều tài khoản mỗi tổ chức** (mời, vai trò: chủ sở hữu, quản trị viên, thành viên; chuyển quyền sở hữu), khóa API có quyền, webhook (chữ ký Standard Webhooks), liên kết chia sẻ công khai |
+| **An toàn mặc định** | Một tệp mã hóa, mật khẩu Argon2, CSP không có script nội tuyến, bảo vệ CSRF, tệp chỉ qua API |
 
-## Schnellstart
+## Ảnh chụp màn hình
 
-Du brauchst Docker. Das Image enthält Programm, Oberfläche, Tesseract (Deutsch, Englisch) und Poppler.
+| | |
+|---|---|
+| ![Dieter, trợ lý](screenshots/dieter.png) | ![Hộp thư đến với gợi ý AI](screenshots/inbox.png) |
+| **Dieter** trả lời kèm nguồn | **Hộp thư đến**: xem xét và phê duyệt, lọc theo nguồn |
+| ![Xem tài liệu](screenshots/document.png) | ![Nhà cung cấp AI](screenshots/settings-ai.png) |
+| **Tài liệu**: trình xem PDF, thẻ, nhắc nhở, in | **AI & mô hình**: mọi nhà cung cấp, cục bộ hoặc đám mây |
+| ![Nhắc nhở](screenshots/reminders.png) | ![Thành viên](screenshots/members.png) |
+| **Nhắc nhở** | **Thành viên** và lời mời |
+
+## Bắt đầu nhanh
+
+Bạn cần Docker. Image chứa chương trình, giao diện web, Tesseract (Đức, Anh) và Poppler.
 
 ```bash
 git clone https://github.com/nicorenezweers/nrzPaper.git
@@ -58,26 +52,26 @@ docker build -t nrzpaper .
 docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 ```
 
-<http://localhost:8320> öffnen. Das erste Konto wird Administrator. Danach ist die Registrierung zu, bis du sie unter *Einstellungen → Registrierung & Benutzer* öffnest. Dort legst du auch Konten für andere an.
+Mở <http://localhost:8320>. Tài khoản đầu tiên bạn tạo sẽ trở thành quản trị viên. Sau đó đăng ký bị đóng cho đến khi bạn mở nó trong *Cài đặt → Đăng ký & người dùng*, nơi bạn cũng có thể tạo tài khoản cho người khác.
 
 ### Docker Compose
 
 ```yaml
 services:
   nrzpaper:
-    build: .                      # oder: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # hoặc: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:
       - "8320:8320"
     volumes:
-      - nrzpaper-data:/data       # verschlüsselte Datenbank + Schlüsseldatei
-      - /srv/scans:/scans         # optional: Ordner für den Ordner-Eingang
+      - nrzpaper-data:/data       # cơ sở dữ liệu mã hóa + tệp khóa
+      - /srv/scans:/scans         # tùy chọn: thư mục cho hộp thư đến từ thư mục
     environment:
       TZ: Europe/Zurich
-      # NRZPAPER_DB_KEY: "ein-langes-geheimnis"   # sonst wird /data/nrzpaper.key erzeugt
-      # NRZPAPER_COOKIE_SECURE: "true"            # hinter HTTPS
-      # NRZPAPER_AI_PROVIDER: "openai"            # oder in der Oberfläche einstellen
+      # NRZPAPER_DB_KEY: "a-long-secret"     # nếu không, /data/nrzpaper.key được tạo
+      # NRZPAPER_COOKIE_SECURE: "true"       # khi phục vụ qua HTTPS
+      # NRZPAPER_AI_PROVIDER: "openai"       # hoặc đặt trong giao diện web
       # NRZPAPER_AI_KEY: "sk-…"
 
 volumes:
@@ -88,101 +82,121 @@ volumes:
 docker compose up -d
 ```
 
-> **Sichere `/data`.** Dort liegen `nrzpaper.db` (alles, verschlüsselt) und `nrzpaper.key`. Ohne den Schlüssel lässt sich die Datenbank nicht öffnen. Wenn du `NRZPAPER_DB_KEY` setzt, bewahre stattdessen diesen Wert gut auf.
+> **Sao lưu `/data`.** Nơi đây chứa `nrzpaper.db` (mọi thứ, đã mã hóa) và `nrzpaper.key`. Không có khóa thì không thể mở cơ sở dữ liệu. Nếu bạn đặt `NRZPAPER_DB_KEY`, hãy giữ giá trị đó an toàn.
 
-### Beide Architekturen
+### Cả hai kiến trúc
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/nrzpaper:1.0.0 --push .
 ```
 
-## Erste Schritte
+Rust được biên dịch chéo chứ không mô phỏng, nên bản dựng arm64 nhanh trên máy x86 và ngược lại.
 
-1. **Hochladen**: ein paar PDFs oder Fotos. Der Text wird im Hintergrund erkannt.
-2. **Tags** anlegen (z. B. *Rechnung*, *Versicherung*) und beschreiben. Die KI vergibt sie anhand der Beschreibung.
-3. **KI** (*Einstellungen → KI & Modelle*): Anbieter wählen, Schlüssel eintragen (oder die eingebauten kostenlosen OpenRouter-Modelle bzw. ein lokales Ollama nutzen), *Modelle laden*, *Verbindung testen*.
-4. **Scanner** (*Profil → Scanner*): *Scanner im Netz suchen* findet eSCL/AirScan-Geräte, dann *Scannen* in der Seitenleiste.
-5. **E-Mail** (*Profil → E-Mail-Eingang*): ein oder mehrere IMAP-Postfächer. PDFs und Bilder aus Anhängen landen in der Inbox.
-6. **Ordner-Eingang** (*Einstellungen → Ordner-Eingang*, Admins): einen Server-Ordner wie `/scans` überwachen (vorher in den Container einbinden).
-7. **Drucker** (*Einstellungen → Drucker*, Admins): *Im Netz suchen* oder `ipp://drucker/ipp/print` eintragen. Danach druckt jedes Mitglied von der Dokumentseite aus.
+## Những bước đầu tiên
 
-## Einstellungen
+1. **Tải lên** một vài PDF hoặc ảnh: văn bản được nhận dạng ở chế độ nền.
+2. **Thẻ**: tạo thẻ như *Hóa đơn* hoặc *Bảo hiểm* và thêm mô tả. AI dùng nó để gán thẻ.
+3. **AI** (*Cài đặt → AI & mô hình*): chọn nhà cung cấp, dán khóa (hoặc dùng mô hình OpenRouter miễn phí tích hợp, hoặc Ollama cục bộ), rồi *Tải mô hình* và *Kiểm tra kết nối*.
+4. **Máy quét** (*Hồ sơ → Máy quét*): *Tìm kiếm mạng* tìm máy quét eSCL/AirScan; rồi *Quét* ở thanh bên.
+5. **Email** (*Hồ sơ → Hộp thư email*): thêm một hoặc nhiều hộp thư IMAP; PDF và ảnh từ tệp đính kèm vào hộp thư đến.
+6. **Hộp thư đến từ thư mục** (*Cài đặt → Hộp thư đến từ thư mục*, quản trị viên): theo dõi thư mục máy chủ như `/scans` (gắn nó vào container trước).
+7. **Máy in** (*Cài đặt → Máy in*, quản trị viên): *Tìm kiếm mạng* hoặc nhập `ipp://printer/ipp/print`; sau đó mỗi thành viên có thể in từ trang tài liệu.
 
-Jede Einstellung geht als Umgebungsvariable mit dem Präfix `NRZPAPER_` (oder in `Rocket.toml`).
+## Cấu hình
 
-| Variable | Vorgabe | Bedeutung |
+Mọi cài đặt có thể được đưa vào dưới dạng biến môi trường với tiền tố `NRZPAPER_` (hoặc trong `Rocket.toml`).
+
+| Biến | Mặc định | Ý nghĩa |
 |---|---|---|
-| `NRZPAPER_DATA_DIR` | `/data` (Image) | Datenbank, Schlüsseldatei, Eingangsordner |
-| `NRZPAPER_DB_KEY` | – | Datenbankschlüssel. Fehlt er, wird `nrzpaper.key` im Datenordner erzeugt |
-| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Wo der Server lauscht |
-| `NRZPAPER_COOKIE_SECURE` | `false` | Hinter HTTPS auf `true` |
-| `NRZPAPER_REGISTRATION_OPEN` | `false` | Selbst registrieren erlauben (auch in der Oberfläche umschaltbar) |
-| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Tesseract-Sprachen (das Image bringt `deu` und `eng` mit) |
-| `NRZPAPER_OCR_WORKERS` | `2` | Gleichzeitige Texterkennungen |
-| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Tage im Papierkorb |
-| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | So lange bleiben nicht freigegebene Inbox-Einträge |
-| `NRZPAPER_SCANNER_URL` | – | Voreingestellter Scanner für neue Konten, z. B. `http://192.168.1.50` |
-| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Netze für die Scanner- und Druckersuche |
+| `NRZPAPER_DATA_DIR` | `/data` (image) | Cơ sở dữ liệu, tệp khóa và thư mục nhập |
+| `NRZPAPER_DB_KEY` | – | Khóa cơ sở dữ liệu; nếu không đặt, `nrzpaper.key` được tạo trong thư mục dữ liệu |
+| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Nơi máy chủ lắng nghe |
+| `NRZPAPER_COOKIE_SECURE` | `false` | Đặt `true` sau HTTPS |
+| `NRZPAPER_REGISTRATION_OPEN` | `false` | Cho phép tự đăng ký (cũng có thể chuyển trong UI) |
+| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Ngôn ngữ Tesseract (image có sẵn `deu` và `eng`) |
+| `NRZPAPER_OCR_WORKERS` | `2` | Tác vụ OCR song song |
+| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Số ngày trong thùng rác trước khi xóa vĩnh viễn |
+| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | Số ngày giữ các mục hộp thư đến chưa phê duyệt |
+| `NRZPAPER_SCANNER_URL` | – | Máy quét đặt trước cho người dùng mới, ví dụ `http://192.168.1.50` |
+| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Mạng được tìm kiếm máy quét và máy in |
 | `NRZPAPER_AI_PROVIDER` | `openrouter` | `openai`, `anthropic`, `gemini`, `mistral`, `groq`, `ollama`, `custom`, … |
-| `NRZPAPER_AI_KEY` / `_URL` / `_MODEL` | – | Schlüssel, Adresse und Modell für diesen Anbieter |
-| `NRZPAPER_OPENROUTER_KEY` | – | OpenRouter-Schlüssel (Alternative zu oben) |
-| `NRZPAPER_LOG` | `info` | Protokoll, z. B. `debug` |
+| `NRZPAPER_AI_KEY` / `NRZPAPER_AI_URL` / `NRZPAPER_AI_MODEL` | – | Khóa, URL gốc và mô hình cho nhà cung cấp đó |
+| `NRZPAPER_OPENROUTER_KEY` | – | Khóa OpenRouter (thay thế cho mục trên) |
+| `NRZPAPER_LOG` | `info` | Bộ lọc log, ví dụ `debug` |
 
-Was in der Oberfläche eingestellt wird (KI-Anbieter, Schlüssel, Modelle, Registrierung), liegt verschlüsselt in der Datenbank und hat Vorrang vor der Umgebung.
+Cài đặt trong giao diện web (nhà cung cấp AI, khóa, mô hình, đăng ký) được lưu trong cơ sở dữ liệu mã hóa và được ưu tiên hơn biến môi trường.
 
-### KI-Anbieter
+### Nhà cung cấp AI
 
-| Anbieter | Adresse | Hinweis |
+| Nhà cung cấp | Địa chỉ | Ghi chú |
 |---|---|---|
-| OpenRouter | eingebaut | Kostenlose Bild-Modelle, eigener Schlüssel optional |
-| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | eingebaut | API-Schlüssel des Anbieters |
-| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Modell = Name der Bereitstellung |
-| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` usw. | Kein Schlüssel nötig |
-| Alles OpenAI-Kompatible | eigene Adresse | Schlüssel optional |
+| OpenRouter | tích hợp | Mô hình thị giác miễn phí; khóa riêng tùy chọn |
+| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | tích hợp | Khóa API từ nhà cung cấp |
+| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Mô hình = tên triển khai |
+| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` v.v. | Không cần khóa |
+| Bất kỳ thứ gì tương thích OpenAI | URL của bạn | Khóa tùy chọn |
 
-Modelle ohne Bildeingang: *„Modell liest keine Bilder – erkannten Text schicken“* anhaken. Anbieter ohne PDF-Eingang bekommen automatisch die ersten Seiten als Bilder. Die Sprache von Titel und Zusammenfassung stellst du unter *Sprache der Vorschläge* ein.
+Mô hình không đọc được hình ảnh: đánh dấu *"Mô hình không đọc được hình ảnh – gửi văn bản đã nhận dạng"*. Các nhà cung cấp không nhận PDF sẽ tự động nhận các trang đầu dưới dạng hình ảnh. Ngôn ngữ của tiêu đề và tóm tắt đề xuất được đặt trong *Ngôn ngữ gợi ý*.
 
-## REST-API
+## REST API
 
-API-Key unter *Profil → API-Keys* anlegen (Rechte wählen). Alles liegt unter `/api/v1` mit `Authorization: Bearer np_…`.
+Tạo khóa API trong *Hồ sơ → Khóa API* (chọn quyền). Tất cả endpoint nằm dưới `/api/v1` và chấp nhận `Authorization: Bearer np_…`.
 
 ```bash
-TOKEN=np_dein_key
+TOKEN=np_your_key
 BASE=http://localhost:8320/api/v1
 
-curl -H "Authorization: Bearer $TOKEN" $BASE/organizations                     # Organisationen
-curl -H "Authorization: Bearer $TOKEN" -F file=@rechnung.pdf \
-     $BASE/organizations/$ORG/documents                                          # hochladen
+# tổ chức
+curl -H "Authorization: Bearer $TOKEN" $BASE/organizations
+
+# tải lên (nhiều tệp cùng lúc với nhiều -F)
+curl -H "Authorization: Bearer $TOKEN" -F file=@invoice.pdf \
+     $BASE/organizations/$ORG/documents
+
+# tìm kiếm: cùng cú pháp như trong UI
 curl -H "Authorization: Bearer $TOKEN" -G $BASE/organizations/$ORG/documents \
-     --data-urlencode 'searchQuery=northwind tag:rechnung created:2026'          # suchen
-curl -H "Authorization: Bearer $TOKEN" -o datei.pdf \
-     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"                 # herunterladen
+     --data-urlencode 'searchQuery=northwind tag:invoice created:2026'
+
+# tải tệp xuống
+curl -H "Authorization: Bearer $TOKEN" -o out.pdf \
+     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"
+
+# thêm thẻ
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags        # Tag setzen
+     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags
+
+# liên kết chia sẻ công khai có hiệu lực 7 ngày
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links # Freigabelink
-curl $BASE/health                                                                 # Zustand
+     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links
+
+# kiểm tra tình trạng (không cần khóa)
+curl $BASE/health
 ```
 
-Webhooks (*Einstellungen → Webhooks*) schicken signiertes JSON (`webhook-id`, `webhook-timestamp`, `webhook-signature`) für `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` und `document:tag:removed`.
+Webhook (*Cài đặt → Webhook*) gửi JSON có chữ ký (`webhook-id`, `webhook-timestamp`, `webhook-signature`) cho `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` và `document:tag:removed`.
 
-Der Eingangsordner `data/ingestion/<Organisations-ID>/` übernimmt Dateien direkt als Dokumente. Überwachte Ordner (*Ordner-Eingang*) legen sie zuerst zur Prüfung in die Inbox.
+Thư mục nhập `data/ingestion/<organization-id>/` nhập tệp trực tiếp thành tài liệu. Thư mục được theo dõi (*Hộp thư đến từ thư mục*) gửi chúng vào hộp thư đến để xem xét trước.
 
-## Entwicklung
+## Phát triển
 
 ```bash
-cargo run                         # Server, http://localhost:8320
+# backend (Rust 1.85+, Tesseract và Poppler cho OCR)
+cargo run                         # http://localhost:8320
 cargo test
 
+# giao diện web với tải lại nóng (dx = dioxus-cli 0.7)
 rustup target add wasm32-unknown-unknown
 cargo install dioxus-cli --version 0.7.10 --locked
-cd ui && dx serve                 # Oberfläche mit Hot Reload, http://localhost:8080
+cd ui && dx serve                 # http://localhost:8080, chuyển tiếp /api tới :8320
 
-scripts/ui.sh && cargo build --release   # Oberfläche ins Programm einbetten
+# nhúng giao diện vào chương trình
+scripts/ui.sh && cargo build --release
 ```
 
-Übersetzungen liegen in `locales/<sprache>.json` (deutscher Text → Übersetzung). `scripts/i18n_extract.py` erneuert `locales/strings.json` und zeigt, was je Sprache fehlt. Aufbau: [ARCHITECTURE.md](../ARCHITECTURE.md).
+Bản dịch nằm trong `locales/<language>.json` (văn bản nguồn tiếng Đức → bản dịch). `scripts/i18n_extract.py` làm mới `locales/strings.json` và báo cáo các mục còn thiếu theo từng ngôn ngữ.
 
-## Lizenz
+Chi tiết kiến trúc: [ARCHITECTURE.md](../ARCHITECTURE.md).
 
-AGPL-3.0-or-later. Oberflächen-Bausteine nach [rust-ui](https://github.com/rust-ui/ui) (MIT), PDF-Ansicht mit [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), Schrift [Inter](https://rsms.me/inter/) (OFL).
+## Giấy phép
+
+AGPL-3.0-or-later. Các thành phần UI dựa trên [rust-ui](https://github.com/rust-ui/ui) (MIT), trình xem PDF dựa trên [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), phông chữ là [Inter](https://rsms.me/inter/) (OFL).

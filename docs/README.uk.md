@@ -1,55 +1,50 @@
-<!--
-Übersetzungsvorlage für Українська (Ukrainian).
-Bitte den Inhalt unten in die jeweilige Sprache übersetzen.
--->
-
 <div align="center">
 
 <img src="../static/icon.png" width="96" alt="nrzPaper">
 
 # nrzPaper
 
-**Selbst gehostete Dokumentenverwaltung in Rust: Papierkram scannen, erkennen, taggen und finden – verschlüsselt in einer Datei.**
+**Самогосподарське керування документами на Rust: скануйте, розпізнавайте, позначайте тегами й знаходьте свої папери — усе зашифровано в одному файлі.**
 
-[English](../README.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md)
+[English](../README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md) · [中文](README.zh.md) · [日本語](README.ja.md) · [Polski](README.pl.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [한국어](README.ko.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [हिन्दी](README.hi.md) · [Tiếng Việt](README.vi.md) · [ไทย](README.th.md) · [Українська](README.uk.md) · [Čeština](README.cs.md) · [Română](README.ro.md) · [Magyar](README.hu.md) · [Ελληνικά](README.el.md) · [Svenska](README.sv.md) · [Norsk](README.nb.md) · [Dansk](README.da.md) · [Suomi](README.fi.md) · [עברית](README.he.md) · [বাংলা](README.bn.md) · [فارسی](README.fa.md)
 
-![Dokumente mit Zeitleiste](screenshots/documents.png)
+![Документи з часовою шкалою](screenshots/documents.png)
 
 </div>
 
-nrzPaper ist ein einziges Programm ohne externe Datenbank. Alles liegt in einer SQLCipher-verschlüsselten SQLite-Datei, auch die Dateien selbst. Es erkennt Text mit Tesseract, scannt direkt von Netzwerkscannern, holt E-Mail-Anhänge ab und lässt eine KI deiner Wahl Titel, Tags und Metadaten vorschlagen. **Dieter**, der eingebaute Assistent, beantwortet Fragen zu deinen Dokumenten und verlinkt die Quellen. Die Oberfläche ist eine Rust/WebAssembly-App (Dioxus) in ruhigem Dunkelgrau und funktioniert auch am Handy.
+nrzPaper — це одна програма без зовнішньої бази даних. Усе зберігається в одному файлі SQLite, зашифрованому SQLCipher, включно із самими файлами. Вона виконує OCR за допомогою Tesseract, сканує безпосередньо з мережевих сканерів, забирає вкладення електронної пошти й дозволяє обраному вами ШІ пропонувати назви, теги та метадані. Вбудований помічник **Dieter** відповідає на запитання про ваші документи й посилається на джерела. Веб-інтерфейс — це застосунок Rust/WebAssembly (Dioxus) у спокійній темній темі, який працює й на телефонах.
 
-## Funktionen
-
-| | |
-|---|---|
-| **Erfassen** | Drag & Drop, Upload, **Netzwerkscanner** (eSCL/AirScan: Canon, HP, Epson, Brother …), **E-Mail-Postfächer** (IMAP, mehrere Konten), **überwachte Ordner** (z. B. der Scan-Ordner auf dem NAS), REST-API |
-| **Inbox** | Scans, Mails, Ordner-Importe und Uploads warten auf die Abnahme: Die KI schlägt Name, Tags und Felder vor, du gibst einzeln oder **alle auf einmal** frei. Filter nach Quelle (Scanner, jedes Postfach, jeder Ordner, Upload). |
-| **Erkennen** | Tesseract und Poppler im Hintergrund, auch für gescannte PDFs und Fotos. Volltextsuche mit Wortanfängen, Wortfolgen und Filtern (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
-| **Ordnen** | Farbige Tags, **Ordner aus Tags** (verschachtelt), **Tagging-Regeln** („enthält Northwind → Rechnung“), eigene **Eigenschaften** (Text, Zahl, Datum, Ja/Nein, Auswahl, Mehrfachauswahl, Benutzer, Verweis auf ein Dokument) |
-| **Zeitleiste** | Senkrechte Zeitleiste neben den Dokumenten: oben heute, darunter jeder Tag mit Post und die Lücken dazwischen („12 Tage ohne Dokumente“). Filter nach Tag, Art und Text. |
-| **Erinnerungen** | „Erinnere mich in 10 Tagen“ an jedem Dokument, mit Notiz. Fällige Erinnerungen stehen in der Seitenleiste und oben in der Zeitleiste. |
-| **Drucken** | Auf jedem **IPP-Netzwerkdrucker** (AirPrint, IPP Everywhere, Mopria, CUPS), den der Server findet. PDFs gehen direkt, an Drucker, die nur JPEG annehmen, als Seitenbilder. |
-| **KI, jeder Anbieter** | OpenRouter (kostenlose Modelle eingebaut), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** oder jede OpenAI-kompatible Adresse. Modelle ohne Bildeingang bekommen den erkannten Text. |
-| **Dieter** | Chat-Assistent unten rechts: *„Wie lautet meine Versicherungsnummer?“*, *„Alle Lohnabrechnungen von Fabrikam 2026“*. Er sucht, liest die passenden Stellen und antwortet mit Links zu den Dokumenten. |
-| **Teams** | Mehrere Organisationen, **mehrere Konten je Organisation** (Einladungen, Rollen Besitzer/Admin/Mitglied, Besitz übergeben), API-Keys mit Rechten, Webhooks (Standard-Webhooks-Signatur), öffentliche Freigabelinks |
-| **Sprachen** | Deutsch, English, Français, Italiano, Español, Português, Nederlands (weitere über `locales/<code>.json`) |
-| **Sicher** | Eine verschlüsselte Datei, Argon2-Passwörter, CSP ohne Inline-Skripte, CSRF-Schutz, Dateien nur über die API |
-
-## Bilder
+## Можливості
 
 | | |
 |---|---|
-| ![Dieter](screenshots/dieter.png) | ![Inbox](screenshots/inbox.png) |
-| **Dieter** antwortet mit Quellen | **Inbox**: prüfen und freigeben, nach Quelle filtern |
-| ![Dokument](screenshots/document.png) | ![KI-Anbieter](screenshots/settings-ai.png) |
-| **Dokument**: PDF-Ansicht, Tags, Erinnerungen, Drucken | **KI & Modelle**: jeder Anbieter, lokal oder Cloud |
-| ![Erinnerungen](screenshots/reminders.png) | ![Mitglieder](screenshots/members.png) |
-| **Erinnerungen** | **Mitglieder** und Einladungen |
+| **Захоплення** | Перетягування, завантаження, **мережеві сканери** (eSCL/AirScan: Canon, HP, Epson, Brother …), **поштові скриньки** (IMAP, кілька облікових записів), **наглядові теки** (наприклад, тека сканування на NAS), REST API |
+| **Вхідні** | Скани, листи, імпорт із тек і завантаження чекають на перевірку: ШІ пропонує назву, теги й поля, а ви схвалюєте по одному або **всі одразу**. Фільтр за джерелом (сканер, кожна поштова скринька, кожна тека, завантаження). |
+| **Розпізнавання** | Tesseract і Poppler у фоні, зокрема для сканованих PDF і фотографій; повнотекстовий пошук із префіксами, фразами й фільтрами (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
+| **Організація** | Кольорові теги, **теки з тегів** (вкладені), **правила тегування** («містить Northwind → Рахунок»), власні **властивості** (текст, число, дата, так/ні, вибір, множинний вибір, користувач, посилання на документ) |
+| **Часова шкала** | Вертикальна часова шкала поруч із документами: сьогодні вгорі, нижче кожен день із поштою й тихі проміжки між ними («12 днів без документів»). Фільтр за тегом, типом і текстом. |
+| **Нагадування** | «Нагадати через 10 днів» для будь-якого документа з нотаткою; насталі нагадування видно в бічній панелі й угорі часової шкали. |
+| **Друк** | Друк на будь-якому **мережевому IPP-принтері** (AirPrint, IPP Everywhere, Mopria, CUPS), який знайде сервер. PDF надсилаються напряму або як зображення сторінок на принтери, що приймають лише JPEG. |
+| **ШІ, будь-який постачальник** | OpenRouter (вбудовані безкоштовні моделі), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** або будь-яка сумісна з OpenAI URL-адреса. Текстові моделі отримують розпізнаний текст замість зображень. |
+| **Dieter** | Чат-помічник (унизу праворуч): *«Який у мене номер страхування?»*, *«Усі розрахункові листки від Fabrikam за 2026 рік»*. Він шукає, читає відповідні фрагменти й відповідає з посиланнями на документи. |
+| **Команди** | Кілька організацій, **кілька облікових записів на організацію** (запрошення, ролі: власник, адміністратор, учасник; передавання володіння), API-ключі з правами, вебхуки (підписи Standard Webhooks), публічні посилання для спільного доступу |
+| **Мови** | English, Deutsch, Français, Italiano, Español, Português, Nederlands, 中文, 日本語, Polski, Русский, العربية, 한국어, Türkçe, Bahasa Indonesia, हिन्दी, Tiếng Việt, ไทย, Українська, Čeština, Română, Magyar, Ελληνικά, Svenska, Norsk, Dansk, Suomi, עברית, বাংলা, فارسی (більше через `locales/<code>.json`) |
+| **Безпечно за замовчуванням** | Один зашифрований файл, паролі Argon2, CSP без вбудованих скриптів, захист від CSRF, файли лише через API |
 
-## Schnellstart
+## Скриншоти
 
-Du brauchst Docker. Das Image enthält Programm, Oberfläche, Tesseract (Deutsch, Englisch) und Poppler.
+| | |
+|---|---|
+| ![Dieter, помічник](screenshots/dieter.png) | ![Вхідні з пропозиціями ШІ](screenshots/inbox.png) |
+| **Dieter** відповідає з джерелами | **Вхідні**: перевірка й схвалення, фільтр за джерелом |
+| ![Перегляд документа](screenshots/document.png) | ![Постачальники ШІ](screenshots/settings-ai.png) |
+| **Документ**: переглядач PDF, теги, нагадування, друк | **ШІ та моделі**: будь-який постачальник, локальний чи хмарний |
+| ![Нагадування](screenshots/reminders.png) | ![Учасники](screenshots/members.png) |
+| **Нагадування** | **Учасники** й запрошення |
+
+## Швидкий старт
+
+Потрібен Docker. Образ містить програму, веб-інтерфейс, Tesseract (німецька, англійська) і Poppler.
 
 ```bash
 git clone https://github.com/nicorenezweers/nrzPaper.git
@@ -58,26 +53,26 @@ docker build -t nrzpaper .
 docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 ```
 
-<http://localhost:8320> öffnen. Das erste Konto wird Administrator. Danach ist die Registrierung zu, bis du sie unter *Einstellungen → Registrierung & Benutzer* öffnest. Dort legst du auch Konten für andere an.
+Відкрийте <http://localhost:8320>. Перший створений обліковий запис стає адміністратором. Після цього реєстрація закрита, доки ви не відкриєте її в *Налаштування → Реєстрація та користувачі*, де також можна створювати облікові записи для інших.
 
 ### Docker Compose
 
 ```yaml
 services:
   nrzpaper:
-    build: .                      # oder: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # або: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:
       - "8320:8320"
     volumes:
-      - nrzpaper-data:/data       # verschlüsselte Datenbank + Schlüsseldatei
-      - /srv/scans:/scans         # optional: Ordner für den Ordner-Eingang
+      - nrzpaper-data:/data       # зашифрована база даних + файл ключа
+      - /srv/scans:/scans         # необов'язково: тека для текових вхідних
     environment:
       TZ: Europe/Zurich
-      # NRZPAPER_DB_KEY: "ein-langes-geheimnis"   # sonst wird /data/nrzpaper.key erzeugt
-      # NRZPAPER_COOKIE_SECURE: "true"            # hinter HTTPS
-      # NRZPAPER_AI_PROVIDER: "openai"            # oder in der Oberfläche einstellen
+      # NRZPAPER_DB_KEY: "a-long-secret"     # інакше створюється /data/nrzpaper.key
+      # NRZPAPER_COOKIE_SECURE: "true"       # під час роботи через HTTPS
+      # NRZPAPER_AI_PROVIDER: "openai"       # або задайте у веб-інтерфейсі
       # NRZPAPER_AI_KEY: "sk-…"
 
 volumes:
@@ -88,101 +83,121 @@ volumes:
 docker compose up -d
 ```
 
-> **Sichere `/data`.** Dort liegen `nrzpaper.db` (alles, verschlüsselt) und `nrzpaper.key`. Ohne den Schlüssel lässt sich die Datenbank nicht öffnen. Wenn du `NRZPAPER_DB_KEY` setzt, bewahre stattdessen diesen Wert gut auf.
+> **Створюйте резервні копії `/data`.** Там лежать `nrzpaper.db` (усе, зашифровано) і `nrzpaper.key`. Без ключа базу даних не відкрити. Якщо ви задали `NRZPAPER_DB_KEY`, надійно зберігайте це значення.
 
-### Beide Architekturen
+### Обидві архітектури
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/nrzpaper:1.0.0 --push .
 ```
 
-## Erste Schritte
+Rust компілюється крос-компілятором, а не емулюється, тому збірка arm64 швидка на машині x86 і навпаки.
 
-1. **Hochladen**: ein paar PDFs oder Fotos. Der Text wird im Hintergrund erkannt.
-2. **Tags** anlegen (z. B. *Rechnung*, *Versicherung*) und beschreiben. Die KI vergibt sie anhand der Beschreibung.
-3. **KI** (*Einstellungen → KI & Modelle*): Anbieter wählen, Schlüssel eintragen (oder die eingebauten kostenlosen OpenRouter-Modelle bzw. ein lokales Ollama nutzen), *Modelle laden*, *Verbindung testen*.
-4. **Scanner** (*Profil → Scanner*): *Scanner im Netz suchen* findet eSCL/AirScan-Geräte, dann *Scannen* in der Seitenleiste.
-5. **E-Mail** (*Profil → E-Mail-Eingang*): ein oder mehrere IMAP-Postfächer. PDFs und Bilder aus Anhängen landen in der Inbox.
-6. **Ordner-Eingang** (*Einstellungen → Ordner-Eingang*, Admins): einen Server-Ordner wie `/scans` überwachen (vorher in den Container einbinden).
-7. **Drucker** (*Einstellungen → Drucker*, Admins): *Im Netz suchen* oder `ipp://drucker/ipp/print` eintragen. Danach druckt jedes Mitglied von der Dokumentseite aus.
+## Перші кроки
 
-## Einstellungen
+1. **Завантажте** кілька PDF або фотографій: текст розпізнається у фоні.
+2. **Теги**: створіть теги, наприклад *Рахунок* або *Страхування*, і додайте опис. ШІ використовує його для призначення тегів.
+3. **ШІ** (*Налаштування → ШІ та моделі*): виберіть постачальника, вставте ключ (або використайте вбудовані безкоштовні моделі OpenRouter чи локальний Ollama), потім *Завантажити моделі* й *Перевірити з'єднання*.
+4. **Сканер** (*Профіль → Сканер*): *Пошук у мережі* знаходить сканери eSCL/AirScan; потім *Сканувати* в бічній панелі.
+5. **Електронна пошта** (*Профіль → Поштові вхідні*): додайте одну або кілька скриньок IMAP; PDF та зображення з вкладень потрапляють до вхідних.
+6. **Текові вхідні** (*Налаштування → Текові вхідні*, адміністратори): стежте за текою сервера, наприклад `/scans` (спершу змонтуйте її в контейнер).
+7. **Принтери** (*Налаштування → Принтери*, адміністратори): *Пошук у мережі* або введіть `ipp://printer/ipp/print`; після цього кожен учасник може друкувати зі сторінки документа.
 
-Jede Einstellung geht als Umgebungsvariable mit dem Präfix `NRZPAPER_` (oder in `Rocket.toml`).
+## Конфігурація
 
-| Variable | Vorgabe | Bedeutung |
+Кожне налаштування можна задати змінною середовища з префіксом `NRZPAPER_` (або в `Rocket.toml`).
+
+| Змінна | За замовчуванням | Значення |
 |---|---|---|
-| `NRZPAPER_DATA_DIR` | `/data` (Image) | Datenbank, Schlüsseldatei, Eingangsordner |
-| `NRZPAPER_DB_KEY` | – | Datenbankschlüssel. Fehlt er, wird `nrzpaper.key` im Datenordner erzeugt |
-| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Wo der Server lauscht |
-| `NRZPAPER_COOKIE_SECURE` | `false` | Hinter HTTPS auf `true` |
-| `NRZPAPER_REGISTRATION_OPEN` | `false` | Selbst registrieren erlauben (auch in der Oberfläche umschaltbar) |
-| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Tesseract-Sprachen (das Image bringt `deu` und `eng` mit) |
-| `NRZPAPER_OCR_WORKERS` | `2` | Gleichzeitige Texterkennungen |
-| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Tage im Papierkorb |
-| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | So lange bleiben nicht freigegebene Inbox-Einträge |
-| `NRZPAPER_SCANNER_URL` | – | Voreingestellter Scanner für neue Konten, z. B. `http://192.168.1.50` |
-| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Netze für die Scanner- und Druckersuche |
+| `NRZPAPER_DATA_DIR` | `/data` (образ) | База даних, файл ключа й теки приймання |
+| `NRZPAPER_DB_KEY` | – | Ключ бази даних; якщо не задано, у теці даних створюється `nrzpaper.key` |
+| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Де слухає сервер |
+| `NRZPAPER_COOKIE_SECURE` | `false` | Встановіть `true` за HTTPS |
+| `NRZPAPER_REGISTRATION_OPEN` | `false` | Дозволити самостійну реєстрацію (можна перемкнути в UI) |
+| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Мови Tesseract (образ містить `deu` та `eng`) |
+| `NRZPAPER_OCR_WORKERS` | `2` | Паралельні завдання OCR |
+| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Днів у кошику до остаточного видалення |
+| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | Скільки днів зберігаються несхвалені елементи вхідних |
+| `NRZPAPER_SCANNER_URL` | – | Попередньо заданий сканер для нових користувачів, наприклад `http://192.168.1.50` |
+| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Мережі для пошуку сканерів і принтерів |
 | `NRZPAPER_AI_PROVIDER` | `openrouter` | `openai`, `anthropic`, `gemini`, `mistral`, `groq`, `ollama`, `custom`, … |
-| `NRZPAPER_AI_KEY` / `_URL` / `_MODEL` | – | Schlüssel, Adresse und Modell für diesen Anbieter |
-| `NRZPAPER_OPENROUTER_KEY` | – | OpenRouter-Schlüssel (Alternative zu oben) |
-| `NRZPAPER_LOG` | `info` | Protokoll, z. B. `debug` |
+| `NRZPAPER_AI_KEY` / `NRZPAPER_AI_URL` / `NRZPAPER_AI_MODEL` | – | Ключ, базова URL-адреса й модель для цього постачальника |
+| `NRZPAPER_OPENROUTER_KEY` | – | Ключ OpenRouter (альтернатива наведеному вище) |
+| `NRZPAPER_LOG` | `info` | Фільтр журналу, наприклад `debug` |
 
-Was in der Oberfläche eingestellt wird (KI-Anbieter, Schlüssel, Modelle, Registrierung), liegt verschlüsselt in der Datenbank und hat Vorrang vor der Umgebung.
+Налаштування з веб-інтерфейсу (постачальник ШІ, ключі, моделі, реєстрація) зберігаються в зашифрованій базі даних і мають пріоритет над середовищем.
 
-### KI-Anbieter
+### Постачальники ШІ
 
-| Anbieter | Adresse | Hinweis |
+| Постачальник | Адреса | Примітки |
 |---|---|---|
-| OpenRouter | eingebaut | Kostenlose Bild-Modelle, eigener Schlüssel optional |
-| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | eingebaut | API-Schlüssel des Anbieters |
-| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Modell = Name der Bereitstellung |
-| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` usw. | Kein Schlüssel nötig |
-| Alles OpenAI-Kompatible | eigene Adresse | Schlüssel optional |
+| OpenRouter | вбудований | Безкоштовні візуальні моделі; власний ключ необов'язковий |
+| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | вбудований | API-ключ постачальника |
+| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Модель = назва розгортання |
+| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` тощо | Ключ не потрібен |
+| Будь-що сумісне з OpenAI | ваша URL-адреса | Ключ необов'язковий |
 
-Modelle ohne Bildeingang: *„Modell liest keine Bilder – erkannten Text schicken“* anhaken. Anbieter ohne PDF-Eingang bekommen automatisch die ersten Seiten als Bilder. Die Sprache von Titel und Zusammenfassung stellst du unter *Sprache der Vorschläge* ein.
+Моделі, які не читають зображення: позначте *«Модель не читає зображення — надсилати розпізнаний текст»*. Постачальники, що не приймають PDF, автоматично отримують перші сторінки як зображення. Мова пропонованих назв і підсумків задається в *Мова пропозицій*.
 
-## REST-API
+## REST API
 
-API-Key unter *Profil → API-Keys* anlegen (Rechte wählen). Alles liegt unter `/api/v1` mit `Authorization: Bearer np_…`.
+Створіть API-ключ у *Профіль → API-ключі* (виберіть права). Усі ендпоінти розташовані під `/api/v1` і приймають `Authorization: Bearer np_…`.
 
 ```bash
-TOKEN=np_dein_key
+TOKEN=np_your_key
 BASE=http://localhost:8320/api/v1
 
-curl -H "Authorization: Bearer $TOKEN" $BASE/organizations                     # Organisationen
-curl -H "Authorization: Bearer $TOKEN" -F file=@rechnung.pdf \
-     $BASE/organizations/$ORG/documents                                          # hochladen
+# організації
+curl -H "Authorization: Bearer $TOKEN" $BASE/organizations
+
+# завантаження (кілька файлів одразу кількома -F)
+curl -H "Authorization: Bearer $TOKEN" -F file=@invoice.pdf \
+     $BASE/organizations/$ORG/documents
+
+# пошук: той самий синтаксис, що й в UI
 curl -H "Authorization: Bearer $TOKEN" -G $BASE/organizations/$ORG/documents \
-     --data-urlencode 'searchQuery=northwind tag:rechnung created:2026'          # suchen
-curl -H "Authorization: Bearer $TOKEN" -o datei.pdf \
-     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"                 # herunterladen
+     --data-urlencode 'searchQuery=northwind tag:invoice created:2026'
+
+# завантажити файл
+curl -H "Authorization: Bearer $TOKEN" -o out.pdf \
+     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"
+
+# додати тег
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags        # Tag setzen
+     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags
+
+# публічне посилання, чинне 7 днів
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links # Freigabelink
-curl $BASE/health                                                                 # Zustand
+     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links
+
+# перевірка стану (ключ не потрібен)
+curl $BASE/health
 ```
 
-Webhooks (*Einstellungen → Webhooks*) schicken signiertes JSON (`webhook-id`, `webhook-timestamp`, `webhook-signature`) für `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` und `document:tag:removed`.
+Вебхуки (*Налаштування → Вебхуки*) надсилають підписаний JSON (`webhook-id`, `webhook-timestamp`, `webhook-signature`) для `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` і `document:tag:removed`.
 
-Der Eingangsordner `data/ingestion/<Organisations-ID>/` übernimmt Dateien direkt als Dokumente. Überwachte Ordner (*Ordner-Eingang*) legen sie zuerst zur Prüfung in die Inbox.
+Тека приймання `data/ingestion/<organization-id>/` імпортує файли безпосередньо як документи. Наглядові теки (*Текові вхідні*) спершу надсилають їх до вхідних на перевірку.
 
-## Entwicklung
+## Розробка
 
 ```bash
-cargo run                         # Server, http://localhost:8320
+# бекенд (Rust 1.85+, Tesseract і Poppler для OCR)
+cargo run                         # http://localhost:8320
 cargo test
 
+# веб-інтерфейс із гарячим перезавантаженням (dx = dioxus-cli 0.7)
 rustup target add wasm32-unknown-unknown
 cargo install dioxus-cli --version 0.7.10 --locked
-cd ui && dx serve                 # Oberfläche mit Hot Reload, http://localhost:8080
+cd ui && dx serve                 # http://localhost:8080, проксіює /api на :8320
 
-scripts/ui.sh && cargo build --release   # Oberfläche ins Programm einbetten
+# вбудувати інтерфейс у програму
+scripts/ui.sh && cargo build --release
 ```
 
-Übersetzungen liegen in `locales/<sprache>.json` (deutscher Text → Übersetzung). `scripts/i18n_extract.py` erneuert `locales/strings.json` und zeigt, was je Sprache fehlt. Aufbau: [ARCHITECTURE.md](../ARCHITECTURE.md).
+Переклади містяться в `locales/<language>.json` (німецький вихідний текст → переклад). `scripts/i18n_extract.py` оновлює `locales/strings.json` і повідомляє про відсутні записи для кожної мови.
 
-## Lizenz
+Деталі архітектури: [ARCHITECTURE.md](../ARCHITECTURE.md).
 
-AGPL-3.0-or-later. Oberflächen-Bausteine nach [rust-ui](https://github.com/rust-ui/ui) (MIT), PDF-Ansicht mit [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), Schrift [Inter](https://rsms.me/inter/) (OFL).
+## Ліцензія
+
+AGPL-3.0-or-later. Компоненти UI базуються на [rust-ui](https://github.com/rust-ui/ui) (MIT), переглядач PDF — на [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), шрифт — [Inter](https://rsms.me/inter/) (OFL).

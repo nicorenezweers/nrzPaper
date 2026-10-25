@@ -1,55 +1,49 @@
-<!--
-Übersetzungsvorlage für Bahasa Indonesia.
-Bitte den Inhalt unten in die jeweilige Sprache übersetzen.
--->
-
 <div align="center">
 
 <img src="../static/icon.png" width="96" alt="nrzPaper">
 
 # nrzPaper
 
-**Selbst gehostete Dokumentenverwaltung in Rust: Papierkram scannen, erkennen, taggen und finden – verschlüsselt in einer Datei.**
+**Manajemen dokumen yang dihosting sendiri dalam Rust: pindai, kenali, beri tag, dan temukan dokumen Anda — terenkripsi dalam satu berkas.**
 
-[English](../README.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md)
+[English](../README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md) · [中文](README.zh.md) · [日本語](README.ja.md) · [Polski](README.pl.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [한국어](README.ko.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [हिन्दी](README.hi.md) · [Tiếng Việt](README.vi.md) · [ไทย](README.th.md) · [Українська](README.uk.md) · [Čeština](README.cs.md) · [Română](README.ro.md) · [Magyar](README.hu.md) · [Ελληνικά](README.el.md) · [Svenska](README.sv.md) · [Norsk](README.nb.md) · [Dansk](README.da.md) · [Suomi](README.fi.md) · [עברית](README.he.md) · [বাংলা](README.bn.md) · [فارسی](README.fa.md)
 
-![Dokumente mit Zeitleiste](screenshots/documents.png)
+![Dokumen dengan garis waktu](screenshots/documents.png)
 
 </div>
 
-nrzPaper ist ein einziges Programm ohne externe Datenbank. Alles liegt in einer SQLCipher-verschlüsselten SQLite-Datei, auch die Dateien selbst. Es erkennt Text mit Tesseract, scannt direkt von Netzwerkscannern, holt E-Mail-Anhänge ab und lässt eine KI deiner Wahl Titel, Tags und Metadaten vorschlagen. **Dieter**, der eingebaute Assistent, beantwortet Fragen zu deinen Dokumenten und verlinkt die Quellen. Die Oberfläche ist eine Rust/WebAssembly-App (Dioxus) in ruhigem Dunkelgrau und funktioniert auch am Handy.
+nrzPaper adalah satu program tanpa basis data eksternal. Semua tersimpan dalam satu berkas SQLite yang dienkripsi SQLCipher, termasuk berkasnya sendiri. Ia melakukan OCR dengan Tesseract, memindai langsung dari pemindai jaringan, mengambil lampiran email, dan memungkinkan AI pilihan Anda menyarankan judul, tag, dan metadata. Asisten bawaan **Dieter** menjawab pertanyaan tentang dokumen Anda dan menautkan sumbernya. Antarmuka web adalah aplikasi Rust/WebAssembly (Dioxus) dengan tema gelap yang tenang dan juga berfungsi di ponsel.
 
-## Funktionen
-
-| | |
-|---|---|
-| **Erfassen** | Drag & Drop, Upload, **Netzwerkscanner** (eSCL/AirScan: Canon, HP, Epson, Brother …), **E-Mail-Postfächer** (IMAP, mehrere Konten), **überwachte Ordner** (z. B. der Scan-Ordner auf dem NAS), REST-API |
-| **Inbox** | Scans, Mails, Ordner-Importe und Uploads warten auf die Abnahme: Die KI schlägt Name, Tags und Felder vor, du gibst einzeln oder **alle auf einmal** frei. Filter nach Quelle (Scanner, jedes Postfach, jeder Ordner, Upload). |
-| **Erkennen** | Tesseract und Poppler im Hintergrund, auch für gescannte PDFs und Fotos. Volltextsuche mit Wortanfängen, Wortfolgen und Filtern (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
-| **Ordnen** | Farbige Tags, **Ordner aus Tags** (verschachtelt), **Tagging-Regeln** („enthält Northwind → Rechnung“), eigene **Eigenschaften** (Text, Zahl, Datum, Ja/Nein, Auswahl, Mehrfachauswahl, Benutzer, Verweis auf ein Dokument) |
-| **Zeitleiste** | Senkrechte Zeitleiste neben den Dokumenten: oben heute, darunter jeder Tag mit Post und die Lücken dazwischen („12 Tage ohne Dokumente“). Filter nach Tag, Art und Text. |
-| **Erinnerungen** | „Erinnere mich in 10 Tagen“ an jedem Dokument, mit Notiz. Fällige Erinnerungen stehen in der Seitenleiste und oben in der Zeitleiste. |
-| **Drucken** | Auf jedem **IPP-Netzwerkdrucker** (AirPrint, IPP Everywhere, Mopria, CUPS), den der Server findet. PDFs gehen direkt, an Drucker, die nur JPEG annehmen, als Seitenbilder. |
-| **KI, jeder Anbieter** | OpenRouter (kostenlose Modelle eingebaut), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** oder jede OpenAI-kompatible Adresse. Modelle ohne Bildeingang bekommen den erkannten Text. |
-| **Dieter** | Chat-Assistent unten rechts: *„Wie lautet meine Versicherungsnummer?“*, *„Alle Lohnabrechnungen von Fabrikam 2026“*. Er sucht, liest die passenden Stellen und antwortet mit Links zu den Dokumenten. |
-| **Teams** | Mehrere Organisationen, **mehrere Konten je Organisation** (Einladungen, Rollen Besitzer/Admin/Mitglied, Besitz übergeben), API-Keys mit Rechten, Webhooks (Standard-Webhooks-Signatur), öffentliche Freigabelinks |
-| **Sprachen** | Deutsch, English, Français, Italiano, Español, Português, Nederlands (weitere über `locales/<code>.json`) |
-| **Sicher** | Eine verschlüsselte Datei, Argon2-Passwörter, CSP ohne Inline-Skripte, CSRF-Schutz, Dateien nur über die API |
-
-## Bilder
+## Fitur
 
 | | |
 |---|---|
-| ![Dieter](screenshots/dieter.png) | ![Inbox](screenshots/inbox.png) |
-| **Dieter** antwortet mit Quellen | **Inbox**: prüfen und freigeben, nach Quelle filtern |
-| ![Dokument](screenshots/document.png) | ![KI-Anbieter](screenshots/settings-ai.png) |
-| **Dokument**: PDF-Ansicht, Tags, Erinnerungen, Drucken | **KI & Modelle**: jeder Anbieter, lokal oder Cloud |
-| ![Erinnerungen](screenshots/reminders.png) | ![Mitglieder](screenshots/members.png) |
-| **Erinnerungen** | **Mitglieder** und Einladungen |
+| **Penangkapan** | Seret & lepas, unggah, **pemindai jaringan** (eSCL/AirScan: Canon, HP, Epson, Brother …), **kotak masuk email** (IMAP, beberapa akun), **folder yang dipantau** (mis. folder pindai di NAS), REST API |
+| **Kotak masuk** | Pindai, email, impor folder, dan unggahan menunggu peninjauan: AI menyarankan nama, tag, dan bidang, dan Anda menyetujui satu per satu atau **semua sekaligus**. Saring berdasarkan sumber (pemindai, setiap kotak surat, setiap folder, unggahan). |
+| **Pengenalan** | Tesseract dan Poppler di latar belakang, juga untuk PDF hasil pindai dan foto; pencarian teks lengkap dengan awalan, frasa, dan filter (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
+| **Pengorganisasian** | Tag berwarna, **folder dari tag** (bersarang), **aturan penandaan** ("berisi Northwind → Faktur"), **properti** khusus (teks, angka, tanggal, ya/tidak, pilihan, pilihan ganda, pengguna, tautan dokumen) |
+| **Garis waktu** | Garis waktu vertikal di samping dokumen: hari ini di atas, di bawahnya setiap hari dengan email, dan jeda tenang di antaranya ("12 hari tanpa dokumen"). Saring berdasarkan tag, jenis, dan teks. |
+| **Pengingat** | "Ingatkan saya dalam 10 hari" pada dokumen mana pun, dengan catatan; pengingat yang jatuh tempo muncul di bilah samping dan di atas garis waktu. |
+| **Cetak** | Cetak dokumen di **printer jaringan IPP** mana pun (AirPrint, IPP Everywhere, Mopria, CUPS) yang ditemukan server. PDF dikirim langsung, atau sebagai gambar halaman ke printer yang hanya menerima JPEG. |
+| **AI, penyedia apa pun** | OpenRouter (model gratis bawaan), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI**, atau URL apa pun yang kompatibel dengan OpenAI. Model khusus teks menerima teks OCR alih-alih gambar. |
+| **Dieter** | Asisten obrolan (kanan bawah): *"Berapa nomor asuransi saya?"*, *"Semua slip gaji dari Fabrikam tahun 2026"*. Ia mencari, membaca bagian yang cocok, dan menjawab dengan tautan ke dokumen. |
+| **Tim** | Beberapa organisasi, **beberapa akun per organisasi** (undangan, peran: pemilik, admin, anggota; alihkan kepemilikan), kunci API dengan izin, webhook (tanda tangan Standard Webhooks), tautan berbagi publik |
+| **Aman secara bawaan** | Satu berkas terenkripsi, kata sandi Argon2, CSP tanpa skrip inline, perlindungan CSRF, berkas hanya melalui API |
 
-## Schnellstart
+## Tangkapan layar
 
-Du brauchst Docker. Das Image enthält Programm, Oberfläche, Tesseract (Deutsch, Englisch) und Poppler.
+| | |
+|---|---|
+| ![Dieter, asisten](screenshots/dieter.png) | ![Kotak masuk dengan saran AI](screenshots/inbox.png) |
+| **Dieter** menjawab dengan sumber | **Kotak masuk**: tinjau dan setujui, saring berdasarkan sumber |
+| ![Tampilan dokumen](screenshots/document.png) | ![Penyedia AI](screenshots/settings-ai.png) |
+| **Dokumen**: penampil PDF, tag, pengingat, cetak | **AI & model**: setiap penyedia, lokal atau cloud |
+| ![Pengingat](screenshots/reminders.png) | ![Anggota](screenshots/members.png) |
+| **Pengingat** | **Anggota** dan undangan |
+
+## Mulai cepat
+
+Anda memerlukan Docker. Gambar berisi program, antarmuka web, Tesseract (Jerman, Inggris), dan Poppler.
 
 ```bash
 git clone https://github.com/nicorenezweers/nrzPaper.git
@@ -58,26 +52,26 @@ docker build -t nrzpaper .
 docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 ```
 
-<http://localhost:8320> öffnen. Das erste Konto wird Administrator. Danach ist die Registrierung zu, bis du sie unter *Einstellungen → Registrierung & Benutzer* öffnest. Dort legst du auch Konten für andere an.
+Buka <http://localhost:8320>. Akun pertama yang Anda buat menjadi administrator. Setelah itu pendaftaran ditutup hingga Anda membukanya di *Pengaturan → Pendaftaran & pengguna*, tempat Anda juga dapat membuat akun untuk orang lain.
 
 ### Docker Compose
 
 ```yaml
 services:
   nrzpaper:
-    build: .                      # oder: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # atau: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:
       - "8320:8320"
     volumes:
-      - nrzpaper-data:/data       # verschlüsselte Datenbank + Schlüsseldatei
-      - /srv/scans:/scans         # optional: Ordner für den Ordner-Eingang
+      - nrzpaper-data:/data       # basis data terenkripsi + berkas kunci
+      - /srv/scans:/scans         # opsional: folder untuk kotak masuk folder
     environment:
       TZ: Europe/Zurich
-      # NRZPAPER_DB_KEY: "ein-langes-geheimnis"   # sonst wird /data/nrzpaper.key erzeugt
-      # NRZPAPER_COOKIE_SECURE: "true"            # hinter HTTPS
-      # NRZPAPER_AI_PROVIDER: "openai"            # oder in der Oberfläche einstellen
+      # NRZPAPER_DB_KEY: "a-long-secret"     # jika tidak, /data/nrzpaper.key dibuat
+      # NRZPAPER_COOKIE_SECURE: "true"       # saat disajikan melalui HTTPS
+      # NRZPAPER_AI_PROVIDER: "openai"       # atau atur di antarmuka web
       # NRZPAPER_AI_KEY: "sk-…"
 
 volumes:
@@ -88,101 +82,121 @@ volumes:
 docker compose up -d
 ```
 
-> **Sichere `/data`.** Dort liegen `nrzpaper.db` (alles, verschlüsselt) und `nrzpaper.key`. Ohne den Schlüssel lässt sich die Datenbank nicht öffnen. Wenn du `NRZPAPER_DB_KEY` setzt, bewahre stattdessen diesen Wert gut auf.
+> **Cadangkan `/data`.** Di sana ada `nrzpaper.db` (semuanya, terenkripsi) dan `nrzpaper.key`. Tanpa kunci, basis data tidak dapat dibuka. Jika Anda menyetel `NRZPAPER_DB_KEY`, simpan nilai itu dengan aman.
 
-### Beide Architekturen
+### Kedua arsitektur
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/nrzpaper:1.0.0 --push .
 ```
 
-## Erste Schritte
+Rust dikompilasi silang, bukan diemulasi, sehingga build arm64 cepat di mesin x86 dan sebaliknya.
 
-1. **Hochladen**: ein paar PDFs oder Fotos. Der Text wird im Hintergrund erkannt.
-2. **Tags** anlegen (z. B. *Rechnung*, *Versicherung*) und beschreiben. Die KI vergibt sie anhand der Beschreibung.
-3. **KI** (*Einstellungen → KI & Modelle*): Anbieter wählen, Schlüssel eintragen (oder die eingebauten kostenlosen OpenRouter-Modelle bzw. ein lokales Ollama nutzen), *Modelle laden*, *Verbindung testen*.
-4. **Scanner** (*Profil → Scanner*): *Scanner im Netz suchen* findet eSCL/AirScan-Geräte, dann *Scannen* in der Seitenleiste.
-5. **E-Mail** (*Profil → E-Mail-Eingang*): ein oder mehrere IMAP-Postfächer. PDFs und Bilder aus Anhängen landen in der Inbox.
-6. **Ordner-Eingang** (*Einstellungen → Ordner-Eingang*, Admins): einen Server-Ordner wie `/scans` überwachen (vorher in den Container einbinden).
-7. **Drucker** (*Einstellungen → Drucker*, Admins): *Im Netz suchen* oder `ipp://drucker/ipp/print` eintragen. Danach druckt jedes Mitglied von der Dokumentseite aus.
+## Langkah pertama
 
-## Einstellungen
+1. **Unggah** beberapa PDF atau foto: teks dikenali di latar belakang.
+2. **Tag**: buat tag seperti *Faktur* atau *Asuransi* dan beri deskripsi. AI menggunakannya untuk menetapkan tag.
+3. **AI** (*Pengaturan → AI & model*): pilih penyedia, tempel kunci (atau gunakan model OpenRouter gratis bawaan, atau Ollama lokal), lalu *Muat model* dan *Uji koneksi*.
+4. **Pemindai** (*Profil → Pemindai*): *Cari di jaringan* menemukan pemindai eSCL/AirScan; lalu *Pindai* di bilah samping.
+5. **Email** (*Profil → Kotak masuk email*): tambahkan satu atau lebih kotak surat IMAP; PDF dan gambar dari lampiran masuk ke kotak masuk.
+6. **Kotak masuk folder** (*Pengaturan → Kotak masuk folder*, admin): pantau folder server seperti `/scans` (pasang dulu ke kontainer).
+7. **Printer** (*Pengaturan → Printer*, admin): *Cari di jaringan* atau masukkan `ipp://printer/ipp/print`; setelah itu setiap anggota dapat mencetak dari halaman dokumen.
 
-Jede Einstellung geht als Umgebungsvariable mit dem Präfix `NRZPAPER_` (oder in `Rocket.toml`).
+## Konfigurasi
 
-| Variable | Vorgabe | Bedeutung |
+Setiap pengaturan dapat diberikan sebagai variabel lingkungan dengan awalan `NRZPAPER_` (atau di `Rocket.toml`).
+
+| Variabel | Bawaan | Arti |
 |---|---|---|
-| `NRZPAPER_DATA_DIR` | `/data` (Image) | Datenbank, Schlüsseldatei, Eingangsordner |
-| `NRZPAPER_DB_KEY` | – | Datenbankschlüssel. Fehlt er, wird `nrzpaper.key` im Datenordner erzeugt |
-| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Wo der Server lauscht |
-| `NRZPAPER_COOKIE_SECURE` | `false` | Hinter HTTPS auf `true` |
-| `NRZPAPER_REGISTRATION_OPEN` | `false` | Selbst registrieren erlauben (auch in der Oberfläche umschaltbar) |
-| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Tesseract-Sprachen (das Image bringt `deu` und `eng` mit) |
-| `NRZPAPER_OCR_WORKERS` | `2` | Gleichzeitige Texterkennungen |
-| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Tage im Papierkorb |
-| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | So lange bleiben nicht freigegebene Inbox-Einträge |
-| `NRZPAPER_SCANNER_URL` | – | Voreingestellter Scanner für neue Konten, z. B. `http://192.168.1.50` |
-| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Netze für die Scanner- und Druckersuche |
+| `NRZPAPER_DATA_DIR` | `/data` (gambar) | Basis data, berkas kunci, dan folder penyerapan |
+| `NRZPAPER_DB_KEY` | – | Kunci basis data; jika tidak disetel, `nrzpaper.key` dibuat di folder data |
+| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Tempat server mendengarkan |
+| `NRZPAPER_COOKIE_SECURE` | `false` | Setel `true` di belakang HTTPS |
+| `NRZPAPER_REGISTRATION_OPEN` | `false` | Izinkan pendaftaran mandiri (juga dapat diubah di UI) |
+| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Bahasa Tesseract (gambar menyertakan `deu` dan `eng`) |
+| `NRZPAPER_OCR_WORKERS` | `2` | Pekerjaan OCR paralel |
+| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Hari di tempat sampah sebelum dihapus permanen |
+| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | Hari item kotak masuk yang belum disetujui disimpan |
+| `NRZPAPER_SCANNER_URL` | – | Pemindai prasetel untuk pengguna baru, mis. `http://192.168.1.50` |
+| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Jaringan yang dicari untuk pemindai dan printer |
 | `NRZPAPER_AI_PROVIDER` | `openrouter` | `openai`, `anthropic`, `gemini`, `mistral`, `groq`, `ollama`, `custom`, … |
-| `NRZPAPER_AI_KEY` / `_URL` / `_MODEL` | – | Schlüssel, Adresse und Modell für diesen Anbieter |
-| `NRZPAPER_OPENROUTER_KEY` | – | OpenRouter-Schlüssel (Alternative zu oben) |
-| `NRZPAPER_LOG` | `info` | Protokoll, z. B. `debug` |
+| `NRZPAPER_AI_KEY` / `NRZPAPER_AI_URL` / `NRZPAPER_AI_MODEL` | – | Kunci, URL dasar, dan model untuk penyedia tersebut |
+| `NRZPAPER_OPENROUTER_KEY` | – | Kunci OpenRouter (alternatif untuk di atas) |
+| `NRZPAPER_LOG` | `info` | Filter log, mis. `debug` |
 
-Was in der Oberfläche eingestellt wird (KI-Anbieter, Schlüssel, Modelle, Registrierung), liegt verschlüsselt in der Datenbank und hat Vorrang vor der Umgebung.
+Pengaturan yang dibuat di antarmuka web (penyedia AI, kunci, model, pendaftaran) disimpan di basis data terenkripsi dan lebih diutamakan daripada lingkungan.
 
-### KI-Anbieter
+### Penyedia AI
 
-| Anbieter | Adresse | Hinweis |
+| Penyedia | Alamat | Catatan |
 |---|---|---|
-| OpenRouter | eingebaut | Kostenlose Bild-Modelle, eigener Schlüssel optional |
-| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | eingebaut | API-Schlüssel des Anbieters |
-| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Modell = Name der Bereitstellung |
-| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` usw. | Kein Schlüssel nötig |
-| Alles OpenAI-Kompatible | eigene Adresse | Schlüssel optional |
+| OpenRouter | bawaan | Model visi gratis; kunci sendiri opsional |
+| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | bawaan | Kunci API dari penyedia |
+| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Model = nama deployment |
+| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` dll. | Tidak perlu kunci |
+| Apa pun yang kompatibel dengan OpenAI | URL Anda | Kunci opsional |
 
-Modelle ohne Bildeingang: *„Modell liest keine Bilder – erkannten Text schicken“* anhaken. Anbieter ohne PDF-Eingang bekommen automatisch die ersten Seiten als Bilder. Die Sprache von Titel und Zusammenfassung stellst du unter *Sprache der Vorschläge* ein.
+Model yang tidak dapat membaca gambar: centang *"Model tidak dapat membaca gambar – kirim teks yang dikenali"*. Penyedia yang tidak menerima PDF otomatis mendapatkan halaman pertama sebagai gambar. Bahasa judul dan ringkasan yang disarankan diatur di *Bahasa saran*.
 
-## REST-API
+## REST API
 
-API-Key unter *Profil → API-Keys* anlegen (Rechte wählen). Alles liegt unter `/api/v1` mit `Authorization: Bearer np_…`.
+Buat kunci API di *Profil → Kunci API* (pilih izin). Semua endpoint berada di bawah `/api/v1` dan menerima `Authorization: Bearer np_…`.
 
 ```bash
-TOKEN=np_dein_key
+TOKEN=np_your_key
 BASE=http://localhost:8320/api/v1
 
-curl -H "Authorization: Bearer $TOKEN" $BASE/organizations                     # Organisationen
-curl -H "Authorization: Bearer $TOKEN" -F file=@rechnung.pdf \
-     $BASE/organizations/$ORG/documents                                          # hochladen
+# organisasi
+curl -H "Authorization: Bearer $TOKEN" $BASE/organizations
+
+# unggah (beberapa berkas sekaligus dengan beberapa -F)
+curl -H "Authorization: Bearer $TOKEN" -F file=@invoice.pdf \
+     $BASE/organizations/$ORG/documents
+
+# cari: sintaks yang sama seperti di UI
 curl -H "Authorization: Bearer $TOKEN" -G $BASE/organizations/$ORG/documents \
-     --data-urlencode 'searchQuery=northwind tag:rechnung created:2026'          # suchen
-curl -H "Authorization: Bearer $TOKEN" -o datei.pdf \
-     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"                 # herunterladen
+     --data-urlencode 'searchQuery=northwind tag:invoice created:2026'
+
+# unduh berkas
+curl -H "Authorization: Bearer $TOKEN" -o out.pdf \
+     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"
+
+# tambahkan tag
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags        # Tag setzen
+     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags
+
+# tautan berbagi publik berlaku 7 hari
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links # Freigabelink
-curl $BASE/health                                                                 # Zustand
+     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links
+
+# pemeriksaan kesehatan (tanpa kunci)
+curl $BASE/health
 ```
 
-Webhooks (*Einstellungen → Webhooks*) schicken signiertes JSON (`webhook-id`, `webhook-timestamp`, `webhook-signature`) für `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` und `document:tag:removed`.
+Webhook (*Pengaturan → Webhook*) mengirim JSON bertanda tangan (`webhook-id`, `webhook-timestamp`, `webhook-signature`) untuk `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added`, dan `document:tag:removed`.
 
-Der Eingangsordner `data/ingestion/<Organisations-ID>/` übernimmt Dateien direkt als Dokumente. Überwachte Ordner (*Ordner-Eingang*) legen sie zuerst zur Prüfung in die Inbox.
+Folder penyerapan `data/ingestion/<organization-id>/` mengimpor berkas langsung sebagai dokumen. Folder yang dipantau (*Kotak masuk folder*) mengirimnya dulu ke kotak masuk untuk ditinjau.
 
-## Entwicklung
+## Pengembangan
 
 ```bash
-cargo run                         # Server, http://localhost:8320
+# backend (Rust 1.85+, Tesseract dan Poppler untuk OCR)
+cargo run                         # http://localhost:8320
 cargo test
 
+# antarmuka web dengan hot reload (dx = dioxus-cli 0.7)
 rustup target add wasm32-unknown-unknown
 cargo install dioxus-cli --version 0.7.10 --locked
-cd ui && dx serve                 # Oberfläche mit Hot Reload, http://localhost:8080
+cd ui && dx serve                 # http://localhost:8080, memproksi /api ke :8320
 
-scripts/ui.sh && cargo build --release   # Oberfläche ins Programm einbetten
+# sematkan antarmuka ke dalam program
+scripts/ui.sh && cargo build --release
 ```
 
-Übersetzungen liegen in `locales/<sprache>.json` (deutscher Text → Übersetzung). `scripts/i18n_extract.py` erneuert `locales/strings.json` und zeigt, was je Sprache fehlt. Aufbau: [ARCHITECTURE.md](../ARCHITECTURE.md).
+Terjemahan berada di `locales/<language>.json` (teks sumber Jerman → terjemahan). `scripts/i18n_extract.py` menyegarkan `locales/strings.json` dan melaporkan entri yang hilang per bahasa.
 
-## Lizenz
+Detail arsitektur: [ARCHITECTURE.md](../ARCHITECTURE.md).
 
-AGPL-3.0-or-later. Oberflächen-Bausteine nach [rust-ui](https://github.com/rust-ui/ui) (MIT), PDF-Ansicht mit [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), Schrift [Inter](https://rsms.me/inter/) (OFL).
+## Lisensi
+
+AGPL-3.0-or-later. Komponen UI berdasarkan [rust-ui](https://github.com/rust-ui/ui) (MIT), penampil PDF berdasarkan [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), font [Inter](https://rsms.me/inter/) (OFL).

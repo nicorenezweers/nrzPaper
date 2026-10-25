@@ -1,55 +1,50 @@
-<!--
-Übersetzungsvorlage für Polski.
-Bitte den Inhalt unten in die jeweilige Sprache übersetzen.
--->
-
 <div align="center">
 
 <img src="../static/icon.png" width="96" alt="nrzPaper">
 
 # nrzPaper
 
-**Selbst gehostete Dokumentenverwaltung in Rust: Papierkram scannen, erkennen, taggen und finden – verschlüsselt in einer Datei.**
+**Samodzielnie hostowane zarządzanie dokumentami w Rust: skanuj, rozpoznawaj, oznaczaj i znajduj swoje papiery — zaszyfrowane w jednym pliku.**
 
-[English](../README.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md)
+[English](../README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md) · [中文](README.zh.md) · [日本語](README.ja.md) · [Polski](README.pl.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [한국어](README.ko.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [हिन्दी](README.hi.md) · [Tiếng Việt](README.vi.md) · [ไทย](README.th.md) · [Українська](README.uk.md) · [Čeština](README.cs.md) · [Română](README.ro.md) · [Magyar](README.hu.md) · [Ελληνικά](README.el.md) · [Svenska](README.sv.md) · [Norsk](README.nb.md) · [Dansk](README.da.md) · [Suomi](README.fi.md) · [עברית](README.he.md) · [বাংলা](README.bn.md) · [فارسی](README.fa.md)
 
-![Dokumente mit Zeitleiste](screenshots/documents.png)
+![Dokumenty z osią czasu](screenshots/documents.png)
 
 </div>
 
-nrzPaper ist ein einziges Programm ohne externe Datenbank. Alles liegt in einer SQLCipher-verschlüsselten SQLite-Datei, auch die Dateien selbst. Es erkennt Text mit Tesseract, scannt direkt von Netzwerkscannern, holt E-Mail-Anhänge ab und lässt eine KI deiner Wahl Titel, Tags und Metadaten vorschlagen. **Dieter**, der eingebaute Assistent, beantwortet Fragen zu deinen Dokumenten und verlinkt die Quellen. Die Oberfläche ist eine Rust/WebAssembly-App (Dioxus) in ruhigem Dunkelgrau und funktioniert auch am Handy.
+nrzPaper to jeden program bez zewnętrznej bazy danych. Wszystko znajduje się w jednym pliku SQLite zaszyfrowanym przez SQLCipher, łącznie z samymi plikami. Wykonuje OCR za pomocą Tesseract, skanuje bezpośrednio ze skanerów sieciowych, pobiera załączniki e-mail i pozwala wybranej przez Ciebie AI proponować tytuły, tagi i metadane. Wbudowany asystent **Dieter** odpowiada na pytania dotyczące Twoich dokumentów i linkuje źródła. Interfejs webowy to aplikacja Rust/WebAssembly (Dioxus) w spokojnym ciemnym motywie, działa też na telefonach.
 
-## Funktionen
-
-| | |
-|---|---|
-| **Erfassen** | Drag & Drop, Upload, **Netzwerkscanner** (eSCL/AirScan: Canon, HP, Epson, Brother …), **E-Mail-Postfächer** (IMAP, mehrere Konten), **überwachte Ordner** (z. B. der Scan-Ordner auf dem NAS), REST-API |
-| **Inbox** | Scans, Mails, Ordner-Importe und Uploads warten auf die Abnahme: Die KI schlägt Name, Tags und Felder vor, du gibst einzeln oder **alle auf einmal** frei. Filter nach Quelle (Scanner, jedes Postfach, jeder Ordner, Upload). |
-| **Erkennen** | Tesseract und Poppler im Hintergrund, auch für gescannte PDFs und Fotos. Volltextsuche mit Wortanfängen, Wortfolgen und Filtern (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
-| **Ordnen** | Farbige Tags, **Ordner aus Tags** (verschachtelt), **Tagging-Regeln** („enthält Northwind → Rechnung“), eigene **Eigenschaften** (Text, Zahl, Datum, Ja/Nein, Auswahl, Mehrfachauswahl, Benutzer, Verweis auf ein Dokument) |
-| **Zeitleiste** | Senkrechte Zeitleiste neben den Dokumenten: oben heute, darunter jeder Tag mit Post und die Lücken dazwischen („12 Tage ohne Dokumente“). Filter nach Tag, Art und Text. |
-| **Erinnerungen** | „Erinnere mich in 10 Tagen“ an jedem Dokument, mit Notiz. Fällige Erinnerungen stehen in der Seitenleiste und oben in der Zeitleiste. |
-| **Drucken** | Auf jedem **IPP-Netzwerkdrucker** (AirPrint, IPP Everywhere, Mopria, CUPS), den der Server findet. PDFs gehen direkt, an Drucker, die nur JPEG annehmen, als Seitenbilder. |
-| **KI, jeder Anbieter** | OpenRouter (kostenlose Modelle eingebaut), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** oder jede OpenAI-kompatible Adresse. Modelle ohne Bildeingang bekommen den erkannten Text. |
-| **Dieter** | Chat-Assistent unten rechts: *„Wie lautet meine Versicherungsnummer?“*, *„Alle Lohnabrechnungen von Fabrikam 2026“*. Er sucht, liest die passenden Stellen und antwortet mit Links zu den Dokumenten. |
-| **Teams** | Mehrere Organisationen, **mehrere Konten je Organisation** (Einladungen, Rollen Besitzer/Admin/Mitglied, Besitz übergeben), API-Keys mit Rechten, Webhooks (Standard-Webhooks-Signatur), öffentliche Freigabelinks |
-| **Sprachen** | Deutsch, English, Français, Italiano, Español, Português, Nederlands (weitere über `locales/<code>.json`) |
-| **Sicher** | Eine verschlüsselte Datei, Argon2-Passwörter, CSP ohne Inline-Skripte, CSRF-Schutz, Dateien nur über die API |
-
-## Bilder
+## Funkcje
 
 | | |
 |---|---|
-| ![Dieter](screenshots/dieter.png) | ![Inbox](screenshots/inbox.png) |
-| **Dieter** antwortet mit Quellen | **Inbox**: prüfen und freigeben, nach Quelle filtern |
-| ![Dokument](screenshots/document.png) | ![KI-Anbieter](screenshots/settings-ai.png) |
-| **Dokument**: PDF-Ansicht, Tags, Erinnerungen, Drucken | **KI & Modelle**: jeder Anbieter, lokal oder Cloud |
-| ![Erinnerungen](screenshots/reminders.png) | ![Mitglieder](screenshots/members.png) |
-| **Erinnerungen** | **Mitglieder** und Einladungen |
+| **Przechwytywanie** | Przeciągnij i upuść, przesyłanie, **skanery sieciowe** (eSCL/AirScan: Canon, HP, Epson, Brother …), **skrzynki e-mail** (IMAP, kilka kont), **obserwowane foldery** (np. folder skanów na NAS), REST API |
+| **Skrzynka odbiorcza** | Skany, maile, importy z folderów i przesłane pliki czekają na przegląd: AI proponuje nazwę, tagi i pola, a Ty zatwierdzasz pojedynczo lub **wszystko naraz**. Filtruj według źródła (skaner, każda skrzynka, każdy folder, przesłanie). |
+| **Rozpoznawanie** | Tesseract i Poppler w tle, także dla zeskanowanych PDF-ów i zdjęć; wyszukiwanie pełnotekstowe z prefiksami, frazami i filtrami (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
+| **Porządkowanie** | Kolorowe tagi, **foldery tworzone z tagów** (zagnieżdżone), **reguły tagowania** („zawiera Northwind → Faktura”), własne **właściwości** (tekst, liczba, data, tak/nie, wybór, wielokrotny wybór, użytkownik, link do dokumentu) |
+| **Oś czasu** | Pionowa oś czasu obok dokumentów: dziś na górze, poniżej każdy dzień z pocztą i ciche przerwy między nimi („12 dni bez dokumentów”). Filtruj według tagu, typu i tekstu. |
+| **Przypomnienia** | „Przypomnij mi za 10 dni” przy dowolnym dokumencie, z notatką; zaległe przypomnienia pojawiają się na pasku bocznym i na górze osi czasu. |
+| **Druk** | Drukuj dokumenty na dowolnej **sieciowej drukarce IPP** (AirPrint, IPP Everywhere, Mopria, CUPS) znalezionej przez serwer. PDF-y idą bezpośrednio lub jako obrazy stron do drukarek przyjmujących tylko JPEG. |
+| **AI, dowolny dostawca** | OpenRouter (wbudowane darmowe modele), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** lub dowolny URL zgodny z OpenAI. Modele tekstowe otrzymują rozpoznany tekst zamiast obrazów. |
+| **Dieter** | Asystent czatu (w prawym dolnym rogu): *„Jaki jest mój numer ubezpieczenia?”*, *„Wszystkie odcinki wypłat od Fabrikam w 2026”*. Wyszukuje, czyta pasujące fragmenty i odpowiada z linkami do dokumentów. |
+| **Zespoły** | Wiele organizacji, **wiele kont na organizację** (zaproszenie, role: właściciel, administrator, członek; przekazanie własności), klucze API z uprawnieniami, webhooki (podpisy Standard Webhooks), publiczne linki do udostępniania |
+| **Języki** | English, Deutsch, Français, Italiano, Español, Português, Nederlands, 中文, 日本語, Polski, Русский, العربية, 한국어, Türkçe, Bahasa Indonesia, हिन्दी, Tiếng Việt, ไทย, Українська, Čeština, Română, Magyar, Ελληνικά, Svenska, Norsk, Dansk, Suomi, עברית, বাংলা, فارسی (więcej przez `locales/<code>.json`) |
+| **Domyślnie bezpieczne** | Jeden zaszyfrowany plik, hasła Argon2, CSP bez skryptów inline, ochrona CSRF, pliki tylko przez API |
 
-## Schnellstart
+## Zrzuty ekranu
 
-Du brauchst Docker. Das Image enthält Programm, Oberfläche, Tesseract (Deutsch, Englisch) und Poppler.
+| | |
+|---|---|
+| ![Dieter, asystent](screenshots/dieter.png) | ![Skrzynka odbiorcza z propozycjami AI](screenshots/inbox.png) |
+| **Dieter** odpowiada ze źródłami | **Skrzynka odbiorcza**: przegląd i zatwierdzanie, filtr według źródła |
+| ![Widok dokumentu](screenshots/document.png) | ![Dostawcy AI](screenshots/settings-ai.png) |
+| **Dokument**: przeglądarka PDF, tagi, przypomnienia, druk | **AI i modele**: każdy dostawca, lokalny lub w chmurze |
+| ![Przypomnienia](screenshots/reminders.png) | ![Członkowie](screenshots/members.png) |
+| **Przypomnienia** | **Członkowie** i zaproszenia |
+
+## Szybki start
+
+Potrzebujesz Dockera. Obraz zawiera program, interfejs webowy, Tesseract (niemiecki, angielski) i Poppler.
 
 ```bash
 git clone https://github.com/nicorenezweers/nrzPaper.git
@@ -58,26 +53,26 @@ docker build -t nrzpaper .
 docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 ```
 
-<http://localhost:8320> öffnen. Das erste Konto wird Administrator. Danach ist die Registrierung zu, bis du sie unter *Einstellungen → Registrierung & Benutzer* öffnest. Dort legst du auch Konten für andere an.
+Otwórz <http://localhost:8320>. Pierwsze utworzone konto zostaje administratorem. Potem rejestracja jest zamknięta, dopóki nie otworzysz jej w *Ustawienia → Rejestracja i użytkownicy*, gdzie możesz też tworzyć konta dla innych.
 
 ### Docker Compose
 
 ```yaml
 services:
   nrzpaper:
-    build: .                      # oder: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # lub: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:
       - "8320:8320"
     volumes:
-      - nrzpaper-data:/data       # verschlüsselte Datenbank + Schlüsseldatei
-      - /srv/scans:/scans         # optional: Ordner für den Ordner-Eingang
+      - nrzpaper-data:/data       # zaszyfrowana baza danych + plik klucza
+      - /srv/scans:/scans         # opcjonalnie: folder dla skrzynki folderowej
     environment:
       TZ: Europe/Zurich
-      # NRZPAPER_DB_KEY: "ein-langes-geheimnis"   # sonst wird /data/nrzpaper.key erzeugt
-      # NRZPAPER_COOKIE_SECURE: "true"            # hinter HTTPS
-      # NRZPAPER_AI_PROVIDER: "openai"            # oder in der Oberfläche einstellen
+      # NRZPAPER_DB_KEY: "a-long-secret"     # inaczej tworzony jest /data/nrzpaper.key
+      # NRZPAPER_COOKIE_SECURE: "true"       # gdy udostępniane przez HTTPS
+      # NRZPAPER_AI_PROVIDER: "openai"       # lub ustaw w interfejsie webowym
       # NRZPAPER_AI_KEY: "sk-…"
 
 volumes:
@@ -88,101 +83,121 @@ volumes:
 docker compose up -d
 ```
 
-> **Sichere `/data`.** Dort liegen `nrzpaper.db` (alles, verschlüsselt) und `nrzpaper.key`. Ohne den Schlüssel lässt sich die Datenbank nicht öffnen. Wenn du `NRZPAPER_DB_KEY` setzt, bewahre stattdessen diesen Wert gut auf.
+> **Twórz kopie zapasowe `/data`.** Znajdują się tam `nrzpaper.db` (wszystko, zaszyfrowane) i `nrzpaper.key`. Bez klucza nie można otworzyć bazy danych. Jeśli ustawisz `NRZPAPER_DB_KEY`, przechowuj bezpiecznie tę wartość.
 
-### Beide Architekturen
+### Obie architektury
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/nrzpaper:1.0.0 --push .
 ```
 
-## Erste Schritte
+Rust jest kompilowany krzyżowo, a nie emulowany, więc kompilacja arm64 jest szybka na maszynie x86 i odwrotnie.
 
-1. **Hochladen**: ein paar PDFs oder Fotos. Der Text wird im Hintergrund erkannt.
-2. **Tags** anlegen (z. B. *Rechnung*, *Versicherung*) und beschreiben. Die KI vergibt sie anhand der Beschreibung.
-3. **KI** (*Einstellungen → KI & Modelle*): Anbieter wählen, Schlüssel eintragen (oder die eingebauten kostenlosen OpenRouter-Modelle bzw. ein lokales Ollama nutzen), *Modelle laden*, *Verbindung testen*.
-4. **Scanner** (*Profil → Scanner*): *Scanner im Netz suchen* findet eSCL/AirScan-Geräte, dann *Scannen* in der Seitenleiste.
-5. **E-Mail** (*Profil → E-Mail-Eingang*): ein oder mehrere IMAP-Postfächer. PDFs und Bilder aus Anhängen landen in der Inbox.
-6. **Ordner-Eingang** (*Einstellungen → Ordner-Eingang*, Admins): einen Server-Ordner wie `/scans` überwachen (vorher in den Container einbinden).
-7. **Drucker** (*Einstellungen → Drucker*, Admins): *Im Netz suchen* oder `ipp://drucker/ipp/print` eintragen. Danach druckt jedes Mitglied von der Dokumentseite aus.
+## Pierwsze kroki
 
-## Einstellungen
+1. **Prześlij** kilka PDF-ów lub zdjęć: tekst jest rozpoznawany w tle.
+2. **Tagi**: utwórz tagi, np. *Faktura* lub *Ubezpieczenie*, i dodaj opis. AI używa go do przypisywania tagów.
+3. **AI** (*Ustawienia → AI i modele*): wybierz dostawcę, wklej klucz (lub użyj wbudowanych darmowych modeli OpenRouter albo lokalnego Ollama), następnie *Wczytaj modele* i *Testuj połączenie*.
+4. **Skaner** (*Profil → Skaner*): *Szukaj w sieci* znajduje skanery eSCL/AirScan; następnie *Skanuj* na pasku bocznym.
+5. **E-mail** (*Profil → Skrzynka e-mail*): dodaj jedną lub więcej skrzynek IMAP; PDF-y i obrazy z załączników trafiają do skrzynki odbiorczej.
+6. **Skrzynka folderowa** (*Ustawienia → Skrzynka folderowa*, administratorzy): obserwuj folder serwera, np. `/scans` (najpierw zamontuj go w kontenerze).
+7. **Drukarki** (*Ustawienia → Drukarki*, administratorzy): *Szukaj w sieci* lub wpisz `ipp://printer/ipp/print`; potem każdy członek może drukować ze strony dokumentu.
 
-Jede Einstellung geht als Umgebungsvariable mit dem Präfix `NRZPAPER_` (oder in `Rocket.toml`).
+## Konfiguracja
 
-| Variable | Vorgabe | Bedeutung |
+Każde ustawienie można podać jako zmienną środowiskową z prefiksem `NRZPAPER_` (lub w `Rocket.toml`).
+
+| Zmienna | Domyślnie | Znaczenie |
 |---|---|---|
-| `NRZPAPER_DATA_DIR` | `/data` (Image) | Datenbank, Schlüsseldatei, Eingangsordner |
-| `NRZPAPER_DB_KEY` | – | Datenbankschlüssel. Fehlt er, wird `nrzpaper.key` im Datenordner erzeugt |
-| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Wo der Server lauscht |
-| `NRZPAPER_COOKIE_SECURE` | `false` | Hinter HTTPS auf `true` |
-| `NRZPAPER_REGISTRATION_OPEN` | `false` | Selbst registrieren erlauben (auch in der Oberfläche umschaltbar) |
-| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Tesseract-Sprachen (das Image bringt `deu` und `eng` mit) |
-| `NRZPAPER_OCR_WORKERS` | `2` | Gleichzeitige Texterkennungen |
-| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Tage im Papierkorb |
-| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | So lange bleiben nicht freigegebene Inbox-Einträge |
-| `NRZPAPER_SCANNER_URL` | – | Voreingestellter Scanner für neue Konten, z. B. `http://192.168.1.50` |
-| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Netze für die Scanner- und Druckersuche |
+| `NRZPAPER_DATA_DIR` | `/data` (obraz) | Baza danych, plik klucza i foldery przyjmowania |
+| `NRZPAPER_DB_KEY` | – | Klucz bazy danych; jeśli nie ustawiono, w folderze danych generowany jest `nrzpaper.key` |
+| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Gdzie nasłuchuje serwer |
+| `NRZPAPER_COOKIE_SECURE` | `false` | Ustaw `true` za HTTPS |
+| `NRZPAPER_REGISTRATION_OPEN` | `false` | Zezwól na samodzielną rejestrację (można też przełączyć w UI) |
+| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Języki Tesseract (obraz zawiera `deu` i `eng`) |
+| `NRZPAPER_OCR_WORKERS` | `2` | Równoległe zadania OCR |
+| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Dni w koszu przed ostatecznym usunięciem |
+| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | Dni przechowywania niezatwierdzonych elementów skrzynki |
+| `NRZPAPER_SCANNER_URL` | – | Wstępnie ustawiony skaner dla nowych użytkowników, np. `http://192.168.1.50` |
+| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Sieci przeszukiwane w poszukiwaniu skanerów i drukarek |
 | `NRZPAPER_AI_PROVIDER` | `openrouter` | `openai`, `anthropic`, `gemini`, `mistral`, `groq`, `ollama`, `custom`, … |
-| `NRZPAPER_AI_KEY` / `_URL` / `_MODEL` | – | Schlüssel, Adresse und Modell für diesen Anbieter |
-| `NRZPAPER_OPENROUTER_KEY` | – | OpenRouter-Schlüssel (Alternative zu oben) |
-| `NRZPAPER_LOG` | `info` | Protokoll, z. B. `debug` |
+| `NRZPAPER_AI_KEY` / `NRZPAPER_AI_URL` / `NRZPAPER_AI_MODEL` | – | Klucz, bazowy URL i model dla tego dostawcy |
+| `NRZPAPER_OPENROUTER_KEY` | – | Klucz OpenRouter (alternatywa dla powyższego) |
+| `NRZPAPER_LOG` | `info` | Filtr logów, np. `debug` |
 
-Was in der Oberfläche eingestellt wird (KI-Anbieter, Schlüssel, Modelle, Registrierung), liegt verschlüsselt in der Datenbank und hat Vorrang vor der Umgebung.
+Ustawienia z interfejsu webowego (dostawca AI, klucze, modele, rejestracja) są przechowywane w zaszyfrowanej bazie danych i mają pierwszeństwo przed środowiskiem.
 
-### KI-Anbieter
+### Dostawcy AI
 
-| Anbieter | Adresse | Hinweis |
+| Dostawca | Adres | Uwagi |
 |---|---|---|
-| OpenRouter | eingebaut | Kostenlose Bild-Modelle, eigener Schlüssel optional |
-| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | eingebaut | API-Schlüssel des Anbieters |
-| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Modell = Name der Bereitstellung |
-| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` usw. | Kein Schlüssel nötig |
-| Alles OpenAI-Kompatible | eigene Adresse | Schlüssel optional |
+| OpenRouter | wbudowany | Darmowe modele wizualne; własny klucz opcjonalny |
+| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | wbudowany | Klucz API dostawcy |
+| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Model = nazwa wdrożenia |
+| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` itp. | Klucz niepotrzebny |
+| Cokolwiek zgodne z OpenAI | Twój URL | Klucz opcjonalny |
 
-Modelle ohne Bildeingang: *„Modell liest keine Bilder – erkannten Text schicken“* anhaken. Anbieter ohne PDF-Eingang bekommen automatisch die ersten Seiten als Bilder. Die Sprache von Titel und Zusammenfassung stellst du unter *Sprache der Vorschläge* ein.
+Modele, które nie czytają obrazów: zaznacz *„Model nie czyta obrazów – wyślij rozpoznany tekst”*. Dostawcy, którzy nie przyjmują PDF-ów, automatycznie dostają pierwsze strony jako obrazy. Język proponowanych tytułów i podsumowań ustawiasz w *Język propozycji*.
 
-## REST-API
+## REST API
 
-API-Key unter *Profil → API-Keys* anlegen (Rechte wählen). Alles liegt unter `/api/v1` mit `Authorization: Bearer np_…`.
+Utwórz klucz API w *Profil → Klucze API* (wybierz uprawnienia). Wszystkie endpointy są pod `/api/v1` i przyjmują `Authorization: Bearer np_…`.
 
 ```bash
-TOKEN=np_dein_key
+TOKEN=np_your_key
 BASE=http://localhost:8320/api/v1
 
-curl -H "Authorization: Bearer $TOKEN" $BASE/organizations                     # Organisationen
-curl -H "Authorization: Bearer $TOKEN" -F file=@rechnung.pdf \
-     $BASE/organizations/$ORG/documents                                          # hochladen
+# organizacje
+curl -H "Authorization: Bearer $TOKEN" $BASE/organizations
+
+# przesyłanie (kilka plików naraz kilkoma -F)
+curl -H "Authorization: Bearer $TOKEN" -F file=@invoice.pdf \
+     $BASE/organizations/$ORG/documents
+
+# wyszukiwanie: ta sama składnia co w UI
 curl -H "Authorization: Bearer $TOKEN" -G $BASE/organizations/$ORG/documents \
-     --data-urlencode 'searchQuery=northwind tag:rechnung created:2026'          # suchen
-curl -H "Authorization: Bearer $TOKEN" -o datei.pdf \
-     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"                 # herunterladen
+     --data-urlencode 'searchQuery=northwind tag:invoice created:2026'
+
+# pobierz plik
+curl -H "Authorization: Bearer $TOKEN" -o out.pdf \
+     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"
+
+# dodaj tag
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags        # Tag setzen
+     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags
+
+# publiczny link ważny 7 dni
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links # Freigabelink
-curl $BASE/health                                                                 # Zustand
+     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links
+
+# sprawdzenie stanu (klucz niepotrzebny)
+curl $BASE/health
 ```
 
-Webhooks (*Einstellungen → Webhooks*) schicken signiertes JSON (`webhook-id`, `webhook-timestamp`, `webhook-signature`) für `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` und `document:tag:removed`.
+Webhooki (*Ustawienia → Webhooki*) wysyłają podpisany JSON (`webhook-id`, `webhook-timestamp`, `webhook-signature`) dla `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` i `document:tag:removed`.
 
-Der Eingangsordner `data/ingestion/<Organisations-ID>/` übernimmt Dateien direkt als Dokumente. Überwachte Ordner (*Ordner-Eingang*) legen sie zuerst zur Prüfung in die Inbox.
+Folder przyjmowania `data/ingestion/<organization-id>/` importuje pliki bezpośrednio jako dokumenty. Obserwowane foldery (*Skrzynka folderowa*) najpierw wysyłają je do skrzynki odbiorczej do przeglądu.
 
-## Entwicklung
+## Rozwój
 
 ```bash
-cargo run                         # Server, http://localhost:8320
+# backend (Rust 1.85+, Tesseract i Poppler do OCR)
+cargo run                         # http://localhost:8320
 cargo test
 
+# interfejs webowy z hot reload (dx = dioxus-cli 0.7)
 rustup target add wasm32-unknown-unknown
 cargo install dioxus-cli --version 0.7.10 --locked
-cd ui && dx serve                 # Oberfläche mit Hot Reload, http://localhost:8080
+cd ui && dx serve                 # http://localhost:8080, proxy /api do :8320
 
-scripts/ui.sh && cargo build --release   # Oberfläche ins Programm einbetten
+# osadź interfejs w programie
+scripts/ui.sh && cargo build --release
 ```
 
-Übersetzungen liegen in `locales/<sprache>.json` (deutscher Text → Übersetzung). `scripts/i18n_extract.py` erneuert `locales/strings.json` und zeigt, was je Sprache fehlt. Aufbau: [ARCHITECTURE.md](../ARCHITECTURE.md).
+Tłumaczenia znajdują się w `locales/<language>.json` (niemiecki tekst źródłowy → tłumaczenie). `scripts/i18n_extract.py` odświeża `locales/strings.json` i raportuje brakujące wpisy według języka.
 
-## Lizenz
+Szczegóły architektury: [ARCHITECTURE.md](../ARCHITECTURE.md).
 
-AGPL-3.0-or-later. Oberflächen-Bausteine nach [rust-ui](https://github.com/rust-ui/ui) (MIT), PDF-Ansicht mit [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), Schrift [Inter](https://rsms.me/inter/) (OFL).
+## Licencja
+
+AGPL-3.0-or-later. Komponenty UI bazują na [rust-ui](https://github.com/rust-ui/ui) (MIT), przeglądarka PDF na [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), czcionka to [Inter](https://rsms.me/inter/) (OFL).

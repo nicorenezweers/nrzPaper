@@ -1,55 +1,49 @@
-<!--
-Übersetzungsvorlage für Türkçe.
-Bitte den Inhalt unten in die jeweilige Sprache übersetzen.
--->
-
 <div align="center">
 
 <img src="../static/icon.png" width="96" alt="nrzPaper">
 
 # nrzPaper
 
-**Selbst gehostete Dokumentenverwaltung in Rust: Papierkram scannen, erkennen, taggen und finden – verschlüsselt in einer Datei.**
+**Rust ile kendi sunucunda belge yönetimi: evrakını tara, tanı, etiketle ve bul — tek bir dosyada şifreli.**
 
-[English](../README.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md)
+[English](../README.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Português](README.pt.md) · [Nederlands](README.nl.md) · [中文](README.zh.md) · [日本語](README.ja.md) · [Polski](README.pl.md) · [Русский](README.ru.md) · [العربية](README.ar.md) · [한국어](README.ko.md) · [Türkçe](README.tr.md) · [Bahasa Indonesia](README.id.md) · [हिन्दी](README.hi.md) · [Tiếng Việt](README.vi.md) · [ไทย](README.th.md) · [Українська](README.uk.md) · [Čeština](README.cs.md) · [Română](README.ro.md) · [Magyar](README.hu.md) · [Ελληνικά](README.el.md) · [Svenska](README.sv.md) · [Norsk](README.nb.md) · [Dansk](README.da.md) · [Suomi](README.fi.md) · [עברית](README.he.md) · [বাংলা](README.bn.md) · [فارسی](README.fa.md)
 
-![Dokumente mit Zeitleiste](screenshots/documents.png)
+![Zaman çizelgeli belgeler](screenshots/documents.png)
 
 </div>
 
-nrzPaper ist ein einziges Programm ohne externe Datenbank. Alles liegt in einer SQLCipher-verschlüsselten SQLite-Datei, auch die Dateien selbst. Es erkennt Text mit Tesseract, scannt direkt von Netzwerkscannern, holt E-Mail-Anhänge ab und lässt eine KI deiner Wahl Titel, Tags und Metadaten vorschlagen. **Dieter**, der eingebaute Assistent, beantwortet Fragen zu deinen Dokumenten und verlinkt die Quellen. Die Oberfläche ist eine Rust/WebAssembly-App (Dioxus) in ruhigem Dunkelgrau und funktioniert auch am Handy.
+nrzPaper, harici veritabanı olmayan tek bir programdır. Dosyaların kendisi dahil her şey SQLCipher ile şifrelenmiş tek bir SQLite dosyasında yaşar. Tesseract ile OCR yapar, doğrudan ağ tarayıcılarından tarar, e-posta eklerini alır ve seçtiğiniz bir yapay zekânın başlık, etiket ve meta veri önermesini sağlar. Yerleşik asistan **Dieter** belgelerinizle ilgili soruları yanıtlar ve kaynakları bağlar. Web arayüzü sakin koyu temalı bir Rust/WebAssembly uygulamasıdır (Dioxus) ve telefonlarda da çalışır.
 
-## Funktionen
-
-| | |
-|---|---|
-| **Erfassen** | Drag & Drop, Upload, **Netzwerkscanner** (eSCL/AirScan: Canon, HP, Epson, Brother …), **E-Mail-Postfächer** (IMAP, mehrere Konten), **überwachte Ordner** (z. B. der Scan-Ordner auf dem NAS), REST-API |
-| **Inbox** | Scans, Mails, Ordner-Importe und Uploads warten auf die Abnahme: Die KI schlägt Name, Tags und Felder vor, du gibst einzeln oder **alle auf einmal** frei. Filter nach Quelle (Scanner, jedes Postfach, jeder Ordner, Upload). |
-| **Erkennen** | Tesseract und Poppler im Hintergrund, auch für gescannte PDFs und Fotos. Volltextsuche mit Wortanfängen, Wortfolgen und Filtern (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
-| **Ordnen** | Farbige Tags, **Ordner aus Tags** (verschachtelt), **Tagging-Regeln** („enthält Northwind → Rechnung“), eigene **Eigenschaften** (Text, Zahl, Datum, Ja/Nein, Auswahl, Mehrfachauswahl, Benutzer, Verweis auf ein Dokument) |
-| **Zeitleiste** | Senkrechte Zeitleiste neben den Dokumenten: oben heute, darunter jeder Tag mit Post und die Lücken dazwischen („12 Tage ohne Dokumente“). Filter nach Tag, Art und Text. |
-| **Erinnerungen** | „Erinnere mich in 10 Tagen“ an jedem Dokument, mit Notiz. Fällige Erinnerungen stehen in der Seitenleiste und oben in der Zeitleiste. |
-| **Drucken** | Auf jedem **IPP-Netzwerkdrucker** (AirPrint, IPP Everywhere, Mopria, CUPS), den der Server findet. PDFs gehen direkt, an Drucker, die nur JPEG annehmen, als Seitenbilder. |
-| **KI, jeder Anbieter** | OpenRouter (kostenlose Modelle eingebaut), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** oder jede OpenAI-kompatible Adresse. Modelle ohne Bildeingang bekommen den erkannten Text. |
-| **Dieter** | Chat-Assistent unten rechts: *„Wie lautet meine Versicherungsnummer?“*, *„Alle Lohnabrechnungen von Fabrikam 2026“*. Er sucht, liest die passenden Stellen und antwortet mit Links zu den Dokumenten. |
-| **Teams** | Mehrere Organisationen, **mehrere Konten je Organisation** (Einladungen, Rollen Besitzer/Admin/Mitglied, Besitz übergeben), API-Keys mit Rechten, Webhooks (Standard-Webhooks-Signatur), öffentliche Freigabelinks |
-| **Sprachen** | Deutsch, English, Français, Italiano, Español, Português, Nederlands (weitere über `locales/<code>.json`) |
-| **Sicher** | Eine verschlüsselte Datei, Argon2-Passwörter, CSP ohne Inline-Skripte, CSRF-Schutz, Dateien nur über die API |
-
-## Bilder
+## Özellikler
 
 | | |
 |---|---|
-| ![Dieter](screenshots/dieter.png) | ![Inbox](screenshots/inbox.png) |
-| **Dieter** antwortet mit Quellen | **Inbox**: prüfen und freigeben, nach Quelle filtern |
-| ![Dokument](screenshots/document.png) | ![KI-Anbieter](screenshots/settings-ai.png) |
-| **Dokument**: PDF-Ansicht, Tags, Erinnerungen, Drucken | **KI & Modelle**: jeder Anbieter, lokal oder Cloud |
-| ![Erinnerungen](screenshots/reminders.png) | ![Mitglieder](screenshots/members.png) |
-| **Erinnerungen** | **Mitglieder** und Einladungen |
+| **Yakalama** | Sürükle-bırak, yükleme, **ağ tarayıcıları** (eSCL/AirScan: Canon, HP, Epson, Brother …), **e-posta kutuları** (IMAP, birden çok hesap), **izlenen klasörler** (ör. NAS'taki tarama klasörü), REST API |
+| **Gelen kutusu** | Taramalar, e-postalar, klasör içe aktarımları ve yüklemeler incelemeyi bekler: YZ ad, etiket ve alanları önerir; tek tek veya **hepsini birden** onaylarsınız. Kaynağa göre filtreleyin (tarayıcı, her posta kutusu, her klasör, yükleme). |
+| **Tanıma** | Arka planda Tesseract ve Poppler, taranmış PDF'ler ve fotoğraflar için de; önekler, ifadeler ve filtrelerle tam metin arama (`tag:`, `-tag:`, `type:`, `created:>2026-06-01`, …) |
+| **Düzenleme** | Renkli etiketler, **etiketlerden oluşan klasörler** (iç içe), **etiketleme kuralları** ("Northwind içeriyorsa → Fatura"), özel **özellikler** (metin, sayı, tarih, evet/hayır, seçim, çoklu seçim, kullanıcı, belge bağlantısı) |
+| **Zaman çizelgesi** | Belgelerin yanında dikey zaman çizelgesi: en üstte bugün, altında e-postalı her gün ve aralarındaki sessiz boşluklar ("12 gün belge yok"). Etiket, tür ve metne göre filtreleyin. |
+| **Hatırlatıcılar** | Herhangi bir belgeye notla "10 gün sonra hatırlat"; zamanı gelen hatırlatıcılar kenar çubuğunda ve zaman çizelgesinin üstünde görünür. |
+| **Yazdırma** | Sunucunun bulduğu herhangi bir **IPP ağ yazıcısında** (AirPrint, IPP Everywhere, Mopria, CUPS) belge yazdırın. PDF'ler doğrudan veya yalnızca JPEG kabul eden yazıcılara sayfa görüntüsü olarak gider. |
+| **YZ, her sağlayıcı** | OpenRouter (ücretsiz modeller yerleşik), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** veya OpenAI uyumlu herhangi bir URL. Yalnızca metin modelleri görüntü yerine OCR metnini alır. |
+| **Dieter** | Sohbet asistanı (sağ altta): *"Sigorta numaram nedir?"*, *"2026'daki tüm Fabrikam bordroları"*. Arar, eşleşen bölümleri okur ve belgelere bağlantılarla yanıtlar. |
+| **Ekipler** | Birden çok kuruluş, **kuruluş başına birden çok hesap** (davet, roller: sahip, yönetici, üye; sahiplik devri), izinli API anahtarları, web kancaları (Standard Webhooks imzaları), genel paylaşım bağlantıları |
+| **Varsayılan olarak güvenli** | Tek şifreli dosya, Argon2 parolalar, satır içi betiksiz CSP, CSRF koruması, dosyalar yalnızca API üzerinden |
 
-## Schnellstart
+## Ekran görüntüleri
 
-Du brauchst Docker. Das Image enthält Programm, Oberfläche, Tesseract (Deutsch, Englisch) und Poppler.
+| | |
+|---|---|
+| ![Dieter, asistan](screenshots/dieter.png) | ![YZ önerileriyle gelen kutusu](screenshots/inbox.png) |
+| **Dieter** kaynaklarla yanıtlar | **Gelen kutusu**: incele ve onayla, kaynağa göre filtrele |
+| ![Belge görünümü](screenshots/document.png) | ![YZ sağlayıcıları](screenshots/settings-ai.png) |
+| **Belge**: PDF görüntüleyici, etiketler, hatırlatıcılar, yazdırma | **YZ ve modeller**: her sağlayıcı, yerel veya bulut |
+| ![Hatırlatıcılar](screenshots/reminders.png) | ![Üyeler](screenshots/members.png) |
+| **Hatırlatıcılar** | **Üyeler** ve davetler |
+
+## Hızlı başlangıç
+
+Docker gerekir. İmaj programı, web arayüzünü, Tesseract'ı (Almanca, İngilizce) ve Poppler'ı içerir.
 
 ```bash
 git clone https://github.com/nicorenezweers/nrzPaper.git
@@ -58,26 +52,26 @@ docker build -t nrzpaper .
 docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 ```
 
-<http://localhost:8320> öffnen. Das erste Konto wird Administrator. Danach ist die Registrierung zu, bis du sie unter *Einstellungen → Registrierung & Benutzer* öffnest. Dort legst du auch Konten für andere an.
+<http://localhost:8320> adresini açın. Oluşturduğunuz ilk hesap yönetici olur. Ardından, *Ayarlar → Kayıt ve kullanıcılar* altında açana kadar kayıt kapalıdır; orada başkaları için de hesap oluşturabilirsiniz.
 
 ### Docker Compose
 
 ```yaml
 services:
   nrzpaper:
-    build: .                      # oder: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # veya: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:
       - "8320:8320"
     volumes:
-      - nrzpaper-data:/data       # verschlüsselte Datenbank + Schlüsseldatei
-      - /srv/scans:/scans         # optional: Ordner für den Ordner-Eingang
+      - nrzpaper-data:/data       # şifreli veritabanı + anahtar dosyası
+      - /srv/scans:/scans         # isteğe bağlı: klasör gelen kutusu için klasör
     environment:
       TZ: Europe/Zurich
-      # NRZPAPER_DB_KEY: "ein-langes-geheimnis"   # sonst wird /data/nrzpaper.key erzeugt
-      # NRZPAPER_COOKIE_SECURE: "true"            # hinter HTTPS
-      # NRZPAPER_AI_PROVIDER: "openai"            # oder in der Oberfläche einstellen
+      # NRZPAPER_DB_KEY: "a-long-secret"     # aksi halde /data/nrzpaper.key oluşturulur
+      # NRZPAPER_COOKIE_SECURE: "true"       # HTTPS üzerinden sunulduğunda
+      # NRZPAPER_AI_PROVIDER: "openai"       # veya web arayüzünde ayarlayın
       # NRZPAPER_AI_KEY: "sk-…"
 
 volumes:
@@ -88,101 +82,121 @@ volumes:
 docker compose up -d
 ```
 
-> **Sichere `/data`.** Dort liegen `nrzpaper.db` (alles, verschlüsselt) und `nrzpaper.key`. Ohne den Schlüssel lässt sich die Datenbank nicht öffnen. Wenn du `NRZPAPER_DB_KEY` setzt, bewahre stattdessen diesen Wert gut auf.
+> **`/data` dizinini yedekleyin.** İçinde `nrzpaper.db` (her şey, şifreli) ve `nrzpaper.key` bulunur. Anahtar olmadan veritabanı açılamaz. `NRZPAPER_DB_KEY` ayarladıysanız bunun yerine o değeri güvende tutun.
 
-### Beide Architekturen
+### Her iki mimari
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/nrzpaper:1.0.0 --push .
 ```
 
-## Erste Schritte
+Rust, emüle edilmeden çapraz derlenir; bu nedenle arm64 derlemesi x86 makinede hızlıdır ve tersi de geçerlidir.
 
-1. **Hochladen**: ein paar PDFs oder Fotos. Der Text wird im Hintergrund erkannt.
-2. **Tags** anlegen (z. B. *Rechnung*, *Versicherung*) und beschreiben. Die KI vergibt sie anhand der Beschreibung.
-3. **KI** (*Einstellungen → KI & Modelle*): Anbieter wählen, Schlüssel eintragen (oder die eingebauten kostenlosen OpenRouter-Modelle bzw. ein lokales Ollama nutzen), *Modelle laden*, *Verbindung testen*.
-4. **Scanner** (*Profil → Scanner*): *Scanner im Netz suchen* findet eSCL/AirScan-Geräte, dann *Scannen* in der Seitenleiste.
-5. **E-Mail** (*Profil → E-Mail-Eingang*): ein oder mehrere IMAP-Postfächer. PDFs und Bilder aus Anhängen landen in der Inbox.
-6. **Ordner-Eingang** (*Einstellungen → Ordner-Eingang*, Admins): einen Server-Ordner wie `/scans` überwachen (vorher in den Container einbinden).
-7. **Drucker** (*Einstellungen → Drucker*, Admins): *Im Netz suchen* oder `ipp://drucker/ipp/print` eintragen. Danach druckt jedes Mitglied von der Dokumentseite aus.
+## İlk adımlar
 
-## Einstellungen
+1. Birkaç PDF veya fotoğraf **yükleyin**: metin arka planda tanınır.
+2. **Etiketler**: *Fatura* veya *Sigorta* gibi etiketler oluşturun ve açıklama ekleyin. YZ bunu etiketleri atamak için kullanır.
+3. **YZ** (*Ayarlar → YZ ve modeller*): bir sağlayıcı seçin, anahtar yapıştırın (veya yerleşik ücretsiz OpenRouter modellerini veya yerel Ollama'yı kullanın), ardından *Modelleri yükle* ve *Bağlantıyı test et*.
+4. **Tarayıcı** (*Profil → Tarayıcı*): *Ağı ara* eSCL/AirScan tarayıcılarını bulur; ardından kenar çubuğunda *Tara*.
+5. **E-posta** (*Profil → E-posta gelen kutusu*): bir veya daha fazla IMAP posta kutusu ekleyin; eklerdeki PDF'ler ve görüntüler gelen kutusuna düşer.
+6. **Klasör gelen kutusu** (*Ayarlar → Klasör gelen kutusu*, yöneticiler): `/scans` gibi bir sunucu klasörünü izleyin (önce kapsayıcıya bağlayın).
+7. **Yazıcılar** (*Ayarlar → Yazıcılar*, yöneticiler): *Ağı ara* veya `ipp://printer/ipp/print` girin; ardından her üye belge sayfasından yazdırabilir.
 
-Jede Einstellung geht als Umgebungsvariable mit dem Präfix `NRZPAPER_` (oder in `Rocket.toml`).
+## Yapılandırma
 
-| Variable | Vorgabe | Bedeutung |
+Her ayar `NRZPAPER_` önekli bir ortam değişkeni (veya `Rocket.toml`) olarak verilebilir.
+
+| Değişken | Varsayılan | Anlamı |
 |---|---|---|
-| `NRZPAPER_DATA_DIR` | `/data` (Image) | Datenbank, Schlüsseldatei, Eingangsordner |
-| `NRZPAPER_DB_KEY` | – | Datenbankschlüssel. Fehlt er, wird `nrzpaper.key` im Datenordner erzeugt |
-| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Wo der Server lauscht |
-| `NRZPAPER_COOKIE_SECURE` | `false` | Hinter HTTPS auf `true` |
-| `NRZPAPER_REGISTRATION_OPEN` | `false` | Selbst registrieren erlauben (auch in der Oberfläche umschaltbar) |
-| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Tesseract-Sprachen (das Image bringt `deu` und `eng` mit) |
-| `NRZPAPER_OCR_WORKERS` | `2` | Gleichzeitige Texterkennungen |
-| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Tage im Papierkorb |
-| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | So lange bleiben nicht freigegebene Inbox-Einträge |
-| `NRZPAPER_SCANNER_URL` | – | Voreingestellter Scanner für neue Konten, z. B. `http://192.168.1.50` |
-| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Netze für die Scanner- und Druckersuche |
+| `NRZPAPER_DATA_DIR` | `/data` (imaj) | Veritabanı, anahtar dosyası ve alım klasörleri |
+| `NRZPAPER_DB_KEY` | – | Veritabanı anahtarı; ayarlanmazsa veri klasöründe `nrzpaper.key` oluşturulur |
+| `NRZPAPER_PORT` / `NRZPAPER_ADDRESS` | `8320` / `0.0.0.0` | Sunucunun dinlediği yer |
+| `NRZPAPER_COOKIE_SECURE` | `false` | HTTPS arkasında `true` yapın |
+| `NRZPAPER_REGISTRATION_OPEN` | `false` | Kendi kendine kayda izin ver (arayüzde de değiştirilebilir) |
+| `NRZPAPER_OCR_LANGUAGES` | `deu+eng` | Tesseract dilleri (imaj `deu` ve `eng` içerir) |
+| `NRZPAPER_OCR_WORKERS` | `2` | Paralel OCR işleri |
+| `NRZPAPER_TRASH_RETENTION_DAYS` | `30` | Kalıcı silmeden önce çöp kutusunda gün |
+| `NRZPAPER_INBOX_KEEP_DAYS` | `7` | Onaylanmamış gelen kutusu öğelerinin saklandığı gün |
+| `NRZPAPER_SCANNER_URL` | – | Yeni kullanıcılar için önceden ayarlanmış tarayıcı, ör. `http://192.168.1.50` |
+| `NRZPAPER_SCAN_SUBNETS` | `192.168.0.0/24,192.168.1.0/24` | Tarayıcı ve yazıcı aranan ağlar |
 | `NRZPAPER_AI_PROVIDER` | `openrouter` | `openai`, `anthropic`, `gemini`, `mistral`, `groq`, `ollama`, `custom`, … |
-| `NRZPAPER_AI_KEY` / `_URL` / `_MODEL` | – | Schlüssel, Adresse und Modell für diesen Anbieter |
-| `NRZPAPER_OPENROUTER_KEY` | – | OpenRouter-Schlüssel (Alternative zu oben) |
-| `NRZPAPER_LOG` | `info` | Protokoll, z. B. `debug` |
+| `NRZPAPER_AI_KEY` / `NRZPAPER_AI_URL` / `NRZPAPER_AI_MODEL` | – | O sağlayıcı için anahtar, temel URL ve model |
+| `NRZPAPER_OPENROUTER_KEY` | – | OpenRouter anahtarı (yukarıdakine alternatif) |
+| `NRZPAPER_LOG` | `info` | Günlük filtresi, ör. `debug` |
 
-Was in der Oberfläche eingestellt wird (KI-Anbieter, Schlüssel, Modelle, Registrierung), liegt verschlüsselt in der Datenbank und hat Vorrang vor der Umgebung.
+Web arayüzünde yapılan ayarlar (YZ sağlayıcısı, anahtarlar, modeller, kayıt) şifreli veritabanında saklanır ve ortam değişkenlerinden önce gelir.
 
-### KI-Anbieter
+### YZ sağlayıcıları
 
-| Anbieter | Adresse | Hinweis |
+| Sağlayıcı | Adres | Notlar |
 |---|---|---|
-| OpenRouter | eingebaut | Kostenlose Bild-Modelle, eigener Schlüssel optional |
-| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | eingebaut | API-Schlüssel des Anbieters |
-| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Modell = Name der Bereitstellung |
-| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` usw. | Kein Schlüssel nötig |
-| Alles OpenAI-Kompatible | eigene Adresse | Schlüssel optional |
+| OpenRouter | yerleşik | Ücretsiz görüntü modelleri; kendi anahtarınız isteğe bağlı |
+| OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen | yerleşik | Sağlayıcıdan API anahtarı |
+| Azure OpenAI | `https://NAME.openai.azure.com/openai/v1` | Model = dağıtım adı |
+| Ollama / LM Studio / vLLM / LocalAI | `http://host:11434/v1` vb. | Anahtar gerekmez |
+| OpenAI uyumlu her şey | kendi URL'niz | Anahtar isteğe bağlı |
 
-Modelle ohne Bildeingang: *„Modell liest keine Bilder – erkannten Text schicken“* anhaken. Anbieter ohne PDF-Eingang bekommen automatisch die ersten Seiten als Bilder. Die Sprache von Titel und Zusammenfassung stellst du unter *Sprache der Vorschläge* ein.
+Görüntü okuyamayan modeller: *"Model görüntüleri okuyamıyor – tanınan metni gönder"* seçeneğini işaretleyin. PDF kabul etmeyen sağlayıcılara otomatik olarak ilk sayfalar görüntü olarak verilir. Önerilen başlık ve özetlerin dili *Öneri dili* altında ayarlanır.
 
-## REST-API
+## REST API
 
-API-Key unter *Profil → API-Keys* anlegen (Rechte wählen). Alles liegt unter `/api/v1` mit `Authorization: Bearer np_…`.
+*Profil → API anahtarları* altında bir API anahtarı oluşturun (izinleri seçin). Tüm uç noktalar `/api/v1` altındadır ve `Authorization: Bearer np_…` kabul eder.
 
 ```bash
-TOKEN=np_dein_key
+TOKEN=np_your_key
 BASE=http://localhost:8320/api/v1
 
-curl -H "Authorization: Bearer $TOKEN" $BASE/organizations                     # Organisationen
-curl -H "Authorization: Bearer $TOKEN" -F file=@rechnung.pdf \
-     $BASE/organizations/$ORG/documents                                          # hochladen
+# kuruluşlar
+curl -H "Authorization: Bearer $TOKEN" $BASE/organizations
+
+# yükleme (birkaç -F ile aynı anda birkaç dosya)
+curl -H "Authorization: Bearer $TOKEN" -F file=@invoice.pdf \
+     $BASE/organizations/$ORG/documents
+
+# arama: arayüzdekiyle aynı sözdizimi
 curl -H "Authorization: Bearer $TOKEN" -G $BASE/organizations/$ORG/documents \
-     --data-urlencode 'searchQuery=northwind tag:rechnung created:2026'          # suchen
-curl -H "Authorization: Bearer $TOKEN" -o datei.pdf \
-     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"                 # herunterladen
+     --data-urlencode 'searchQuery=northwind tag:invoice created:2026'
+
+# dosyayı indir
+curl -H "Authorization: Bearer $TOKEN" -o out.pdf \
+     "$BASE/organizations/$ORG/documents/$DOC/file?download=true"
+
+# etiket ekle
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags        # Tag setzen
+     -d '{"tagId":"'$TAG'"}' $BASE/organizations/$ORG/documents/$DOC/tags
+
+# 7 gün geçerli genel paylaşım bağlantısı
 curl -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links # Freigabelink
-curl $BASE/health                                                                 # Zustand
+     -d '{"expiresInDays":7}' $BASE/organizations/$ORG/documents/$DOC/share-links
+
+# durum kontrolü (anahtar gerekmez)
+curl $BASE/health
 ```
 
-Webhooks (*Einstellungen → Webhooks*) schicken signiertes JSON (`webhook-id`, `webhook-timestamp`, `webhook-signature`) für `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` und `document:tag:removed`.
+Web kancaları (*Ayarlar → Web kancaları*) `document:created`, `document:updated`, `document:deleted`, `document:restored`, `document:tag:added` ve `document:tag:removed` için imzalı JSON (`webhook-id`, `webhook-timestamp`, `webhook-signature`) gönderir.
 
-Der Eingangsordner `data/ingestion/<Organisations-ID>/` übernimmt Dateien direkt als Dokumente. Überwachte Ordner (*Ordner-Eingang*) legen sie zuerst zur Prüfung in die Inbox.
+Alım klasörü `data/ingestion/<organization-id>/` dosyaları doğrudan belge olarak içe aktarır. İzlenen klasörler (*Klasör gelen kutusu*) önce inceleme için gelen kutusuna gönderir.
 
-## Entwicklung
+## Geliştirme
 
 ```bash
-cargo run                         # Server, http://localhost:8320
+# arka uç (Rust 1.85+, OCR için Tesseract ve Poppler)
+cargo run                         # http://localhost:8320
 cargo test
 
+# sıcak yeniden yüklemeli web arayüzü (dx = dioxus-cli 0.7)
 rustup target add wasm32-unknown-unknown
 cargo install dioxus-cli --version 0.7.10 --locked
-cd ui && dx serve                 # Oberfläche mit Hot Reload, http://localhost:8080
+cd ui && dx serve                 # http://localhost:8080, /api'yi :8320'ye yönlendirir
 
-scripts/ui.sh && cargo build --release   # Oberfläche ins Programm einbetten
+# arayüzü programa göm
+scripts/ui.sh && cargo build --release
 ```
 
-Übersetzungen liegen in `locales/<sprache>.json` (deutscher Text → Übersetzung). `scripts/i18n_extract.py` erneuert `locales/strings.json` und zeigt, was je Sprache fehlt. Aufbau: [ARCHITECTURE.md](../ARCHITECTURE.md).
+Çeviriler `locales/<language>.json` içinde (Almanca kaynak metin → çeviri). `scripts/i18n_extract.py`, `locales/strings.json` dosyasını yeniler ve dil başına eksik girdileri bildirir.
 
-## Lizenz
+Mimari ayrıntıları: [ARCHITECTURE.md](../ARCHITECTURE.md).
 
-AGPL-3.0-or-later. Oberflächen-Bausteine nach [rust-ui](https://github.com/rust-ui/ui) (MIT), PDF-Ansicht mit [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), Schrift [Inter](https://rsms.me/inter/) (OFL).
+## Lisans
+
+AGPL-3.0-or-later. Arayüz bileşenleri [rust-ui](https://github.com/rust-ui/ui) (MIT), PDF görüntüleyici [PDF.js](https://mozilla.github.io/pdf.js/) (Apache-2.0), yazı tipi [Inter](https://rsms.me/inter/) (OFL) temellidir.

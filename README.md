@@ -47,7 +47,7 @@ nrzPaper is a single program with no external database. Everything lives in one 
 You need Docker. The image contains the program, the web interface, Tesseract (German, English) and Poppler.
 
 ```bash
-docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data ghcr.io/nicorenezweers/nrzpaper:1.0.0
+docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data ghcr.io/nicorenezweers/nrz-paper:1.0.0
 ```
 
 The image is multi-arch (`linux/amd64`, `linux/arm64`) and is published for every [release](https://github.com/nicorenezweers/nrzPaper/releases). To build it yourself instead:
@@ -65,7 +65,7 @@ Open <http://localhost:8320>. The first account you create becomes the administr
 ```yaml
 services:
   nrzpaper:
-    image: ghcr.io/nicorenezweers/nrzpaper:1.0.0   # or: build: .
+    image: ghcr.io/nicorenezweers/nrz-paper:1.0.0   # or: build: .
     container_name: nrzpaper
     restart: unless-stopped
     ports:

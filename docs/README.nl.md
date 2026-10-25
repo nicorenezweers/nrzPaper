@@ -60,7 +60,7 @@ Open <http://localhost:8320>. Het eerste account wordt beheerder. Daarna is regi
 ```yaml
 services:
   nrzpaper:
-    build: .                      # of: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # of: image: ghcr.io/nicorenezweers/nrz-paper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:

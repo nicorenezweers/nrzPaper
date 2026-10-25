@@ -60,7 +60,7 @@ Otevřete <http://localhost:8320>. První vytvořený účet se stane správcem.
 ```yaml
 services:
   nrzpaper:
-    build: .                      # nebo: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # nebo: image: ghcr.io/nicorenezweers/nrz-paper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:

@@ -60,7 +60,7 @@ Avaa <http://localhost:8320>. Ensimmäisestä luomastasi tilistä tulee ylläpit
 ```yaml
 services:
   nrzpaper:
-    build: .                      # tai: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # tai: image: ghcr.io/nicorenezweers/nrz-paper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:

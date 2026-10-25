@@ -1,7 +1,7 @@
 name: Release
 
 # Runs when a GitHub release is published (or by hand for an existing tag):
-# - pushes the multi-arch image ghcr.io/<owner>/nrzpaper:<version> (+ :latest)
+# - pushes the multi-arch image ghcr.io/<owner>/nrz-paper:<version> (+ :latest)
 # - attaches the program with its OCR package for linux amd64 and arm64 to the release
 on:
   release:
@@ -31,7 +31,7 @@ jobs:
         id: v
         run: |
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/nrzpaper" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/nrz-paper" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -40,6 +40,32 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Program and OCR package
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: umbrel
+          platforms: linux/amd64,linux/arm64
+          outputs: type=local,dest=dist
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          v=${{ steps.v.outputs.version }}
+          for arch in amd64 arm64; do
+            name="nrzpaper-$v-linux-$arch"
+            mkdir -p "pkg/$name"
+            cp -r dist/linux_$arch/. "pkg/$name/"
+            cp README.md LICENSE "pkg/$name/"
+            tar -C pkg -czf "$name.tar.gz" "$name"
+            cp "dist/linux_$arch/nrzpaper" "nrzpaper-$v-linux-$arch"
+          done
+          sha256sum nrzpaper-$v-linux-* > SHA256SUMS
+          gh release upload "$TAG" nrzpaper-$v-linux-* SHA256SUMS --clobber
 
       - name: Image (linux/amd64, linux/arm64)
         uses: docker/build-push-action@v6
@@ -59,28 +85,3 @@ jobs:
             org.opencontainers.image.licenses=AGPL-3.0-or-later
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Program and OCR package
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          target: umbrel
-          platforms: linux/amd64,linux/arm64
-          outputs: type=local,dest=dist
-          cache-from: type=gha
-
-      - name: Attach to the release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          v=${{ steps.v.outputs.version }}
-          for arch in amd64 arm64; do
-            name="nrzpaper-$v-linux-$arch"
-            mkdir -p "pkg/$name"
-            cp -r dist/linux_$arch/. "pkg/$name/"
-            cp README.md LICENSE "pkg/$name/"
-            tar -C pkg -czf "$name.tar.gz" "$name"
-            cp "dist/linux_$arch/nrzpaper" "nrzpaper-$v-linux-$arch"
-          done
-          sha256sum nrzpaper-$v-linux-* > SHA256SUMS
-          gh release upload "$TAG" nrzpaper-$v-linux-* SHA256SUMS --clobber

@@ -60,7 +60,7 @@ Deschide <http://localhost:8320>. Primul cont pe care îl creezi devine administ
 ```yaml
 services:
   nrzpaper:
-    build: .                      # sau: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # sau: image: ghcr.io/nicorenezweers/nrz-paper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:

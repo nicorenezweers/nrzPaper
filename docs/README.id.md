@@ -60,7 +60,7 @@ Buka <http://localhost:8320>. Akun pertama yang Anda buat menjadi administrator.
 ```yaml
 services:
   nrzpaper:
-    build: .                      # atau: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # atau: image: ghcr.io/nicorenezweers/nrz-paper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:

@@ -60,7 +60,7 @@ Mở <http://localhost:8320>. Tài khoản đầu tiên bạn tạo sẽ trở t
 ```yaml
 services:
   nrzpaper:
-    build: .                      # hoặc: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # hoặc: image: ghcr.io/nicorenezweers/nrz-paper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:

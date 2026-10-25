@@ -60,7 +60,7 @@ Nyisd meg a <http://localhost:8320> címet. Az első létrehozott fiók lesz az 
 ```yaml
 services:
   nrzpaper:
-    build: .                      # vagy: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # vagy: image: ghcr.io/nicorenezweers/nrz-paper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:

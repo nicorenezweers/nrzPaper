@@ -60,7 +60,7 @@ docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 ```yaml
 services:
   nrzpaper:
-    build: .                      # или: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # или: image: ghcr.io/nicorenezweers/nrz-paper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:

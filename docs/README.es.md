@@ -60,7 +60,7 @@ Abre <http://localhost:8320>. La primera cuenta creada será la de administrador
 ```yaml
 services:
   nrzpaper:
-    build: .                      # o: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    build: .                      # o: image: ghcr.io/nicorenezweers/nrz-paper:1.0.0
     container_name: nrzpaper
     restart: unless-stopped
     ports:

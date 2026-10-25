@@ -556,10 +556,12 @@ async fn share_links_are_public_until_revoked() {
 
     // Abmelden: Freigabe funktioniert ohne Konto
     common::logout(&client).await;
-    let res = client.get(format!("/share/{token}")).dispatch().await;
-    assert_eq!(res.status(), Status::Ok, "Seite der Oberfläche");
-    assert_eq!(res.headers().get_one("X-Robots-Tag"), Some("noindex"));
-    drop(res);
+    // Die Seite gibt es nur, wenn die Oberfläche eingebettet ist (scripts/ui.sh vor dem Build).
+    if std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/ui/dist/public/index.html")).is_file() {
+        let res = client.get(format!("/share/{token}")).dispatch().await;
+        assert_eq!(res.status(), Status::Ok, "Seite der Oberfläche");
+        assert_eq!(res.headers().get_one("X-Robots-Tag"), Some("noindex"));
+    }
     let (s, v) = common::call(&client, "GET", format!("/api/v1/share/{token}"), None).await;
     assert_eq!(s, Status::Ok);
     assert_eq!(v["document"]["name"], "vertrag.txt");

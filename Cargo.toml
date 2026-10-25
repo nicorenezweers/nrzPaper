@@ -1,0 +1,66 @@
+[package]
+name = "nrzpaper"
+version = "1.0.0"
+edition = "2021"
+description = "nrzPaper – self-hosted document management in Rust (Rocket, SQLCipher, Tesseract, Dioxus)"
+license = "AGPL-3.0-or-later"
+rust-version = "1.85"
+
+[dependencies]
+# Web
+rocket = { version = "=0.5.1", features = ["secrets", "json"] }
+# Rocket 0.5.1 verlangt nur "^0.5.1" für diese beiden – ohne feste Version zieht
+# Cargo 0.5.2 (hyper 1.x), und Rocket 0.5.1 lässt sich nicht mehr übersetzen.
+rocket_http = "=0.5.1"
+rocket_codegen = "=0.5.1"
+
+# Datenbank: eine einzige SQLite-Datei, komplett mit SQLCipher verschlüsselt.
+# libsqlite3-sys wird hier nur aufgeführt, um für sqlx die SQLCipher-Variante
+# (inkl. FTS5) einzuschalten – Cargo vereinigt die Features beider Abhängigkeiten.
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "sqlite", "macros", "migrate", "json"] }
+libsqlite3-sys = { version = "0.37", features = ["bundled-sqlcipher-vendored-openssl"] }
+
+# Laufzeit & Hilfen
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "process", "sync", "time", "io-util"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+time = { version = "0.3", features = ["serde", "formatting", "parsing", "macros"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Sicherheit
+argon2 = "0.5"
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+base64 = "0.22"
+
+# Webhooks: ausgehende Anfragen (rustls, keine zweite OpenSSL) und HMAC-Signatur
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+hmac = "0.12"
+
+# Dateien
+notify = "8"
+infer = "0.19"
+
+regex = "1"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "tiff", "gif", "bmp"] }
+async-imap = { version = "0.10", default-features = false, features = ["runtime-tokio"] }
+mail-parser = "0.11"
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12", "logging"] }
+webpki-roots = "1"
+futures = { version = "0.3", default-features = false, features = ["std"] }
+
+[build-dependencies]
+flate2 = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true

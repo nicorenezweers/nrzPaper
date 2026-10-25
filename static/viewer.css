@@ -1,0 +1,80 @@
+/* Viewer von nrzPaper – nur Grautöne.
+   Die .textLayer-Regeln stammen aus PDF.js (pdfjs-dist 4.10.38, Apache-2.0, siehe static/vendor/pdfjs/LICENSE);
+   die Markierungsfarben sind auf Grau umgestellt. */
+
+.viewer-pages { --page-gap: 18px; }
+.pdf-page { position: relative; margin: 0 auto var(--page-gap); background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 28px rgba(0,0,0,.45); border-radius: 2px; }
+.pdf-page canvas { display: block; width: 100%; height: 100%; border-radius: 2px; }
+.pdf-page .placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #a1a1aa; font-size: 12px; }
+.thumb { cursor: pointer; border-radius: 6px; padding: 6px; }
+.thumb canvas { display: block; width: 100%; background: #fff; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.thumb.active { background: #27272a; outline: 1px solid #52525b; }
+.thumb span { display: block; text-align: center; font-size: 11px; color: #a1a1aa; margin-top: 4px; }
+.viewer-full { position: fixed !important; inset: 0; z-index: 50; border-radius: 0 !important; }
+.image-stage img { transform-origin: center center; transition: transform .15s ease; max-width: none; }
+
+.textLayer{position:absolute;
+  text-align:initial;
+  inset:0;
+  overflow:clip;
+  opacity:1;
+  line-height:1;
+  -webkit-text-size-adjust:none;
+     -moz-text-size-adjust:none;
+          text-size-adjust:none;
+  forced-color-adjust:none;
+  transform-origin:0 0;
+  caret-color:CanvasText;
+  z-index:0;}
+.textLayer.highlighting{touch-action:none;}
+.textLayer :is(span,br){color:transparent;
+    position:absolute;
+    white-space:pre;
+    cursor:text;
+    transform-origin:0% 0%;}
+.textLayer  > :not(.markedContent),.textLayer .markedContent span:not(.markedContent){z-index:1;}
+.textLayer span.markedContent{top:0;
+    height:0;}
+.textLayer span[role="img"]{-webkit-user-select:none;
+       -moz-user-select:none;
+            user-select:none;
+    cursor:default;}
+.textLayer .highlight{--highlight-bg-color:rgb(24 24 27 / 0.22);
+    --highlight-selected-bg-color:rgb(24 24 27 / 0.5);
+    --highlight-backdrop-filter:none;
+    --highlight-selected-backdrop-filter:none;}
+.textLayer .highlight{--highlight-bg-color:transparent;
+      --highlight-selected-bg-color:transparent;
+      --highlight-backdrop-filter:var(--hcm-highlight-filter);
+      --highlight-selected-backdrop-filter:var(
+        --hcm-highlight-selected-filter
+      );}
+.textLayer .highlight{margin:-1px;
+    padding:1px;
+    background-color:var(--highlight-bg-color);
+    -webkit-backdrop-filter:var(--highlight-backdrop-filter);
+            backdrop-filter:var(--highlight-backdrop-filter);
+    border-radius:4px;}
+.textLayer ::-moz-selection{background:rgba(0 0 255 / 0.25);
+    background:color-mix(in srgb, AccentColor, transparent 75%);}
+.textLayer ::selection{background:rgba(0 0 255 / 0.25);
+    background:color-mix(in srgb, AccentColor, transparent 75%);}
+.textLayer br::-moz-selection{background:transparent;}
+.textLayer br::selection{background:transparent;}
+.textLayer .endOfContent{display:block;
+    position:absolute;
+    inset:100% 0 0;
+    z-index:0;
+    cursor:default;
+    -webkit-user-select:none;
+       -moz-user-select:none;
+            user-select:none;}
+.textLayer.selecting .endOfContent{top:0;}
+.textLayer.selecting ~ .annotationLayer section{pointer-events:none;}
+.textLayer.highlighting{cursor:var(--editorFreeHighlight-editing-cursor);}
+.textLayer.highlighting:not(.free) span{cursor:var(--editorHighlight-editing-cursor);}
+.textLayer.highlighting.free span{cursor:var(--editorFreeHighlight-editing-cursor);}
+
+.textLayer .hit { background: rgb(24 24 27 / 0.22); border-radius: 2px; }
+.textLayer .hit.current { background: rgb(24 24 27 / 0.55); }
+.textLayer ::selection { background: rgb(63 63 70 / 0.35); }

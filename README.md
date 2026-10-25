@@ -47,10 +47,15 @@ nrzPaper is a single program with no external database. Everything lives in one 
 You need Docker. The image contains the program, the web interface, Tesseract (German, English) and Poppler.
 
 ```bash
+docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data ghcr.io/nicorenezweers/nrzpaper:1.0.0
+```
+
+The image is multi-arch (`linux/amd64`, `linux/arm64`) and is published for every [release](https://github.com/nicorenezweers/nrzPaper/releases). To build it yourself instead:
+
+```bash
 git clone https://github.com/nicorenezweers/nrzPaper.git
 cd nrzPaper
 docker build -t nrzpaper .
-docker run -d --name nrzpaper -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 ```
 
 Open <http://localhost:8320>. The first account you create becomes the administrator. After that, registration is closed until you open it under *Settings → Registration & users*, where you can also create accounts for others.
@@ -60,7 +65,7 @@ Open <http://localhost:8320>. The first account you create becomes the administr
 ```yaml
 services:
   nrzpaper:
-    build: .                      # or: image: ghcr.io/nicorenezweers/nrzpaper:1.0.0
+    image: ghcr.io/nicorenezweers/nrzpaper:1.0.0   # or: build: .
     container_name: nrzpaper
     restart: unless-stopped
     ports:
@@ -84,6 +89,17 @@ docker compose up -d
 ```
 
 > **Back up `/data`.** It holds `nrzpaper.db` (everything, encrypted) and `nrzpaper.key`. Without the key the database cannot be opened. If you set `NRZPAPER_DB_KEY`, keep that value safe instead.
+
+### Without Docker
+
+Every [release](https://github.com/nicorenezweers/nrzPaper/releases) has the program for Linux (`amd64`, `arm64`) as a single file, and as a `.tar.gz` that also contains Tesseract and Poppler with their libraries (`ocr/`) and `Rocket.toml`:
+
+```bash
+curl -LO https://github.com/nicorenezweers/nrzPaper/releases/download/v1.0.0/nrzpaper-1.0.0-linux-amd64.tar.gz
+tar xzf nrzpaper-1.0.0-linux-amd64.tar.gz && cd nrzpaper-1.0.0-linux-amd64
+PATH="$PWD/ocr/bin:$PATH" LD_LIBRARY_PATH="$PWD/ocr/lib" TESSDATA_PREFIX="$PWD/ocr/tessdata" \
+  NRZPAPER_CONFIG=Rocket.toml NRZPAPER_DATA_DIR=./data ./nrzpaper
+```
 
 ### Both architectures
 

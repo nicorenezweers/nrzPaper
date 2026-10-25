@@ -4,8 +4,8 @@
 mod escl;
 mod pdf;
 
-pub use escl::{discover, scan_page, status, Found};
-pub use pdf::{is_jpeg, make_pdf};
+pub use escl::{discover, prefix as subnet_prefix, scan_page, status, Found};
+pub use pdf::{is_jpeg, make_pdf, to_jpeg};
 
 use std::sync::LazyLock;
 use std::time::Duration;

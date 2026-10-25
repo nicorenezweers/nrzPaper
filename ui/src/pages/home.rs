@@ -5,6 +5,7 @@ use crate::components::common::*;
 use crate::state::{self, ME};
 use crate::Route;
 use dioxus::prelude::*;
+use crate::i18n::tr;
 
 #[component]
 pub fn Home() -> Element {
@@ -50,19 +51,25 @@ pub fn NewOrg() -> Element {
             div { class: "w-full max-w-md",
                 div { class: "mb-6 text-center",
                     img { src: asset!("/assets/icon.png"), class: "mx-auto size-12 rounded-xl", alt: "" }
-                    h1 { class: "mt-3 text-xl font-semibold tracking-tight", if first { "Erste Organisation" } else { "Neue Organisation" } }
-                    p { class: "mt-1 text-sm text-muted-foreground", "Eine Organisation trennt Dokumente, Tags und Mitglieder – z. B. „Privat“ und „Gewerbe“." }
+                    h1 { class: "mt-3 text-xl font-semibold tracking-tight", if first { {tr("Erste Organisation")} } else { {tr("Neue Organisation")} } }
+                    p { class: "mt-1 text-sm text-muted-foreground", {tr("Eine Organisation trennt Dokumente, Tags und Mitglieder – z. B. „Privat“ und „Gewerbe“.")} }
+                }
+                if !crate::state::INVITATIONS.read().is_empty() {
+                    div { class: "mb-4",
+                        p { class: "mb-2 text-sm text-muted-foreground", {tr("Du wurdest eingeladen – oder lege unten eine eigene Organisation an.")} }
+                        crate::components::invitations::Invitations { large: true }
+                    }
                 }
                 form { class: "grid gap-4 rounded-xl border bg-card p-6 shadow-sm", onsubmit: submit,
                     if let Some(e) = error() { Callout { text: e, error: true } }
-                    Field { label: "Name",
-                        input { class: INPUT, autofocus: true, required: true, maxlength: 100, placeholder: "z. B. Privat", value: "{name}", oninput: move |e| name.set(e.value()) }
+                    Field { label: tr("Name"),
+                        input { class: INPUT, autofocus: true, required: true, maxlength: 100, placeholder: tr("z. B. Privat"), value: "{name}", oninput: move |e| name.set(e.value()) }
                     }
                     div { class: "flex justify-end gap-2",
                         if !first {
-                            button { class: btn(BTN_OUTLINE), r#type: "button", onclick: move |_| { nav.go_back(); }, "Abbrechen" }
+                            button { class: btn(BTN_OUTLINE), r#type: "button", onclick: move |_| { nav.go_back(); }, {tr("Abbrechen")} }
                         }
-                        button { class: btn(BTN_PRIMARY), disabled: busy() || name().trim().is_empty(), r#type: "submit", "Anlegen" }
+                        button { class: btn(BTN_PRIMARY), disabled: busy() || name().trim().is_empty(), r#type: "submit", {tr("Anlegen")} }
                     }
                 }
             }
@@ -74,8 +81,8 @@ pub fn NewOrg() -> Element {
 pub fn NotFound(segments: Vec<String>) -> Element {
     rsx! {
         div { class: "grid min-h-screen place-items-center p-6",
-            EmptyState { title: "Seite nicht gefunden", description: "Diese Adresse gibt es in nrzPaper nicht.",
-                Link { class: btn(BTN_OUTLINE), to: Route::Home {}, "Zur Übersicht" }
+            EmptyState { title: tr("Seite nicht gefunden"), description: tr("Diese Adresse gibt es in nrzPaper nicht."),
+                Link { class: btn(BTN_OUTLINE), to: Route::Home {}, {tr("Zur Übersicht")} }
             }
         }
     }

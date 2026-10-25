@@ -15,7 +15,7 @@ const PAGE: &[u8] = include_bytes!("../assets/test-page.jpg");
 const TEXT_PDF: &[u8] = include_bytes!("fixtures/text.pdf");
 
 fn mail(from: &str, subject: &str, parts: &[(&str, &str, &[u8])]) -> Vec<u8> {
-    let mut m = format!("From: {from}\r\nTo: nico@example.ch\r\nSubject: {subject}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"G\"\r\n\r\n--G\r\nContent-Type: text/plain\r\n\r\nHallo\r\n");
+    let mut m = format!("From: {from}\r\nTo: alice@example.com\r\nSubject: {subject}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"G\"\r\n\r\n--G\r\nContent-Type: text/plain\r\n\r\nHallo\r\n");
     for (name, ctype, data) in parts {
         m.push_str(&format!(
             "--G\r\nContent-Type: {ctype}; name=\"{name}\"\r\nContent-Disposition: attachment; filename=\"{name}\"\r\nContent-Transfer-Encoding: base64\r\n\r\n{}\r\n",
@@ -164,7 +164,7 @@ async fn post_json(client: &Client, uri: String) -> (Status, Value) {
 fn account(org: &str, port: u16, password: &str) -> Value {
     json!({
         "name": "Privat-Mail", "organizationId": org, "host": "127.0.0.1", "port": port,
-        "security": "none", "username": "nico@example.ch", "password": password,
+        "security": "none", "username": "alice@example.com", "password": password,
         "folder": "INBOX", "tags": ["E-Mail", "Rechnung"], "enabled": true, "markSeen": true,
         "intervalMinutes": 5,
     })

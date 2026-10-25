@@ -3,6 +3,7 @@
 
 mod api;
 mod components;
+mod i18n;
 mod models;
 mod pages;
 mod state;
@@ -21,6 +22,7 @@ use pages::scan::Scan;
 use pages::settings::Settings;
 use pages::share::Share;
 use pages::tags::Tags;
+use pages::reminders::RemindersPage;
 use pages::trash::Trash;
 
 static CSS: Asset = asset!("/assets/tailwind.css");
@@ -54,6 +56,8 @@ pub enum Route {
             Tags { org: String },
             #[route("/organizations/:org/trash")]
             Trash { org: String },
+            #[route("/organizations/:org/reminders")]
+            RemindersPage { org: String },
             #[route("/organizations/:org/scan")]
             Scan { org: String },
             #[route("/organizations/:org/inbox?:item")]
@@ -75,6 +79,7 @@ impl Route {
             | Route::DocumentPage { org, .. }
             | Route::Tags { org }
             | Route::Trash { org }
+            | Route::RemindersPage { org }
             | Route::Scan { org }
             | Route::Inbox { org, .. }
             | Route::Settings { org, .. } => Some(org),
@@ -89,6 +94,11 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    let mut ready = use_signal(|| false);
+    use_future(move || async move {
+        i18n::init().await;
+        ready.set(true);
+    });
     rsx! {
         document::Stylesheet { href: CSS }
         // PDF-Viewer (Seiten, Textebene, Treffer) – vom Server ausgeliefert
@@ -96,7 +106,9 @@ fn App() -> Element {
         document::Link { rel: "icon", r#type: "image/png", href: FAVICON }
         document::Link { rel: "apple-touch-icon", href: ICON }
         document::Meta { name: "theme-color", content: "#1f1f1f" }
-        Router::<Route> {}
+        if ready() {
+            Router::<Route> {}
+        }
         ConfirmHost {}
         Toaster {}
     }

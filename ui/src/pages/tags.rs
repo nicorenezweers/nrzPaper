@@ -8,6 +8,7 @@ use crate::state::{self, OVERVIEW};
 use crate::Route;
 use dioxus::prelude::*;
 use serde_json::json;
+use crate::i18n::{tr, trf};
 
 pub const PALETTE: &[&str] = &["#a1a1aa", "#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#3b82f6", "#8b5cf6", "#ec4899", "#78716c"];
 
@@ -18,13 +19,13 @@ pub fn Tags(org: String) -> Element {
     let tags: Vec<Tag> = OVERVIEW.read().clone().filter(|(o, _)| *o == org).map(|(_, v)| v.tags).unwrap_or_default();
     rsx! {
         div { class: "mx-auto max-w-4xl p-4 md:p-6",
-            PageHeader { title: "Tags", description: "Ordnen Dokumente. Ein Klick auf die Anzahl zeigt die Dokumente.",
+            PageHeader { title: tr("Tags"), description: tr("Ordnen Dokumente. Ein Klick auf die Anzahl zeigt die Dokumente."),
                 actions: rsx! {
-                    button { class: btn(BTN_PRIMARY), onclick: move |_| { editing.set(None); open.set(true); }, icons::Plus { class: "size-4" } "Neuer Tag" }
+                    button { class: btn(BTN_PRIMARY), onclick: move |_| { editing.set(None); open.set(true); }, icons::Plus { class: "size-4" } {tr("Neuer Tag")} }
                 }
             }
             if tags.is_empty() {
-                EmptyState { title: "Noch keine Tags", description: "Tags fassen Dokumente zusammen – und Ordner fassen Tags zusammen.", icon: rsx! { icons::Tag {} } }
+                EmptyState { title: tr("Noch keine Tags"), description: tr("Tags fassen Dokumente zusammen – und Ordner fassen Tags zusammen."), icon: rsx! { icons::Tag {} } }
             } else {
                 div { class: "divide-y overflow-hidden rounded-xl border bg-card",
                     for t in tags.iter().cloned() {
@@ -36,17 +37,17 @@ pub fn Tags(org: String) -> Element {
                             }
                             Link { class: "text-sm text-muted-foreground hover:text-foreground",
                                 to: Route::Documents { org: org.clone(), q: if t.name.contains(' ') { format!("tag:\"{}\"", t.name) } else { format!("tag:{}", t.name) } },
-                                "{t.documents_count} " if t.documents_count == 1 { "Dokument" } else { "Dokumente" }
+                                "{t.documents_count} " if t.documents_count == 1 { {tr("Dokument")} } else { {tr("Dokumente")} }
                             }
-                            button { class: "{btn(BTN_GHOST)} {BTN_ICON}", title: "Bearbeiten", onclick: { let t = t.clone(); move |_| { editing.set(Some(t.clone())); open.set(true); } }, icons::Pencil { class: "size-4" } }
-                            button { class: "{btn(BTN_GHOST)} {BTN_ICON} text-muted-foreground hover:text-destructive", title: "Löschen",
+                            button { class: "{btn(BTN_GHOST)} {BTN_ICON}", title: tr("Bearbeiten"), onclick: { let t = t.clone(); move |_| { editing.set(Some(t.clone())); open.set(true); } }, icons::Pencil { class: "size-4" } }
+                            button { class: "{btn(BTN_GHOST)} {BTN_ICON} text-muted-foreground hover:text-destructive", title: tr("Löschen"),
                                 onclick: { let (org, t) = (org.clone(), t.clone()); move |_| {
                                     let (org, t) = (org.clone(), t.clone());
                                     spawn(async move {
-                                        let ask = Ask::new(format!("Tag „{}“ löschen?", t.name), format!("Er wird von {} Dokument(en) entfernt. Die Dokumente bleiben.", t.documents_count)).confirm("Löschen").destructive();
+                                        let ask = Ask::new(trf("Tag „{0}“ löschen?", &[&(t.name)]), trf("Er wird von {0} Dokument(en) entfernt. Die Dokumente bleiben.", &[&(t.documents_count)])).confirm(tr("Löschen")).destructive();
                                         if confirm(ask).await {
                                             match api::delete(&format!("/organizations/{org}/tags/{}", t.id)).await {
-                                                Ok(()) => { toast("Tag gelöscht."); state::refresh(); }
+                                                Ok(()) => { toast(tr("Tag gelöscht.")); state::refresh(); }
                                                 Err(e) => toast_error(e),
                                             }
                                         }
@@ -77,9 +78,9 @@ pub fn TagDialog(open: Signal<bool>, org: String, tag: Option<Tag>) -> Element {
         }
     }));
     let id = tag.as_ref().map(|t| t.id.clone());
-    let title = if tag.is_some() { "Tag bearbeiten" } else { "Neuer Tag" };
+    let title = if tag.is_some() { tr("Tag bearbeiten") } else { tr("Neuer Tag") };
     rsx! {
-        Modal { open, title, description: "Die Beschreibung hilft der KI, den Tag richtig zu vergeben.",
+        Modal { open, title, description: tr("Die Beschreibung hilft der KI, den Tag richtig zu vergeben."),
             form { class: "grid gap-4",
                 onsubmit: move |e| {
                     e.prevent_default();
@@ -91,17 +92,17 @@ pub fn TagDialog(open: Signal<bool>, org: String, tag: Option<Tag>) -> Element {
                             None => api::post(&format!("/organizations/{org}/tags"), &body).await,
                         };
                         match res {
-                            Ok(_) => { toast("Tag gespeichert."); open.set(false); state::refresh(); }
+                            Ok(_) => { toast(tr("Tag gespeichert.")); open.set(false); state::refresh(); }
                             Err(e) => toast_error(e),
                         }
                     });
                 },
-                Field { label: "Name", input { class: INPUT, required: true, maxlength: 64, value: "{name}", oninput: move |e| name.set(e.value()) } }
-                Field { label: "Beschreibung", hint: "z. B. „Rechnungen und Belege mit Betrag“",
+                Field { label: tr("Name"), input { class: INPUT, required: true, maxlength: 64, value: "{name}", oninput: move |e| name.set(e.value()) } }
+                Field { label: tr("Beschreibung"), hint: tr("z. B. „Rechnungen und Belege mit Betrag“"),
                     input { class: INPUT, value: "{description}", oninput: move |e| description.set(e.value()) }
                 }
                 div { class: "grid gap-1.5",
-                    span { class: "text-sm font-medium", "Farbe" }
+                    span { class: "text-sm font-medium", {tr("Farbe")} }
                     div { class: "flex flex-wrap gap-2",
                         for c in PALETTE.iter().copied() {
                             button { r#type: "button", class: if color() == c { "size-7 rounded-full ring-2 ring-foreground ring-offset-2 ring-offset-background" } else { "size-7 rounded-full" },
@@ -110,8 +111,8 @@ pub fn TagDialog(open: Signal<bool>, org: String, tag: Option<Tag>) -> Element {
                     }
                 }
                 div { class: "flex justify-end gap-2 pt-2",
-                    button { class: btn(BTN_OUTLINE), r#type: "button", onclick: move |_| open.set(false), "Abbrechen" }
-                    button { class: btn(BTN_PRIMARY), r#type: "submit", disabled: name().trim().is_empty(), "Speichern" }
+                    button { class: btn(BTN_OUTLINE), r#type: "button", onclick: move |_| open.set(false), {tr("Abbrechen")} }
+                    button { class: btn(BTN_PRIMARY), r#type: "submit", disabled: name().trim().is_empty(), {tr("Speichern")} }
                 }
             }
         }

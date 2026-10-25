@@ -52,6 +52,7 @@ pub async fn create(
     auto_name: bool,
     source: &str,
     source_info: &str,
+    source_ref: &str,
     hint_tags: Vec<String>,
     pdf: Vec<u8>,
     pages: Vec<Vec<u8>>,
@@ -63,8 +64,8 @@ pub async fn create(
     let ts = now();
     let mut tx = pool.begin().await?;
     sqlx::query(
-        "INSERT INTO inbox_items (id, organization_id, user_id, name, auto_name, status, step, tags, page_count, source, source_info, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'analyse', 'KI liest das Dokument …', ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO inbox_items (id, organization_id, user_id, name, auto_name, status, step, tags, page_count, source, source_info, source_ref, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 'analyse', 'KI liest das Dokument …', ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(org)
@@ -75,6 +76,7 @@ pub async fn create(
     .bind(pages.len() as i64)
     .bind(source)
     .bind(source_info.chars().take(300).collect::<String>())
+    .bind(source_ref)
     .bind(ts)
     .bind(ts)
     .execute(&mut *tx)
@@ -97,6 +99,21 @@ pub async fn create(
     tx.commit().await?;
     tokio::spawn(analyze(pool.clone(), ai.clone(), id.clone()));
     get(pool, org, &id).await
+}
+
+/// Datei für die Inbox: PDF bleibt, ein Bild wird zur PDF-Seite (plus Seitenbild für die
+/// Lupe und die KI). Andere Dateien gehören direkt in die Dokumente.
+pub fn from_file(name: &str, data: Vec<u8>) -> AppResult<(Vec<u8>, Vec<Vec<u8>>)> {
+    if let Some(start) = data.windows(5).take(1024).position(|w| w == b"%PDF-") {
+        return Ok((data[start..].to_vec(), Vec::new()));
+    }
+    let jpeg = crate::scan::to_jpeg(&data).map_err(|_| {
+        AppError::bad(format!(
+            "„{name}“ ist weder PDF noch Bild – andere Dateien bitte direkt hochladen."
+        ))
+    })?;
+    let pdf = crate::scan::make_pdf(std::slice::from_ref(&jpeg)).map_err(AppError::bad)?;
+    Ok((pdf, vec![jpeg]))
 }
 
 pub async fn get(pool: &SqlitePool, org: &str, id: &str) -> AppResult<InboxItem> {
@@ -422,6 +439,27 @@ pub async fn approve(
             Err(e)
         }
     }
+}
+
+/// „Zuletzt abgelegt“ leeren – die Dokumente selbst bleiben natürlich.
+pub async fn clear_filed(pool: &SqlitePool, org: &str) -> AppResult<u64> {
+    Ok(
+        sqlx::query("DELETE FROM inbox_items WHERE organization_id = ? AND status = 'fertig'")
+            .bind(org)
+            .execute(pool)
+            .await?
+            .rows_affected(),
+    )
+}
+
+/// Einträge, die auf die Prüfung warten (für „Alle freigeben“).
+pub async fn reviewable(pool: &SqlitePool, org: &str) -> AppResult<Vec<String>> {
+    Ok(sqlx::query_scalar(
+        "SELECT id FROM inbox_items WHERE organization_id = ? AND status = 'pruefen' ORDER BY created_at",
+    )
+    .bind(org)
+    .fetch_all(pool)
+    .await?)
 }
 
 /// Verwerfen: Eintrag samt PDF und Seiten löschen (abgelegte Dokumente bleiben).

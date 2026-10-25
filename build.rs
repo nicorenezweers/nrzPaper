@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 fn main() {
     println!("cargo:rerun-if-changed=migrations");
     println!("cargo:rerun-if-changed=ui/dist/public");
+    println!("cargo:rerun-if-changed=locales");
 
     let out = PathBuf::from(std::env::var("OUT_DIR").unwrap());
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("ui/dist/public");
@@ -41,6 +42,26 @@ fn main() {
     }
     code += "];\n";
     std::fs::write(out.join("spa.rs"), code).unwrap();
+
+    // Übersetzungen (locales/<sprache>.json, deutsch → Sprache) für die Oberfläche
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("locales");
+    let mut locales: Vec<(String, PathBuf)> = std::fs::read_dir(&dir)
+        .map(|r| r.flatten().map(|e| e.path()).collect::<Vec<_>>())
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|p| {
+            let stem = p.file_stem()?.to_str()?.to_string();
+            (p.extension()? == "json" && stem.len() == 2).then_some((stem, p))
+        })
+        .collect();
+    locales.sort();
+    let mut code = String::from("pub static LOCALES: &[(&str, &[u8])] = &[\n");
+    for (lang, path) in &locales {
+        println!("cargo:rerun-if-changed={}", path.display());
+        code += &format!("    ({lang:?}, include_bytes!({:?})),\n", path.display().to_string());
+    }
+    code += "];\n";
+    std::fs::write(out.join("locales.rs"), code).unwrap();
 }
 
 fn collect(root: &Path, dir: &Path, files: &mut Vec<String>) {

@@ -62,7 +62,6 @@ pub fn routes() -> Vec<Route> {
         order_properties,
         document_properties,
         set_document_property,
-        members,
         thumbnail,
         delete_permanently,
         empty_trash,
@@ -364,36 +363,41 @@ async fn test_mail(
 
 // ------------------------------------------------------------------ Einstellungen (Administratoren)
 
-/// KI-Einstellungen für die Oberfläche – der Schlüssel selbst verlässt den Server nie.
+/// KI-Einstellungen für die Oberfläche – Schlüssel selbst verlassen den Server nie, nur ob
+/// einer hinterlegt ist und Anfang/Ende zur Wiedererkennung.
 async fn ai_json(pool: &SqlitePool, config: &Config) -> AppResult<Value> {
     let stored = settings::get::<AiSettings>(pool, ai::SETTINGS_KEY)
         .await?
         .unwrap_or_default();
-    let effective = AiConfig::load(pool, config).await;
-    let source = if !stored.key.trim().is_empty() {
-        "settings"
-    } else if config
-        .openrouter_key
-        .as_deref()
-        .is_some_and(|k| !k.trim().is_empty())
-    {
-        "environment"
-    } else if ai::BUILTIN_KEY.is_some() {
-        "builtin"
-    } else {
-        "none"
-    };
+    let effective = AiConfig::with_settings(config, Some(&stored));
+    let providers: Vec<Value> = ai::PROVIDERS
+        .iter()
+        .map(|p| {
+            let key = stored.key_for(p.id);
+            let mut v = json!(p);
+            v["hasKey"] = json!(!key.is_empty());
+            v["keyHint"] = json!(ai::hint(key));
+            v["customUrl"] = json!(stored.urls.get(p.id).cloned().unwrap_or_default());
+            v
+        })
+        .collect();
     Ok(json!({
         "disabled": stored.disabled,
+        "provider": effective.provider.id,
         "model": stored.model,
         "fallbacks": stored.fallbacks,
+        "textOnly": stored.text_only,
+        "language": if stored.language.is_empty() { "de".to_string() } else { stored.language.clone() },
         "effectiveModel": effective.model,
+        "effectiveUrl": effective.url,
         "effectiveFallbacks": effective.fallbacks,
-        "defaultModel": ai::DEFAULT_MODEL,
-        "defaultFallbacks": ai::FALLBACK_MODELS,
-        "keySource": source,
+        "defaultModel": effective.provider.model,
+        "defaultFallbacks": if effective.provider.id == "openrouter" { json!(ai::FALLBACK_MODELS) } else { json!([]) },
+        "keySource": AiConfig::key_source(config, Some(&stored)),
         "keyHint": effective.key_hint(),
         "available": effective.available(),
+        "missing": effective.missing(),
+        "providers": providers,
     }))
 }
 
@@ -410,14 +414,25 @@ async fn get_ai(
 #[serde(rename_all = "camelCase")]
 struct AiInput {
     disabled: bool,
+    /// Anbieter (leer = bisheriger)
+    #[serde(default)]
+    provider: String,
     model: String,
     fallbacks: Vec<String>,
-    /// Neuer Schlüssel; leer lassen = bisherigen behalten
+    /// Neuer Schlüssel für den Anbieter; leer lassen = bisherigen behalten
     #[serde(default)]
     key: String,
-    /// Eigenen Schlüssel entfernen (dann gilt Umgebung bzw. eingebauter)
+    /// Eigenen Schlüssel des Anbieters entfernen
     #[serde(default)]
     clear_key: bool,
+    /// Eigene Adresse der API (leer = Vorgabe des Anbieters)
+    #[serde(default)]
+    url: Option<String>,
+    #[serde(default)]
+    text_only: bool,
+    /// Sprache der Vorschläge (Code oder "auto"); fehlt = bisherige
+    #[serde(default)]
+    language: Option<String>,
 }
 
 #[put("/settings/ai", data = "<body>")]
@@ -430,22 +445,46 @@ async fn put_ai(
     let mut stored = settings::get::<AiSettings>(pool, ai::SETTINGS_KEY)
         .await?
         .unwrap_or_default();
+    if !body.provider.trim().is_empty() {
+        let p = ai::provider(body.provider.trim());
+        if p.id != body.provider.trim() {
+            return Err(AppError::bad("Diesen KI-Anbieter gibt es nicht."));
+        }
+        stored.provider = p.id.to_string();
+    }
+    let id = ai::provider(stored.provider_id()).id;
     let key = body.key.trim();
     if !key.is_empty() {
-        if !key.starts_with("sk-") || key.len() < 20 || key.contains(char::is_whitespace) {
+        if key.len() < 8 || key.len() > 4096 || key.contains(char::is_whitespace) {
+            return Err(AppError::bad("Das sieht nicht wie ein API-Schlüssel aus."));
+        }
+        if id == "openrouter" && !key.starts_with("sk-") {
             return Err(AppError::bad(
                 "Das sieht nicht wie ein OpenRouter-Schlüssel aus (sk-or-…).",
             ));
         }
-        stored.key = key.to_string();
+        stored.keys.insert(id.to_string(), key.to_string());
     } else if body.clear_key {
-        stored.key.clear();
+        stored.keys.remove(id);
+        if id == "openrouter" {
+            stored.key.clear();
+        }
+    }
+    if let Some(url) = body.url.as_deref() {
+        let url = url.trim().trim_end_matches('/');
+        if url.is_empty() {
+            stored.urls.remove(id);
+        } else if !(url.starts_with("http://") || url.starts_with("https://")) || url.len() > 500 {
+            return Err(AppError::bad("Die Adresse muss mit http:// oder https:// beginnen."));
+        } else {
+            stored.urls.insert(id.to_string(), url.to_string());
+        }
     }
     let clean = |m: &str| {
         m.trim()
             .chars()
             .filter(|c| !c.is_whitespace())
-            .take(120)
+            .take(200)
             .collect::<String>()
     };
     stored.model = clean(&body.model);
@@ -457,22 +496,35 @@ async fn put_ai(
         .take(10)
         .collect();
     stored.disabled = body.disabled;
+    stored.text_only = body.text_only;
+    if let Some(l) = body.language.as_deref() {
+        if l != "auto" && !ai::SUGGESTION_LANGUAGES.iter().any(|(c, _)| *c == l) {
+            return Err(AppError::bad("Diese Sprache gibt es nicht."));
+        }
+        stored.language = l.to_string();
+    }
     settings::set(pool, ai::SETTINGS_KEY, &stored).await?;
     ai_json(pool, config).await
 }
 
-/// Kostenlose Bild-Modelle von OpenRouter für die Auswahl.
-#[get("/settings/ai/models")]
+/// Modelle des gewählten Anbieters (oder eines anderen: `?provider=`) für die Auswahl.
+#[get("/settings/ai/models?<provider>")]
 async fn ai_models(
     _admin: AdminUser,
+    provider: Option<&str>,
     pool: &State<SqlitePool>,
     config: &State<Config>,
 ) -> AppResult<Value> {
-    let ai = AiConfig::load(pool, config).await;
-    let models = ai::free_vision_models(&ai).await.map_err(AppError::bad)?;
-    Ok(
-        json!({ "models": models.into_iter().map(|(id, name)| json!({ "id": id, "name": name })).collect::<Vec<_>>() }),
-    )
+    let mut stored = settings::get::<AiSettings>(pool, ai::SETTINGS_KEY)
+        .await?
+        .unwrap_or_default();
+    if let Some(p) = provider.filter(|p| !p.is_empty()) {
+        stored.provider = ai::provider(p).id.to_string();
+        stored.model.clear();
+    }
+    let ai = AiConfig::with_settings(config, Some(&stored));
+    let models = ai::models(&ai).await.map_err(AppError::bad)?;
+    Ok(json!({ "models": models }))
 }
 
 #[get("/settings/instance")]
@@ -541,6 +593,7 @@ async fn overview(
     Ok(json!({
         "role": role,
         "reviewCount": inbox::open_count(pool, org).await?,
+        "remindersDue": crate::services::reminders::due_count(pool, &user.0.id, org).await?,
         "folders": folders::tree(pool, org).await?,
         "tags": tag_list,
         "aiAvailable": ai.available(),
@@ -773,16 +826,6 @@ async fn set_document_property(
 
 // ------------------------------------------------------------------ Mitglieder, Papierkorb, Vorschau
 
-#[get("/organizations/<org>/members")]
-async fn members(user: CurrentUser, org: &str, pool: &State<SqlitePool>) -> AppResult<Value> {
-    member(pool, &user, org).await?;
-    let list: Vec<Value> = organizations::members(pool, org)
-        .await?
-        .into_iter()
-        .map(|(id, username, role, since)| json!({ "id": id, "username": username, "role": role, "since": since }))
-        .collect();
-    Ok(json!({ "members": list }))
-}
 
 /// Vorschaubild (JPEG) oder Platzhalter (SVG).
 #[derive(Responder)]

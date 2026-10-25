@@ -10,6 +10,18 @@ pub fn routes() -> Vec<Route> {
     routes![asset, favicon]
 }
 
+include!(concat!(env!("OUT_DIR"), "/locales.rs"));
+
+/// Übersetzung der Oberfläche (deutsch → Sprache), z. B. `locales/fr.json`.
+fn locale(path: &str) -> Option<Asset> {
+    let lang = path.strip_prefix("locales/")?.strip_suffix(".json")?;
+    LOCALES.iter().find(|(l, _)| *l == lang).map(|(_, body)| Asset {
+        body,
+        content_type: ContentType::JSON,
+        immutable: false,
+    })
+}
+
 /// Prüfsumme der eigenen Dateien – hängt als `?v=` an den Links. Ändert sich eine Datei,
 /// ändert sich die Adresse, und Browser laden neu (statt eine Stunde die alte Fassung zu nutzen).
 pub static VERSION: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
@@ -93,7 +105,8 @@ impl<'r> Responder<'r, 'static> for Asset {
 
 #[get("/static/<path..>")]
 fn asset(path: std::path::PathBuf) -> Option<Asset> {
-    lookup(path.to_str()?)
+    let path = path.to_str()?;
+    lookup(path).or_else(|| locale(path))
 }
 
 /// Browser fragen ohne Link nach /favicon.ico – dasselbe Icon wie die Umbrel-App.

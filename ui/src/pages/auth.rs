@@ -6,6 +6,7 @@ use crate::models::AuthStatus;
 use crate::state;
 use crate::Route;
 use dioxus::prelude::*;
+use crate::i18n::tr;
 
 /// Gemeinsamer Rahmen der Anmeldeseiten: Logo, Karte, Fusszeile.
 #[component]
@@ -21,7 +22,8 @@ fn AuthCard(#[props(into)] title: String, #[props(into)] subtitle: String, child
                     }
                 }
                 div { class: "rounded-xl border bg-card p-6 shadow-sm", {children} }
-                p { class: "mt-6 text-center text-xs text-muted-foreground", "nrzPaper – Dokumente, verschlüsselt in einer Datei" }
+                p { class: "mt-6 text-center text-xs text-muted-foreground", {tr("nrzPaper – Dokumente, verschlüsselt in einer Datei")} }
+                div { class: "mt-3 flex justify-center", crate::components::language::LanguageSelect {} }
             }
         }
     }
@@ -62,29 +64,29 @@ pub fn Login(next: String) -> Element {
                         let _ = w.location().assign(&target);
                     }
                 }
-                Err(e) if e.status == 401 => error.set(Some("Benutzername oder Passwort stimmt nicht.".into())),
+                Err(e) if e.status == 401 => error.set(Some({tr("Benutzername oder Passwort stimmt nicht.")}.into())),
                 Err(e) => error.set(Some(e.message)),
             }
         });
     };
     rsx! {
-        AuthCard { title: "Anmelden", subtitle: "Willkommen zurück bei nrzPaper",
+        AuthCard { title: tr("Anmelden"), subtitle: tr("Willkommen zurück bei nrzPaper"),
             form { class: "grid gap-4", onsubmit: submit,
                 if let Some(e) = error() { Callout { text: e, error: true } }
-                Field { label: "Benutzername",
+                Field { label: tr("Benutzername"),
                     input { class: INPUT, autocomplete: "username", autofocus: true, required: true, value: "{username}", oninput: move |e| username.set(e.value()) }
                 }
-                Field { label: "Passwort",
+                Field { label: tr("Passwort"),
                     input { class: INPUT, r#type: "password", autocomplete: "current-password", required: true, value: "{password}", oninput: move |e| password.set(e.value()) }
                 }
                 button { class: "{btn(BTN_PRIMARY)} w-full", disabled: busy(), r#type: "submit",
                     if busy() { icons::LoaderCircle { class: "size-4 animate-spin" } }
-                    "Anmelden"
+                    {tr("Anmelden")}
                 }
                 if can_register {
                     p { class: "text-center text-sm text-muted-foreground",
-                        "Noch kein Konto? "
-                        Link { class: "font-medium text-foreground underline-offset-4 hover:underline", to: Route::Register {}, "Registrieren" }
+                        {tr("Noch kein Konto? ")}
+                        Link { class: "font-medium text-foreground underline-offset-4 hover:underline", to: Route::Register {}, {tr("Registrieren")} }
                     }
                 }
             }
@@ -102,7 +104,7 @@ fn RegisterForm(first: bool) -> Element {
     let submit = move |e: FormEvent| {
         e.prevent_default();
         if password() != confirm() {
-            error.set(Some("Die Passwörter stimmen nicht überein.".into()));
+            error.set(Some({tr("Die Passwörter stimmen nicht überein.")}.into()));
             return;
         }
         spawn(async move {
@@ -123,26 +125,26 @@ fn RegisterForm(first: bool) -> Element {
     rsx! {
         form { class: "grid gap-4", onsubmit: submit,
             if first {
-                Callout { text: "Das erste Konto wird Administrator dieser Instanz." }
+                Callout { text: tr("Das erste Konto wird Administrator dieser Instanz.") }
             }
             if let Some(e) = error() { Callout { text: e, error: true } }
-            Field { label: "Benutzername", hint: "3–32 Zeichen: Buchstaben, Zahlen, Punkt, Minus, Unterstrich",
+            Field { label: tr("Benutzername"), hint: tr("3–32 Zeichen: Buchstaben, Zahlen, Punkt, Minus, Unterstrich"),
                 input { class: INPUT, autocomplete: "username", autofocus: true, required: true, value: "{username}", oninput: move |e| username.set(e.value()) }
             }
-            Field { label: "Passwort", hint: "Mindestens 8 Zeichen",
+            Field { label: tr("Passwort"), hint: tr("Mindestens 8 Zeichen"),
                 input { class: INPUT, r#type: "password", autocomplete: "new-password", required: true, minlength: 8, value: "{password}", oninput: move |e| password.set(e.value()) }
             }
-            Field { label: "Passwort wiederholen",
+            Field { label: tr("Passwort wiederholen"),
                 input { class: INPUT, r#type: "password", autocomplete: "new-password", required: true, value: "{confirm}", oninput: move |e| confirm.set(e.value()) }
             }
             button { class: "{btn(BTN_PRIMARY)} w-full", disabled: busy(), r#type: "submit",
                 if busy() { icons::LoaderCircle { class: "size-4 animate-spin" } }
-                if first { "Einrichten" } else { "Konto anlegen" }
+                if first { {tr("Einrichten")} } else { {tr("Konto anlegen")} }
             }
             if !first {
                 p { class: "text-center text-sm text-muted-foreground",
-                    "Schon ein Konto? "
-                    Link { class: "font-medium text-foreground underline-offset-4 hover:underline", to: Route::Login { next: String::new() }, "Anmelden" }
+                    {tr("Schon ein Konto? ")}
+                    Link { class: "font-medium text-foreground underline-offset-4 hover:underline", to: Route::Login { next: String::new() }, {tr("Anmelden")} }
                 }
             }
         }
@@ -152,7 +154,7 @@ fn RegisterForm(first: bool) -> Element {
 #[component]
 pub fn Setup() -> Element {
     rsx! {
-        AuthCard { title: "nrzPaper einrichten", subtitle: "Lege das erste Konto an.",
+        AuthCard { title: tr("nrzPaper einrichten"), subtitle: tr("Lege das erste Konto an."),
             RegisterForm { first: true }
         }
     }
@@ -161,7 +163,7 @@ pub fn Setup() -> Element {
 #[component]
 pub fn Register() -> Element {
     rsx! {
-        AuthCard { title: "Registrieren", subtitle: "Neues Konto bei nrzPaper",
+        AuthCard { title: tr("Registrieren"), subtitle: tr("Neues Konto bei nrzPaper"),
             RegisterForm { first: false }
         }
     }

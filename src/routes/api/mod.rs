@@ -2,7 +2,12 @@
 //! Sitzung; jeder Endpunkt prüft die passende Berechtigung.
 
 mod app;
+mod assistant;
 mod documents;
+mod members;
+mod printers;
+mod reminders;
+mod sources;
 mod scan;
 mod tags;
 mod webhooks;
@@ -28,7 +33,12 @@ pub fn routes() -> Vec<Route> {
         delete_organization
     ];
     r.extend(app::routes());
+    r.extend(assistant::routes());
     r.extend(documents::routes());
+    r.extend(members::routes());
+    r.extend(printers::routes());
+    r.extend(reminders::routes());
+    r.extend(sources::routes());
     r.extend(scan::routes());
     r.extend(tags::routes());
     r.extend(webhooks::routes());

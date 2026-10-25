@@ -32,6 +32,8 @@ pub fn routes() -> Vec<Route> {
         item_page,
         edit_item,
         approve,
+        approve_all,
+        clear_filed,
         analyze,
         discard,
         scanner_status,
@@ -228,7 +230,7 @@ async fn finish(
 
 // ------------------------------------------------------------------ Prüfliste
 
-/// PDFs importieren – sie gehen wie Scans zuerst in die Prüfung.
+/// PDFs und Bilder in die Inbox laden – sie gehen wie Scans zuerst in die Prüfung.
 #[post("/organizations/<org>/review/import", data = "<form>")]
 async fn import_pdfs(
     user: CurrentUser,
@@ -240,10 +242,14 @@ async fn import_pdfs(
     member(pool, &user, org).await?;
     let ai = AiConfig::load(pool, config).await;
     let mut created = Vec::new();
-    for f in form.into_inner().file {
-        if !f.data.starts_with(b"%PDF") {
-            return Err(AppError::bad(format!("„{}“ ist keine PDF-Datei.", f.name)));
-        }
+    let files = form.into_inner().file;
+    // Erst alle prüfen, damit nicht die Hälfte importiert wird
+    let mut prepared = Vec::new();
+    for f in files {
+        let (pdf, pages) = inbox::from_file(&f.name, f.data)?;
+        prepared.push((f.name, pdf, pages));
+    }
+    for (name, pdf, pages) in prepared {
         // Bis die KI einen Namen vorschlägt, gilt der Dateiname.
         created.push(
             inbox::create(
@@ -251,13 +257,14 @@ async fn import_pdfs(
                 &ai,
                 org,
                 Some(&user.0.id),
-                &f.name,
+                &name,
                 true,
                 "import",
                 "",
+                "",
                 Vec::new(),
-                f.data,
-                Vec::new(),
+                pdf,
+                pages,
             )
             .await?,
         );
@@ -365,6 +372,33 @@ async fn approve(
     Ok(
         json!({ "documentId": document_id, "url": format!("/organizations/{target}/documents/{document_id}") }),
     )
+}
+
+/// Alles freigeben, was auf die Prüfung wartet – mit den Vorschlägen, wie sie sind.
+/// Einzelne Fehler (z. B. Duplikate) halten die anderen nicht auf.
+#[post("/organizations/<org>/review/approve-all")]
+async fn approve_all(
+    user: CurrentUser,
+    org: &str,
+    pool: &State<SqlitePool>,
+    queue: &State<OcrQueue>,
+) -> AppResult<Value> {
+    member(pool, &user, org).await?;
+    let (mut approved, mut errors) = (0, Vec::new());
+    for id in inbox::reviewable(pool, org).await? {
+        match inbox::approve(pool, queue, org, &id, &user.0.id, inbox::Edit::default()).await {
+            Ok(_) => approved += 1,
+            Err(e) => errors.push(e.public_message()),
+        }
+    }
+    Ok(json!({ "approved": approved, "errors": errors }))
+}
+
+/// Die Liste „Zuletzt abgelegt“ leeren.
+#[delete("/organizations/<org>/review-filed")]
+async fn clear_filed(user: CurrentUser, org: &str, pool: &State<SqlitePool>) -> AppResult<Value> {
+    member(pool, &user, org).await?;
+    Ok(json!({ "removed": inbox::clear_filed(pool, org).await? }))
 }
 
 #[post("/organizations/<org>/review/<id>/analyze")]

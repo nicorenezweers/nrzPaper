@@ -53,7 +53,7 @@ async fn setup(c: &Client) -> String {
         c,
         "POST",
         "/api/v1/auth/register",
-        Some(json!({ "username": "nico", "password": "geheim-123" })),
+        Some(json!({ "username": "alice", "password": "geheim-123" })),
     )
     .await;
     assert_eq!(s, Status::Created);
@@ -100,7 +100,7 @@ async fn auth_and_account() {
         &c,
         "POST",
         "/api/v1/auth/login",
-        Some(json!({ "username": "nico", "password": "falsch" })),
+        Some(json!({ "username": "alice", "password": "falsch" })),
     )
     .await;
     assert_eq!(s, Status::Unauthorized);
@@ -108,7 +108,7 @@ async fn auth_and_account() {
         &c,
         "POST",
         "/api/v1/auth/login",
-        Some(json!({ "username": "nico", "password": "geheim-123" })),
+        Some(json!({ "username": "alice", "password": "geheim-123" })),
     )
     .await;
     assert_eq!(s, Status::Ok);
@@ -154,10 +154,10 @@ async fn auth_and_account() {
         &c,
         "PUT",
         "/api/v1/me/scanner",
-        Some(json!({ "scannerUrl": "192.168.0.70", "color": false, "dpi": 150 })),
+        Some(json!({ "scannerUrl": "192.168.1.50", "color": false, "dpi": 150 })),
     )
     .await;
-    assert_eq!(v["scanner"]["scannerUrl"], "http://192.168.0.70");
+    assert_eq!(v["scanner"]["scannerUrl"], "http://192.168.1.50");
 
     // Fremde Seite darf nichts ändern
     let res = c
@@ -437,7 +437,7 @@ async fn custom_properties_all_types() {
         Status::Ok
     );
     assert_eq!(set(ids[3].clone(), json!(["true"])).await.0, Status::Ok);
-    assert_eq!(set(ids[4].clone(), json!(["nico"])).await.0, Status::Ok);
+    assert_eq!(set(ids[4].clone(), json!(["alice"])).await.0, Status::Ok);
     assert_eq!(
         set(ids[4].clone(), json!(["fremder"])).await.0,
         Status::BadRequest
@@ -456,7 +456,7 @@ async fn custom_properties_all_types() {
     assert_eq!(get("Betrag")["values"], json!(["1250.5"]));
     assert_eq!(get("Fällig")["values"], json!(["2026-12-31"]));
     assert_eq!(get("Bezahlt")["display"], json!(["Ja"]));
-    assert_eq!(get("Zuständig")["display"], json!(["nico"]));
+    assert_eq!(get("Zuständig")["display"], json!(["alice"]));
     assert_eq!(get("Siehe auch")["display"], json!(["anhang.txt"]));
 
     // Möglichkeiten ändern: bestehende behalten Werte, entfernte verlieren sie; Typ fest
@@ -583,7 +583,7 @@ async fn folders_overview_and_trash() {
     assert_eq!(v["tags"][0]["documentsCount"], 1);
     assert_eq!(v["reviewCount"], 0);
     let (_, v) = call(&c, "GET", &format!("{base}/members"), None).await;
-    assert_eq!(v["members"][0]["username"], "nico");
+    assert_eq!(v["members"][0]["username"], "alice");
 
     // Vorschaubild für Text: Platzhalter
     let res = c

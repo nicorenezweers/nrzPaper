@@ -532,8 +532,8 @@ async fn import_failures_and_moving() {
         "openrouter/free zweimal, dann drei Bild-Modelle"
     );
 
-    // Kein PDF → abgelehnt
-    let (ct, body) = multipart(&[("bild.jpg", PAGE)]);
+    // Weder PDF noch Bild → abgelehnt (Bilder werden zur PDF-Seite)
+    let (ct, body) = multipart(&[("notiz.txt", b"nur Text")]);
     let res = e
         .client
         .post(format!("/api/v1/organizations/{org}/review/import"))
@@ -634,13 +634,13 @@ async fn scanner_settings_and_access() {
     // Konto: Scanner; KI-Einstellungen (Admin) zeigen das Standardmodell
     let (_, v) = e.json("GET", "/settings/ai".into(), None).await;
     assert_eq!(v["effectiveModel"], "openrouter/free");
-    assert_eq!(e.scanner("192.168.0.70/", false, 600).await, Status::Ok);
+    assert_eq!(e.scanner("192.168.1.50/", false, 600).await, Status::Ok);
     let s: (String, bool, i64) =
         sqlx::query_as("SELECT scanner_url, color, dpi FROM scan_settings")
             .fetch_one(e.pool())
             .await
             .unwrap();
-    assert_eq!(s, ("http://192.168.0.70".to_string(), false, 600));
+    assert_eq!(s, ("http://192.168.1.50".to_string(), false, 600));
     assert_eq!(e.scanner("http://", false, 300).await, Status::BadRequest);
     // Leer: kein Scanner → Scannen meldet das verständlich
     assert_eq!(e.scanner("", true, 300).await, Status::Ok);

@@ -8,6 +8,7 @@ use crate::models::{Folder, Tag};
 use crate::state::{self, ME, OVERVIEW, REFRESH};
 use crate::Route;
 use dioxus::prelude::*;
+use crate::i18n::{tr, trf};
 
 /// Lädt den angemeldeten Benutzer; ohne Anmeldung zur Anmeldeseite.
 #[component]
@@ -54,7 +55,16 @@ pub fn OrgLayout() -> Element {
         async move {
             loop {
                 gloo_timers::future::TimeoutFuture::new(20_000).await;
+                let before = state::OVERVIEW.read().as_ref().filter(|(o, _)| *o == org).map(|(_, v)| v.reminders_due);
                 state::load_overview(&org).await;
+                state::load_invitations().await;
+                // Neu fällige Erinnerung: kurz melden
+                let after = state::OVERVIEW.read().as_ref().filter(|(o, _)| *o == org).map(|(_, v)| v.reminders_due);
+                if let (Some(b), Some(a)) = (before, after) {
+                    if a > b {
+                        toast(if a == 1 { tr("Eine Erinnerung ist fällig.") } else { trf("{0} Erinnerungen sind fällig.", &[&a]) });
+                    }
+                }
             }
         }
     });
@@ -63,8 +73,8 @@ pub fn OrgLayout() -> Element {
     if !me.organizations.iter().any(|o| o.id == org) {
         return rsx! {
             div { class: "grid h-screen place-items-center p-6",
-                EmptyState { title: "Organisation nicht gefunden", description: "Es gibt sie nicht, oder du bist kein Mitglied.",
-                    Link { class: btn(BTN_OUTLINE), to: Route::Home {}, "Zur Übersicht" }
+                EmptyState { title: tr("Organisation nicht gefunden"), description: tr("Es gibt sie nicht, oder du bist kein Mitglied."),
+                    Link { class: btn(BTN_OUTLINE), to: Route::Home {}, {tr("Zur Übersicht")} }
                 }
             }
         };
@@ -87,6 +97,7 @@ pub fn OrgLayout() -> Element {
             div { class: "flex min-w-0 flex-1 flex-col",
                 TopBar { org: org.clone(), on_menu: move |_| mobile_open.set(true) }
                 main { class: "min-h-0 flex-1 overflow-y-auto", Outlet::<Route> {} }
+                crate::components::assistant::Assistant { org: org.clone() }
             }
         }
     }
@@ -123,7 +134,7 @@ fn TopBar(org: String, on_menu: EventHandler<()>) -> Element {
                 input {
                     class: "{INPUT} pl-9",
                     r#type: "search",
-                    placeholder: "Suchen … z. B. rechnung tag:steuern created:2026",
+                    placeholder: tr("Suchen … z. B. rechnung tag:steuern created:2026"),
                     value: "{text}",
                     oninput: move |e| text.set(e.value()),
                 }
@@ -137,18 +148,18 @@ fn TopBar(org: String, on_menu: EventHandler<()>) -> Element {
 fn SearchHelp() -> Element {
     let mut open = use_signal(|| false);
     rsx! {
-        button { class: "{btn(BTN_GHOST)} {BTN_SM} hidden text-muted-foreground sm:inline-flex", onclick: move |_| open.set(true), icons::Info { class: "size-4" } "Suchhilfe" }
-        Modal { open, title: "Suchhilfe", description: "Begriffe lassen sich frei kombinieren.",
+        button { class: "{btn(BTN_GHOST)} {BTN_SM} hidden text-muted-foreground sm:inline-flex", onclick: move |_| open.set(true), icons::Info { class: "size-4" } {tr("Suchhilfe")} }
+        Modal { open, title: tr("Suchhilfe"), description: tr("Begriffe lassen sich frei kombinieren."),
             div { class: "grid gap-2 text-sm",
                 for (code , text) in [
-                    ("rechnung zürich", "beide Wörter, Anfang genügt, Umlaute egal"),
-                    ("\"mobile abo\"", "genau diese Wortfolge"),
-                    ("name: / content:", "nur im Namen bzw. im erkannten Text"),
-                    ("tag:steuern  -tag:privat", "mit bzw. ohne Tag"),
-                    ("has:tags", "nur Dokumente mit Tags"),
-                    ("type:pdf / image / text", "Dateityp"),
-                    ("created:2026  created:>2026-06-01", "Hochgeladen im Jahr / ab Datum"),
-                    ("status:failed", "Texterkennung fehlgeschlagen"),
+                    ("rechnung zürich", {tr("beide Wörter, Anfang genügt, Umlaute egal")}),
+                    ("\"mobile abo\"", {tr("genau diese Wortfolge")}),
+                    ("name: / content:", {tr("nur im Namen bzw. im erkannten Text")}),
+                    ("tag:steuern  -tag:privat", {tr("mit bzw. ohne Tag")}),
+                    ("has:tags", {tr("nur Dokumente mit Tags")}),
+                    ("type:pdf / image / text", {tr("Dateityp")}),
+                    ("created:2026  created:>2026-06-01", {tr("Hochgeladen im Jahr / ab Datum")}),
+                    ("status:failed", {tr("Texterkennung fehlgeschlagen")}),
                 ] {
                     div { class: "flex flex-wrap items-baseline gap-x-3 gap-y-1",
                         code { class: "rounded bg-muted px-1.5 py-0.5 font-mono text-xs", "{code}" }
@@ -208,7 +219,7 @@ fn Sidebar(org: String) -> Element {
                     }
                     icons::ChevronsUpDown { class: "size-4 text-muted-foreground" }
                 },
-                MenuLabel { "Organisationen" }
+                MenuLabel { {tr("Organisationen")} }
                 for o in me.organizations.iter().cloned() {
                     MenuItem { active: o.id == org, onclick: move |_| { nav.push(Route::Documents { org: o.id.clone(), q: String::new() }); },
                         icons::Building2 {}
@@ -216,22 +227,23 @@ fn Sidebar(org: String) -> Element {
                     }
                 }
                 MenuSeparator {}
-                MenuItem { onclick: move |_| { nav.push(Route::NewOrg {}); }, icons::Plus {} "Neue Organisation" }
+                MenuItem { onclick: move |_| { nav.push(Route::NewOrg {}); }, icons::Plus {} {tr("Neue Organisation")} }
             }
         }
 
         nav { class: "flex flex-col gap-0.5 px-3",
-            NavLink { to: Route::Documents { org: org.clone(), q: String::new() }, label: "Dokumente", active: is(&Route::Documents { org: String::new(), q: String::new() }) || is(&Route::DocumentPage { org: String::new(), id: String::new() }), icon: rsx! { icons::FileText {} } }
-            NavLink { to: Route::Inbox { org: org.clone(), item: String::new() }, label: "Inbox", badge: overview.review_count, active: is(&Route::Inbox { org: String::new(), item: String::new() }), icon: rsx! { icons::Inbox {} } }
-            NavLink { to: Route::Scan { org: org.clone() }, label: "Scannen", active: is(&Route::Scan { org: String::new() }), icon: rsx! { icons::ScanLine {} } }
-            NavLink { to: Route::Tags { org: org.clone() }, label: "Tags", active: is(&Route::Tags { org: String::new() }), icon: rsx! { icons::Tag {} } }
-            NavLink { to: Route::Trash { org: org.clone() }, label: "Papierkorb", active: is(&Route::Trash { org: String::new() }), icon: rsx! { icons::Trash2 {} } }
+            NavLink { to: Route::Documents { org: org.clone(), q: String::new() }, label: tr("Dokumente"), active: is(&Route::Documents { org: String::new(), q: String::new() }) || is(&Route::DocumentPage { org: String::new(), id: String::new() }), icon: rsx! { icons::FileText {} } }
+            NavLink { to: Route::Inbox { org: org.clone(), item: String::new() }, label: tr("Inbox"), badge: overview.review_count, active: is(&Route::Inbox { org: String::new(), item: String::new() }), icon: rsx! { icons::Inbox {} } }
+            NavLink { to: Route::RemindersPage { org: org.clone() }, label: tr("Erinnerungen"), badge: overview.reminders_due, active: is(&Route::RemindersPage { org: String::new() }), icon: rsx! { icons::Bell {} } }
+            NavLink { to: Route::Scan { org: org.clone() }, label: tr("Scannen"), active: is(&Route::Scan { org: String::new() }), icon: rsx! { icons::ScanLine {} } }
+            NavLink { to: Route::Tags { org: org.clone() }, label: tr("Tags"), active: is(&Route::Tags { org: String::new() }), icon: rsx! { icons::Tag {} } }
+            NavLink { to: Route::Trash { org: org.clone() }, label: tr("Papierkorb"), active: is(&Route::Trash { org: String::new() }), icon: rsx! { icons::Trash2 {} } }
         }
 
         // Ordner
         div { class: "mt-5 flex items-center justify-between px-5",
-            span { class: "text-xs font-medium uppercase tracking-wider text-muted-foreground", "Ordner" }
-            button { class: "grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-sidenav-accent hover:text-foreground", title: "Neuer Ordner",
+            span { class: "text-xs font-medium uppercase tracking-wider text-muted-foreground", {tr("Ordner")} }
+            button { class: "grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-sidenav-accent hover:text-foreground", title: tr("Neuer Ordner"),
                 onclick: move |_| { editing.set(None); folder_dialog.set(true); },
                 icons::Plus { class: "size-4" }
             }
@@ -240,7 +252,7 @@ fn Sidebar(org: String) -> Element {
             if overview.folders.is_empty() {
                 button { class: "w-full rounded-md px-2.5 py-1.5 text-left text-sm text-muted-foreground hover:bg-sidenav-accent/60",
                     onclick: move |_| { editing.set(None); folder_dialog.set(true); },
-                    "Ordner aus Tags anlegen …"
+                    {tr("Ordner aus Tags anlegen …")}
                 }
             }
             for f in overview.folders.iter().cloned() {
@@ -249,6 +261,8 @@ fn Sidebar(org: String) -> Element {
                 }
             }
         }
+
+        crate::components::invitations::Invitations {}
 
         // Profil mit Einstellungen
         div { class: "border-t border-sidenav-border p-3",
@@ -282,21 +296,21 @@ fn FolderRow(org: String, folder: Folder, active: bool, on_edit: EventHandler<Fo
                 Dropdown { align: Align::End,
                     trigger_class: "grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
                     trigger: rsx! { icons::Ellipsis { class: "size-4" } },
-                    MenuItem { onclick: move |_| on_edit.call(f2.clone()), icons::Pencil {} "Bearbeiten" }
+                    MenuItem { onclick: move |_| on_edit.call(f2.clone()), icons::Pencil {} {tr("Bearbeiten")} }
                     MenuItem { destructive: true,
                         onclick: move |_| {
                             let (org, f) = (org2.clone(), folder.clone());
                             spawn(async move {
-                                let ask = Ask::new(format!("Ordner „{}“ löschen?", f.name), "Unterordner werden mitgelöscht. Dokumente und Tags bleiben.").confirm("Löschen").destructive();
+                                let ask = Ask::new(trf("Ordner „{0}“ löschen?", &[&(f.name)]), tr("Unterordner werden mitgelöscht. Dokumente und Tags bleiben.")).confirm(tr("Löschen")).destructive();
                                 if confirm(ask).await {
                                     match api::delete(&format!("/organizations/{org}/folders/{}", f.id)).await {
-                                        Ok(()) => { toast("Ordner gelöscht."); state::refresh(); }
+                                        Ok(()) => { toast(tr("Ordner gelöscht.")); state::refresh(); }
                                         Err(e) => toast_error(e),
                                     }
                                 }
                             });
                         },
-                        icons::Trash2 {} "Löschen"
+                        icons::Trash2 {} {tr("Löschen")}
                     }
                 }
             }
@@ -321,7 +335,7 @@ pub fn FolderDialog(open: Signal<bool>, org: String, folder: Option<Folder>, fol
             chosen.set(init.as_ref().map(|f| f.tag_ids.clone()).unwrap_or_default());
         }
     }));
-    let title = if folder.is_some() { "Ordner bearbeiten" } else { "Neuer Ordner" };
+    let title = if folder.is_some() { tr("Ordner bearbeiten") } else { tr("Neuer Ordner") };
     let eid = editing_id.clone();
     let save = move |_| {
         let (org, eid) = (org.clone(), eid.clone());
@@ -336,7 +350,7 @@ pub fn FolderDialog(open: Signal<bool>, org: String, folder: Option<Folder>, fol
             busy.set(false);
             match res {
                 Ok(_) => {
-                    toast("Ordner gespeichert.");
+                    toast(tr("Ordner gespeichert."));
                     open.set(false);
                     state::refresh();
                 }
@@ -345,23 +359,23 @@ pub fn FolderDialog(open: Signal<bool>, org: String, folder: Option<Folder>, fol
         });
     };
     rsx! {
-        Modal { open, title, description: "Ein Ordner zeigt alle Dokumente mit mindestens einem seiner Tags – Unterordner eingeschlossen.",
+        Modal { open, title, description: tr("Ein Ordner zeigt alle Dokumente mit mindestens einem seiner Tags – Unterordner eingeschlossen."),
             div { class: "grid gap-4",
-                Field { label: "Name",
-                    input { class: INPUT, value: "{name}", placeholder: "z. B. Finanzen", oninput: move |e| name.set(e.value()) }
+                Field { label: tr("Name"),
+                    input { class: INPUT, value: "{name}", placeholder: tr("z. B. Finanzen"), oninput: move |e| name.set(e.value()) }
                 }
-                Field { label: "Liegt in",
+                Field { label: tr("Liegt in"),
                     select { class: SELECT, value: "{parent}", onchange: move |e| parent.set(e.value()),
-                        option { value: "", "— oberste Ebene —" }
+                        option { value: "", {tr("— oberste Ebene —")} }
                         for f in folders.iter().filter(|f| f.id != editing_id) {
                             option { value: "{f.id}", selected: f.id == parent(), {format!("{}{}", "  · ".repeat(f.depth), f.name)} }
                         }
                     }
                 }
                 div { class: "grid gap-2",
-                    span { class: "text-sm font-medium", "Tags in diesem Ordner" }
+                    span { class: "text-sm font-medium", {tr("Tags in diesem Ordner")} }
                     if tags.is_empty() {
-                        p { class: "text-sm text-muted-foreground", "Noch keine Tags – zuerst unter „Tags“ anlegen." }
+                        p { class: "text-sm text-muted-foreground", {tr("Noch keine Tags – zuerst unter „Tags“ anlegen.")} }
                     }
                     div { class: "flex flex-wrap gap-1.5",
                         for t in tags.iter().cloned() {
@@ -376,8 +390,8 @@ pub fn FolderDialog(open: Signal<bool>, org: String, folder: Option<Folder>, fol
                     }
                 }
                 div { class: "flex justify-end gap-2 pt-2",
-                    button { class: btn(BTN_OUTLINE), onclick: move |_| open.set(false), "Abbrechen" }
-                    button { class: btn(BTN_PRIMARY), disabled: busy() || name().trim().is_empty(), onclick: save, "Speichern" }
+                    button { class: btn(BTN_OUTLINE), onclick: move |_| open.set(false), {tr("Abbrechen")} }
+                    button { class: btn(BTN_PRIMARY), disabled: busy() || name().trim().is_empty(), onclick: save, {tr("Speichern")} }
                 }
             }
         }
@@ -393,37 +407,46 @@ fn ProfileMenu(org: String, is_admin: bool, username: String, role: String) -> E
         move |_| { nav.push(Route::Settings { org: org.clone(), section: section.into() }); }
     };
     let can_manage = matches!(role.as_str(), "owner" | "admin");
+    let mut lang_open = use_signal(|| false);
     rsx! {
+        crate::components::language::LanguageDialog { open: lang_open }
         Dropdown { side: Side::Top, class: "w-[14.5rem]",
             trigger_class: "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-sidenav-accent",
             trigger: rsx! {
                 span { class: "grid size-8 place-items-center rounded-full bg-secondary text-sm font-semibold", "{initial}" }
                 span { class: "min-w-0 flex-1",
                     span { class: "block truncate text-sm font-medium", "{username}" }
-                    span { class: "block text-xs text-muted-foreground", if is_admin { "Administrator" } else { "Konto" } }
+                    span { class: "block text-xs text-muted-foreground", if is_admin { {tr("Administrator")} } else { {tr("Konto")} } }
                 }
                 icons::ChevronsUpDown { class: "size-4 text-muted-foreground" }
             },
-            MenuLabel { "Konto" }
-            MenuItem { onclick: go("profile"), icons::User {} "Profil & Passwort" }
-            MenuItem { onclick: go("api-keys"), icons::Key {} "API-Keys" }
-            MenuItem { onclick: go("scanner"), icons::Printer {} "Scanner" }
-            MenuItem { onclick: go("mail"), icons::Mail {} "E-Mail-Eingang" }
+            MenuLabel { {tr("Konto")} }
+            MenuItem { onclick: go("profile"), icons::User {} {tr("Profil & Passwort")} }
+            MenuItem { onclick: go("api-keys"), icons::Key {} {tr("API-Keys")} }
+            MenuItem { onclick: go("scanner"), icons::ScanLine {} {tr("Scanner")} }
+            MenuItem { onclick: go("mail"), icons::Mail {} {tr("E-Mail-Eingang")} }
             MenuSeparator {}
-            MenuLabel { "Organisation" }
-            MenuItem { onclick: go("organization"), icons::Building2 {} "Allgemein & Mitglieder" }
-            MenuItem { onclick: go("tagging-rules"), icons::Wand {} "Tagging-Regeln" }
-            MenuItem { onclick: go("properties"), icons::SlidersHorizontal {} "Eigenschaften" }
+            MenuLabel { {tr("Organisation")} }
+            MenuItem { onclick: go("organization"), icons::Building2 {} {tr("Allgemein & Mitglieder")} }
+            MenuItem { onclick: go("tagging-rules"), icons::Wand {} {tr("Tagging-Regeln")} }
+            MenuItem { onclick: go("properties"), icons::SlidersHorizontal {} {tr("Eigenschaften")} }
             if can_manage {
-                MenuItem { onclick: go("webhooks"), icons::Webhook {} "Webhooks" }
+                MenuItem { onclick: go("webhooks"), icons::Webhook {} {tr("Webhooks")} }
             }
             if is_admin {
                 MenuSeparator {}
-                MenuLabel { "Instanz" }
-                MenuItem { onclick: go("ai"), icons::Sparkles {} "KI (OpenRouter)" }
-                MenuItem { onclick: go("instance"), icons::ShieldCheck {} "Registrierung & Benutzer" }
+                MenuLabel { {tr("Instanz")} }
+                MenuItem { onclick: go("ai"), icons::Sparkles {} {tr("KI & Modelle")} }
+                MenuItem { onclick: go("instance"), icons::ShieldCheck {} {tr("Registrierung & Benutzer")} }
+                MenuItem { onclick: go("printers"), icons::Printer {} {tr("Drucker")} }
+                MenuItem { onclick: go("watch-folders"), icons::FolderInput {} {tr("Ordner-Eingang")} }
             }
             MenuSeparator {}
+            MenuItem { onclick: move |_| lang_open.set(true),
+                icons::Languages {}
+                span { class: "flex-1", {tr("Sprache")} }
+                span { class: "text-xs text-muted-foreground", {crate::components::language::current_name()} }
+            }
             MenuItem {
                 onclick: move |_| {
                     spawn(async move {
@@ -433,7 +456,7 @@ fn ProfileMenu(org: String, is_admin: bool, username: String, role: String) -> E
                     });
                 },
                 icons::LogOut {}
-                "Abmelden"
+                {tr("Abmelden")}
             }
         }
     }

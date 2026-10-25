@@ -10,6 +10,7 @@ use crate::state::{self, OVERVIEW, REFRESH};
 use crate::util;
 use crate::Route;
 use dioxus::prelude::*;
+use crate::i18n::{tr, trf};
 
 const PAGE_SIZE: u32 = 24;
 
@@ -105,11 +106,11 @@ fn DocList(org: String, q: String, folder: Option<String>) -> Element {
                 Ok(v) => {
                     let docs = if v["documents"].is_array() { v["documents"].as_array().cloned().unwrap_or_default() } else { vec![v.clone()] };
                     for d in docs {
-                        let name = d["document"]["name"].as_str().unwrap_or("Dokument");
+                        let name = d["document"]["name"].as_str().map(String::from).unwrap_or_else(|| tr("Dokument"));
                         if d["restored"] == true {
-                            toast(format!("„{name}“ aus dem Papierkorb geholt."));
+                            toast(trf("„{0}“ aus dem Papierkorb geholt.", &[&(name)]));
                         } else {
-                            toast(format!("„{name}“ hochgeladen – Texterkennung läuft."));
+                            toast(trf("„{0}“ hochgeladen – Texterkennung läuft.", &[&(name)]));
                         }
                     }
                     for e in v["errors"].as_array().cloned().unwrap_or_default() {
@@ -132,13 +133,15 @@ fn DocList(org: String, q: String, folder: Option<String>) -> Element {
     let route_for2 = route_for.clone();
 
     let (title, eyebrow, description) = match &current_folder {
-        Some(f) => (f.name.clone(), Some("Ordner".to_string()), None),
-        None => ("Dokumente".to_string(), None, Some("PDFs und Bilder hierher ziehen – der Text wird automatisch erkannt.".to_string())),
+        Some(f) => (f.name.clone(), Some({tr("Ordner")}.to_string()), None),
+        None => ({tr("Dokumente")}.to_string(), None, Some({tr("PDFs und Bilder hierher ziehen – der Text wird automatisch erkannt.")}.to_string())),
     };
 
+    let mut timeline = use_signal(|| util::storage_get("nrz-timeline").as_deref() != Some("off"));
     rsx! {
+        div { class: "flex min-h-full",
         div {
-            class: "relative min-h-full p-4 md:p-6",
+            class: "relative min-w-0 flex-1 p-4 md:p-6",
             ondragenter: move |_| dragging += 1,
             ondragleave: move |_| dragging -= 1,
             ondragover: move |e| e.prevent_default(),
@@ -152,19 +155,24 @@ fn DocList(org: String, q: String, folder: Option<String>) -> Element {
                 eyebrow,
                 description,
                 actions: rsx! {
+                    button { class: if timeline() { "hidden size-9 place-items-center rounded-md border bg-accent xl:grid" } else { "hidden size-9 place-items-center rounded-md border text-muted-foreground hover:text-foreground xl:grid" },
+                        title: tr("Zeitleiste ein- oder ausblenden"),
+                        onclick: move |_| { let on = !timeline(); timeline.set(on); util::storage_set("nrz-timeline", if on { "on" } else { "off" }); },
+                        icons::GitCommitVertical { class: "size-4" }
+                    }
                     div { class: "flex rounded-md border p-0.5",
                         button { class: if view() == "grid" { "grid size-8 place-items-center rounded-sm bg-accent" } else { "grid size-8 place-items-center rounded-sm text-muted-foreground hover:text-foreground" },
-                            title: "Kacheln", onclick: move |_| { view.set("grid".into()); util::storage_set("nrz-view", "grid"); },
+                            title: tr("Kacheln"), onclick: move |_| { view.set("grid".into()); util::storage_set("nrz-view", "grid"); },
                             icons::LayoutGrid { class: "size-4" }
                         }
                         button { class: if view() == "list" { "grid size-8 place-items-center rounded-sm bg-accent" } else { "grid size-8 place-items-center rounded-sm text-muted-foreground hover:text-foreground" },
-                            title: "Liste", onclick: move |_| { view.set("list".into()); util::storage_set("nrz-view", "list"); },
+                            title: tr("Liste"), onclick: move |_| { view.set("list".into()); util::storage_set("nrz-view", "list"); },
                             icons::List { class: "size-4" }
                         }
                     }
                     label { class: "{btn(BTN_PRIMARY)} cursor-pointer",
                         if uploading() { icons::LoaderCircle { class: "size-4 animate-spin" } } else { icons::Upload { class: "size-4" } }
-                        "Hochladen"
+                        {tr("Hochladen")}
                         input { r#type: "file", multiple: true, class: "hidden",
                             onchange: move |e| {
                                 upload.call(util::input_files(&e));
@@ -176,10 +184,10 @@ fn DocList(org: String, q: String, folder: Option<String>) -> Element {
 
             if let Some(f) = &current_folder {
                 div { class: "-mt-3 mb-5 flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground",
-                    "Dokumente mit "
-                    if folder_tags.is_empty() { span { "– noch keine Tags zugeordnet" } }
+                    {tr("Dokumente mit ")}
+                    if folder_tags.is_empty() { span { {tr("– noch keine Tags zugeordnet")} } }
                     for t in folder_tags.iter().cloned() { TagBadge { tag: t, small: true } }
-                    if f.count > 0 { span { class: "ml-1", "· {f.count} insgesamt (mit Unterordnern)" } }
+                    if f.count > 0 { span { class: "ml-1", {trf("· {0} insgesamt (mit Unterordnern)", &[&(f.count)])} } }
                 }
             }
 
@@ -205,11 +213,11 @@ fn DocList(org: String, q: String, folder: Option<String>) -> Element {
                 Some(Err(e)) => rsx! { Callout { text: e.message.clone(), error: true } },
                 Some(Ok(l)) if l.documents.is_empty() => rsx! {
                     if !q.is_empty() {
-                        EmptyState { title: "Keine Treffer", description: format!("Für „{q}“ wurde nichts gefunden."), icon: rsx! { icons::Search {} } }
+                        EmptyState { title: {tr("Keine Treffer")}, description: {trf("Für „{0}“ wurde nichts gefunden.", &[&(q)])}, icon: rsx! { icons::Search {} } }
                     } else if current_folder.is_some() {
-                        EmptyState { title: "Ordner ist leer", description: "Hier erscheinen Dokumente mit einem der Tags dieses Ordners.", icon: rsx! { icons::FolderOpen {} } }
+                        EmptyState { title: {tr("Ordner ist leer")}, description: {tr("Hier erscheinen Dokumente mit einem der Tags dieses Ordners.")}, icon: rsx! { icons::FolderOpen {} } }
                     } else {
-                        EmptyState { title: "Noch keine Dokumente", description: "Dateien hierher ziehen, oben auf „Hochladen“ klicken oder scannen.", icon: rsx! { icons::FileUp {} } }
+                        EmptyState { title: {tr("Noch keine Dokumente")}, description: {tr("Dateien hierher ziehen, oben auf „Hochladen“ klicken oder scannen.")}, icon: rsx! { icons::FileUp {} } }
                     }
                 },
                 Some(Ok(l)) => {
@@ -217,10 +225,10 @@ fn DocList(org: String, q: String, folder: Option<String>) -> Element {
                     rsx! {
                         p { class: "mb-3 text-sm text-muted-foreground",
                             "{l.documents_count} "
-                            if l.documents_count == 1 { "Dokument" } else { "Dokumente" }
-                            if !q.is_empty() { " für „{q}“" }
+                            if l.documents_count == 1 { {tr("Dokument")} } else { {tr("Dokumente")} }
+                            if !q.is_empty() { {trf(" für „{0}“", &[&(q)])} }
                             if !q.is_empty() {
-                                Link { class: "ml-2 text-foreground underline-offset-4 hover:underline", to: route_for2(String::new()), "Suche löschen" }
+                                Link { class: "ml-2 text-foreground underline-offset-4 hover:underline", to: route_for2(String::new()), {tr("Suche löschen")} }
                             }
                         }
                         if view() == "grid" {
@@ -232,9 +240,9 @@ fn DocList(org: String, q: String, folder: Option<String>) -> Element {
                         }
                         if pages > 1 {
                             nav { class: "mt-6 flex items-center justify-center gap-1",
-                                button { class: "{btn(BTN_GHOST)} {BTN_SM}", disabled: page() == 0, onclick: move |_| page -= 1, icons::ChevronLeft { class: "size-4" } "Zurück" }
-                                span { class: "px-3 text-sm text-muted-foreground", "Seite {page() + 1} von {pages}" }
-                                button { class: "{btn(BTN_GHOST)} {BTN_SM}", disabled: page() + 1 >= pages, onclick: move |_| page += 1, "Weiter" icons::ChevronRight { class: "size-4" } }
+                                button { class: "{btn(BTN_GHOST)} {BTN_SM}", disabled: page() == 0, onclick: move |_| page -= 1, icons::ChevronLeft { class: "size-4" } {tr("Zurück")} }
+                                span { class: "px-3 text-sm text-muted-foreground", {trf("Seite {0} von {1}", &[&(page() + 1), &(pages)])} }
+                                button { class: "{btn(BTN_GHOST)} {BTN_SM}", disabled: page() + 1 >= pages, onclick: move |_| page += 1, {tr("Weiter")} icons::ChevronRight { class: "size-4" } }
                             }
                         }
                     }
@@ -245,10 +253,16 @@ fn DocList(org: String, q: String, folder: Option<String>) -> Element {
                 div { class: "pointer-events-none fixed inset-0 z-40 grid place-items-center bg-background/85 backdrop-blur-sm",
                     div { class: "rounded-2xl border-2 border-dashed border-muted-foreground/50 px-16 py-14 text-center",
                         icons::FileUp { class: "mx-auto size-8 text-muted-foreground" }
-                        p { class: "mt-3 text-lg font-semibold", "Loslassen zum Hochladen" }
+                        p { class: "mt-3 text-lg font-semibold", {tr("Loslassen zum Hochladen")} }
                     }
                 }
             }
+        }
+        if timeline() {
+            div { class: "sticky top-0 hidden h-[calc(100dvh-3.5rem)] w-80 shrink-0 border-l bg-sidenav/40 xl:block 2xl:w-96",
+                crate::pages::timeline::Timeline { org: org.clone() }
+            }
+        }
         }
     }
 }
@@ -278,7 +292,7 @@ fn DocCard(org: String, doc: Document) -> Element {
                 }
                 if doc.busy() {
                     span { class: "absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-background/90 px-2 py-0.5 text-[11px]",
-                        icons::LoaderCircle { class: "size-3 animate-spin" } "Texterkennung …"
+                        icons::LoaderCircle { class: "size-3 animate-spin" } {tr("Texterkennung …")}
                     }
                 }
             }
@@ -289,14 +303,14 @@ fn DocCard(org: String, doc: Document) -> Element {
                 p { class: "flex items-center gap-1.5", icons::Calendar { class: "size-3.5" } "{util::date(doc.created_at)}" }
                 p { class: "flex items-center gap-1.5", icons::FileText { class: "size-3.5" }
                     "{doc.type_label()}"
-                    if let Some(n) = doc.page_count { " · {n} " if n == 1 { "Seite" } else { "Seiten" } }
+                    if let Some(n) = doc.page_count { " · {n} " if n == 1 { {tr("Seite")} } else { {tr("Seiten")} } }
                     " · {util::size(doc.size)}"
                 }
             }
             div { class: "grid grid-cols-3 divide-x border-t text-muted-foreground",
-                Link { to, class: "grid place-items-center py-2 hover:bg-accent hover:text-foreground", title: "Öffnen und bearbeiten", icons::Pencil { class: "size-4" } }
-                button { class: "grid place-items-center py-2 hover:bg-accent hover:text-foreground", title: "Vorschau", onclick: move |_| open_preview(&org2, &d2), icons::Eye { class: "size-4" } }
-                a { class: "grid place-items-center py-2 hover:bg-accent hover:text-foreground", title: "Herunterladen", href: "{file_url(&org, &doc.id)}?download=true", icons::Download { class: "size-4" } }
+                Link { to, class: "grid place-items-center py-2 hover:bg-accent hover:text-foreground", title: tr("Öffnen und bearbeiten"), icons::Pencil { class: "size-4" } }
+                button { class: "grid place-items-center py-2 hover:bg-accent hover:text-foreground", title: tr("Vorschau"), onclick: move |_| open_preview(&org2, &d2), icons::Eye { class: "size-4" } }
+                a { class: "grid place-items-center py-2 hover:bg-accent hover:text-foreground", title: tr("Herunterladen"), href: "{file_url(&org, &doc.id)}?download=true", icons::Download { class: "size-4" } }
             }
         }
     }
@@ -309,10 +323,10 @@ fn DocTable(org: String, docs: Vec<Document>) -> Element {
             table { class: "w-full text-sm",
                 thead { class: "bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground",
                     tr {
-                        th { class: "px-4 py-2.5 font-medium", "Name" }
-                        th { class: "hidden px-4 py-2.5 font-medium lg:table-cell", "Tags" }
-                        th { class: "hidden px-4 py-2.5 font-medium md:table-cell", "Grösse" }
-                        th { class: "px-4 py-2.5 font-medium", "Hochgeladen" }
+                        th { class: "px-4 py-2.5 font-medium", {tr("Name")} }
+                        th { class: "hidden px-4 py-2.5 font-medium lg:table-cell", {tr("Tags")} }
+                        th { class: "hidden px-4 py-2.5 font-medium md:table-cell", {tr("Grösse")} }
+                        th { class: "px-4 py-2.5 font-medium", {tr("Hochgeladen")} }
                         th { class: "w-10" }
                     }
                 }
@@ -325,7 +339,7 @@ fn DocTable(org: String, docs: Vec<Document>) -> Element {
                                     span { class: "min-w-0",
                                         span { class: "block truncate font-medium", "{d.name}" }
                                         span { class: "text-xs text-muted-foreground",
-                                            if d.busy() { "Texterkennung läuft …" } else if let Some(n) = d.page_count { "{n} " if n == 1 { "Seite" } else { "Seiten" } }
+                                            if d.busy() { {tr("Texterkennung läuft …")} } else if let Some(n) = d.page_count { "{n} " if n == 1 { {tr("Seite")} } else { {tr("Seiten")} } }
                                         }
                                     }
                                 }
@@ -336,7 +350,7 @@ fn DocTable(org: String, docs: Vec<Document>) -> Element {
                             td { class: "hidden px-4 py-2.5 text-muted-foreground md:table-cell", "{util::size(d.size)}" }
                             td { class: "px-4 py-2.5 text-muted-foreground", "{util::datetime(d.created_at)}" }
                             td { class: "px-2",
-                                button { class: "{btn(BTN_GHOST)} {BTN_ICON}", title: "Vorschau",
+                                button { class: "{btn(BTN_GHOST)} {BTN_ICON}", title: tr("Vorschau"),
                                     onclick: { let (org, d) = (org.clone(), d.clone()); move |_| open_preview(&org, &d) },
                                     icons::Eye { class: "size-4" }
                                 }

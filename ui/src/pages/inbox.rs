@@ -13,16 +13,31 @@ use crate::Route;
 use dioxus::prelude::*;
 use serde_json::json;
 use std::collections::BTreeMap;
+use crate::i18n::{tr, trf};
 
-fn badge(status: &str) -> (&'static str, &'static str) {
+fn badge(status: &str) -> (String, &'static str) {
     match status {
-        "analyse" => ("KI liest …", "border-border text-muted-foreground"),
-        "pruefen" => ("Prüfen", "border-primary bg-primary text-primary-foreground"),
-        "import" => ("Wird abgelegt …", "border-border text-muted-foreground"),
-        "fertig" => ("Abgelegt", "border-border text-muted-foreground"),
-        "fehler" => ("Fehler", "border-destructive/50 text-destructive"),
-        _ => ("?", ""),
+        "analyse" => ({tr("KI liest …")}, "border-border text-muted-foreground"),
+        "pruefen" => ({tr("Prüfen")}, "border-primary bg-primary text-primary-foreground"),
+        "import" => ({tr("Wird abgelegt …")}, "border-border text-muted-foreground"),
+        "fertig" => ({tr("Abgelegt")}, "border-border text-muted-foreground"),
+        "fehler" => ({tr("Fehler")}, "border-destructive/50 text-destructive"),
+        _ => ("?".into(), ""),
     }
+}
+
+#[derive(serde::Deserialize, Clone, PartialEq, Default)]
+#[serde(default)]
+struct SourceRef {
+    r#ref: String,
+    name: String,
+}
+
+#[derive(serde::Deserialize, Clone, PartialEq, Default)]
+#[serde(default)]
+struct Sources {
+    mail: Vec<SourceRef>,
+    folders: Vec<SourceRef>,
 }
 
 #[component]
@@ -62,9 +77,61 @@ pub fn Inbox(org: String, item: String) -> Element {
         }
     });
 
+    // Quellen für den Filter: Postfächer und Ordner dieser Organisation
+    let o2 = org.clone();
+    let sources = use_resource(use_reactive!(|o2| async move {
+        api::get::<Sources>(&format!("/organizations/{o2}/inbox-sources")).await.unwrap_or_default()
+    }));
+    let mut filter = use_signal(|| util::storage_get("nrz-inbox-filter").unwrap_or_default());
+    let mut set_filter = move |f: String| {
+        util::storage_set("nrz-inbox-filter", &f);
+        filter.set(f);
+    };
+    let mut uploading = use_signal(|| false);
+    let o3 = org.clone();
+    let upload = use_callback(move |files: Vec<web_sys::File>| {
+        if files.is_empty() {
+            return;
+        }
+        let o = o3.clone();
+        spawn(async move {
+            uploading.set(true);
+            match api::upload::<serde_json::Value>(&format!("/organizations/{o}/review/import"), &files).await {
+                Ok(v) => {
+                    let n = v["items"].as_array().map(Vec::len).unwrap_or(0);
+                    toast(if n == 1 { tr("1 Datei zur Prüfung – die KI liest …") } else { trf("{0} Dateien zur Prüfung – die KI liest …", &[&n]) });
+                    load.call(());
+                    state::refresh();
+                }
+                Err(e) => toast_error(e),
+            }
+            uploading.set(false);
+        });
+    });
+
     let Some(list) = data() else { return rsx! { Loading {} } };
-    let open: Vec<InboxItem> = list.items.iter().filter(|i| i.status != "fertig").cloned().collect();
-    let done: Vec<InboxItem> = list.items.iter().filter(|i| i.status == "fertig").cloned().collect();
+    let src = sources.read().clone().unwrap_or_default();
+    let f = filter();
+    let matches = move |i: &InboxItem| -> bool {
+        match f.as_str() {
+            "" => true,
+            "scan" => i.source == "scan",
+            "mail" => i.source == "mail",
+            "folder" => i.source_ref.starts_with("folder:"),
+            "upload" => i.source == "import" && i.source_ref.is_empty(),
+            exact => i.source_ref == exact,
+        }
+    };
+    let count = |kind: &str| list.items.iter().filter(|i| i.status != "fertig").filter(|i| match kind {
+        "scan" => i.source == "scan",
+        "mail" => i.source == "mail",
+        "folder" => i.source_ref.starts_with("folder:"),
+        _ => i.source == "import" && i.source_ref.is_empty(),
+    }).count();
+    let open: Vec<InboxItem> = list.items.iter().filter(|i| i.status != "fertig").filter(|i| matches(i)).cloned().collect();
+    let done: Vec<InboxItem> = list.items.iter().filter(|i| i.status == "fertig").filter(|i| matches(i)).cloned().collect();
+    let reviewable = list.items.iter().filter(|i| i.status == "pruefen").count();
+    let group = if filter().starts_with("mail") { "mail".to_string() } else if filter().starts_with("folder") { "folder".to_string() } else { filter() };
     let selected = list.items.iter().find(|i| i.id == current()).cloned().or_else(|| open.first().cloned()).or_else(|| done.first().cloned());
 
     let row = move |i: InboxItem, active: bool| {
@@ -75,6 +142,7 @@ pub fn Inbox(org: String, item: String) -> Element {
                 span { class: "mt-0.5 w-4 shrink-0 text-muted-foreground",
                     if i.busy() { icons::LoaderCircle { class: "size-4 animate-spin" } }
                     else if i.source == "mail" { icons::Mail { class: "size-4" } }
+                    else if i.source_ref.starts_with("folder:") { icons::FolderInput { class: "size-4" } }
                     else if i.source == "scan" { icons::ScanLine { class: "size-4" } }
                     else { icons::FileText { class: "size-4" } }
                 }
@@ -82,7 +150,7 @@ pub fn Inbox(org: String, item: String) -> Element {
                     span { class: "block truncate text-sm font-medium", "{i.name}" }
                     span { class: "block truncate text-xs text-muted-foreground",
                         "{util::datetime(i.created_at)}"
-                        if i.page_count > 0 { " · {i.page_count} S." }
+                        if i.page_count > 0 { {trf(" · {0} S.", &[&(i.page_count)])} }
                     }
                 }
                 StatusBadge { status: i.status.clone() }
@@ -92,18 +160,93 @@ pub fn Inbox(org: String, item: String) -> Element {
 
     rsx! {
         div { class: "p-4 md:p-6",
-            PageHeader { title: "Inbox", description: "Scans, importierte PDFs und E-Mail-Anhänge warten hier auf die Abnahme.",
+            PageHeader { title: tr("Inbox"), description: tr("Scans, importierte PDFs und E-Mail-Anhänge warten hier auf die Abnahme."),
                 actions: rsx! {
-                    Link { class: btn(BTN_OUTLINE), to: Route::Scan { org: org.clone() }, icons::ScanLine { class: "size-4" } "Scannen" }
+                    if reviewable > 0 {
+                        button { class: btn(BTN_PRIMARY),
+                            onclick: {
+                                let o = org.clone();
+                                move |_| {
+                                    let o = o.clone();
+                                    spawn(async move {
+                                        let ask = Ask::new(trf("Alle {0} freigeben?", &[&reviewable]), tr("Jedes Dokument wird mit den Vorschlägen der KI abgelegt – Name, Tags und Eigenschaften wie angezeigt.")).confirm(tr("Alle freigeben"));
+                                        if confirm(ask).await {
+                                            match api::action::<serde_json::Value>(&format!("/organizations/{o}/review/approve-all")).await {
+                                                Ok(v) => {
+                                                    toast(trf("{0} Dokument(e) abgelegt.", &[&v["approved"].as_i64().unwrap_or(0)]));
+                                                    for e in v["errors"].as_array().cloned().unwrap_or_default() {
+                                                        toast_error(e.as_str().unwrap_or("").to_string());
+                                                    }
+                                                    load.call(());
+                                                    state::refresh();
+                                                }
+                                                Err(e) => toast_error(e),
+                                            }
+                                        }
+                                    });
+                                }
+                            },
+                            icons::CheckCheck { class: "size-4" } {trf("Alle freigeben ({0})", &[&reviewable])}
+                        }
+                    }
+                    label { class: "{btn(BTN_OUTLINE)} cursor-pointer", title: tr("PDFs und Bilder zur Prüfung hochladen"),
+                        if uploading() { icons::LoaderCircle { class: "size-4 animate-spin" } } else { icons::Upload { class: "size-4" } }
+                        {tr("Hochladen")}
+                        input { r#type: "file", multiple: true, accept: "application/pdf,image/*", class: "hidden",
+                            onchange: move |e| upload.call(util::input_files(&e)) }
+                    }
+                    Link { class: btn(BTN_OUTLINE), to: Route::Scan { org: org.clone() }, icons::ScanLine { class: "size-4" } {tr("Scannen")} }
+                }
+            }
+            // Quellen: Scanner, E-Mail, Ordner, Upload
+            div { class: "mb-4 flex flex-wrap items-center gap-1.5",
+                for (key , label , n) in [("", tr("Alle"), list.items.iter().filter(|i| i.status != "fertig").count()), ("scan", tr("Scanner"), count("scan")), ("mail", tr("E-Mail"), count("mail")), ("folder", tr("Ordner"), count("folder")), ("upload", tr("Hochgeladen"), count("upload"))] {
+                    button {
+                        class: if group == key { "inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3 py-1 text-xs font-medium text-primary-foreground" } else { "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground" },
+                        onclick: move |_| set_filter(key.to_string()),
+                        "{label}"
+                        if n > 0 { span { class: "rounded-full bg-background/20 px-1.5 tabular-nums", "{n}" } }
+                    }
+                }
+                if group == "mail" && src.mail.len() > 1 {
+                    select { class: "{SELECT} h-7 w-auto text-xs", onchange: move |e| set_filter(e.value()),
+                        option { value: "mail", selected: filter() == "mail", {tr("Alle Postfächer")} }
+                        for m in src.mail.iter() { option { value: "{m.r#ref}", selected: filter() == m.r#ref, "{m.name}" } }
+                    }
+                }
+                if group == "folder" && src.folders.len() > 1 {
+                    select { class: "{SELECT} h-7 w-auto text-xs", onchange: move |e| set_filter(e.value()),
+                        option { value: "folder", selected: filter() == "folder", {tr("Alle Ordner")} }
+                        for m in src.folders.iter() { option { value: "{m.r#ref}", selected: filter() == m.r#ref, "{m.name}" } }
+                    }
                 }
             }
             div { class: "grid gap-5 lg:grid-cols-[17rem_minmax(0,1fr)]",
                 nav { class: "space-y-1 self-start rounded-xl border bg-card p-2",
-                    p { class: "px-2.5 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground", "Offen ({open.len()})" }
-                    if open.is_empty() { p { class: "px-2.5 py-2 text-sm text-muted-foreground", "Nichts abzunehmen." } }
+                    p { class: "px-2.5 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground", {trf("Offen ({0})", &[&(open.len())])} }
+                    if open.is_empty() { p { class: "px-2.5 py-2 text-sm text-muted-foreground", {tr("Nichts abzunehmen.")} } }
                     for i in open.iter().cloned() { {row(i.clone(), selected.as_ref().is_some_and(|s| s.id == i.id))} }
                     if !done.is_empty() {
-                        p { class: "px-2.5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground", "Zuletzt abgelegt" }
+                        div { class: "flex items-center justify-between px-2.5 pb-1 pt-4",
+                            p { class: "text-xs font-semibold uppercase tracking-wider text-muted-foreground", {tr("Zuletzt abgelegt")} }
+                            button { class: "text-xs text-muted-foreground hover:text-foreground", title: tr("Liste leeren – die Dokumente bleiben"),
+                                onclick: {
+                                    let o = org.clone();
+                                    move |_| {
+                                        let o = o.clone();
+                                        spawn(async move {
+                                            if confirm(Ask::new(tr("„Zuletzt abgelegt“ leeren?"), tr("Nur die Liste wird geleert – die abgelegten Dokumente bleiben.")).confirm(tr("Leeren"))).await {
+                                                match api::delete(&format!("/organizations/{o}/review-filed")).await {
+                                                    Ok(()) => { toast(tr("Liste geleert.")); load.call(()); }
+                                                    Err(e) => toast_error(e),
+                                                }
+                                            }
+                                        });
+                                    }
+                                },
+                                {tr("Alle entfernen")}
+                            }
+                        }
                         for i in done.iter().cloned() { {row(i.clone(), selected.as_ref().is_some_and(|s| s.id == i.id))} }
                     }
                 }
@@ -117,7 +260,7 @@ pub fn Inbox(org: String, item: String) -> Element {
                         on_open: move |(o, d): (String, String)| { nav.push(Route::DocumentPage { org: o, id: d }); },
                     }
                 } else {
-                    EmptyState { title: "Alles erledigt", description: "Neue Scans, Importe und E-Mail-Anhänge landen hier.", icon: rsx! { icons::Inbox {} } }
+                    EmptyState { title: tr("Alles erledigt"), description: tr("Neue Scans, Importe und E-Mail-Anhänge landen hier."), icon: rsx! { icons::Inbox {} } }
                 }
             }
         }
@@ -162,9 +305,9 @@ fn Detail(org: String, item: InboxItem, list: InboxList, on_change: EventHandler
             div { class: "grid min-h-[20rem] flex-1 place-items-center p-10 text-center",
                 div {
                     div { class: "mx-auto grid size-12 place-items-center rounded-xl bg-muted", icons::Check { class: "size-6" } }
-                    p { class: "mt-3 font-medium", "Abgelegt" }
+                    p { class: "mt-3 font-medium", {tr("Abgelegt")} }
                     if let Some(d) = item.document_id.clone() {
-                        button { class: "{btn(BTN_PRIMARY)} mt-4", onclick: { let o = item.organization_id.clone(); move |_| on_open.call((o.clone(), d.clone())) }, "Dokument öffnen" }
+                        button { class: "{btn(BTN_PRIMARY)} mt-4", onclick: { let o = item.organization_id.clone(); move |_| on_open.call((o.clone(), d.clone())) }, {tr("Dokument öffnen")} }
                     }
                 }
             }
@@ -179,7 +322,7 @@ fn Detail(org: String, item: InboxItem, list: InboxList, on_change: EventHandler
                         button { class: if n == page() { "w-20 shrink-0 rounded-lg border-2 border-primary p-1" } else { "w-20 shrink-0 rounded-lg border-2 border-transparent p-1 hover:border-border" },
                             onclick: move |_| page.set(n),
                             img { src: "/api/v1{base}/pages/{n}", alt: "", class: "aspect-[3/4] w-full rounded object-cover" }
-                            span { class: "mt-1 block text-[11px] text-muted-foreground", "Seite {n}" }
+                            span { class: "mt-1 block text-[11px] text-muted-foreground", {trf("Seite {0}", &[&(n)])} }
                         }
                     }
                 }
@@ -212,24 +355,24 @@ fn Detail(org: String, item: InboxItem, list: InboxList, on_change: EventHandler
                 if !item.error.is_empty() { Callout { text: item.error.clone(), error: true } }
                 if !item.warning.is_empty() { Callout { text: item.warning.clone() } }
 
-                Field { label: "Name",
+                Field { label: tr("Name"),
                     input { class: INPUT, disabled: !editable, value: "{name}", oninput: move |e| name.set(e.value()), onchange: move |_| save.call(()) }
                 }
-                Field { label: "Organisation",
+                Field { label: tr("Organisation"),
                     select { class: SELECT, disabled: !editable,
                         onchange: move |e| { target.set(e.value()); tags.set(Vec::new()); save.call(()); },
                         for o in list.organizations.iter() { option { value: "{o.id}", selected: o.id == target(), "{o.name}" } }
                     }
                 }
                 div { class: "grid gap-1.5",
-                    span { class: "text-sm font-medium", "Tags" }
+                    span { class: "text-sm font-medium", {tr("Tags")} }
                     div { class: "flex flex-wrap gap-1.5",
-                        if names.is_empty() { span { class: "text-sm text-muted-foreground", "Keine Tags in dieser Organisation." } }
+                        if names.is_empty() { span { class: "text-sm text-muted-foreground", {tr("Keine Tags in dieser Organisation.")} } }
                         for n in names.iter().cloned() {
                             {
                                 let known = org_tags.iter().find(|t| t.name.eq_ignore_ascii_case(&n)).cloned();
                                 let on = tags().iter().any(|x| x.eq_ignore_ascii_case(&n));
-                                let tag = known.clone().unwrap_or(Tag { name: n.clone(), color: "#71717a".into(), description: "neu – wird beim Freigeben angelegt".into(), ..Default::default() });
+                                let tag = known.clone().unwrap_or(Tag { name: n.clone(), color: "#71717a".into(), description: {tr("neu – wird beim Freigeben angelegt")}.into(), ..Default::default() });
                                 rsx! {
                                     TagToggle { tag, on, extra: if known.is_some() { String::new() } else { " ✱".into() },
                                         onclick: move |_| {
@@ -254,17 +397,17 @@ fn Detail(org: String, item: InboxItem, list: InboxList, on_change: EventHandler
                                 }
                                 new_tag.set(String::new());
                             },
-                            input { class: INPUT, placeholder: "Neuer Tag (wird beim Freigeben angelegt)", value: "{new_tag}", oninput: move |e| new_tag.set(e.value()) }
+                            input { class: INPUT, placeholder: tr("Neuer Tag (wird beim Freigeben angelegt)"), value: "{new_tag}", oninput: move |e| new_tag.set(e.value()) }
                             button { class: "{btn(BTN_OUTLINE)} {BTN_ICON}", r#type: "submit", icons::Plus { class: "size-4" } }
                         }
                     }
                 }
                 div { class: "grid gap-1.5",
-                    span { class: "text-sm font-medium", "Metadaten aus dem Dokument" }
+                    span { class: "text-sm font-medium", {tr("Metadaten aus dem Dokument")} }
                     div { class: "grid gap-2 sm:grid-cols-2",
                         for f in list.meta_fields.iter().cloned() {
                             label { class: "grid gap-1",
-                                span { class: "text-xs text-muted-foreground", "{f.label}" }
+                                span { class: "text-xs text-muted-foreground", {tr(&f.label)} }
                                 input { class: "{INPUT} h-8", disabled: !editable, value: "{meta().get(&f.key).cloned().unwrap_or_default()}",
                                     oninput: { let k = f.key.clone(); move |e: FormEvent| { let mut m: BTreeMap<String, String> = meta(); m.insert(k.clone(), e.value()); meta.set(m); } },
                                     onchange: move |_| save.call(()),
@@ -273,11 +416,11 @@ fn Detail(org: String, item: InboxItem, list: InboxList, on_change: EventHandler
                         }
                     }
                 }
-                Field { label: "Zusammenfassung",
+                Field { label: tr("Zusammenfassung"),
                     textarea { class: TEXTAREA, rows: 3, disabled: !editable, value: "{summary}", oninput: move |e| summary.set(e.value()), onchange: move |_| save.call(()) }
                 }
                 if !item.model.is_empty() {
-                    p { class: "flex items-center gap-1.5 text-xs text-muted-foreground", icons::Sparkles { class: "size-3.5" } "gelesen von {item.model}" }
+                    p { class: "flex items-center gap-1.5 text-xs text-muted-foreground", icons::Sparkles { class: "size-3.5" } {trf("gelesen von {0}", &[&item.model])} }
                 }
                 if editable {
                     div { class: "flex flex-wrap gap-2 pt-1",
@@ -289,15 +432,15 @@ fn Detail(org: String, item: InboxItem, list: InboxList, on_change: EventHandler
                                     let res = api::post::<serde_json::Value, _>(&format!("{b}/approve"), &payload).await;
                                     busy.set(false);
                                     match res {
-                                        Ok(_) => { toast(format!("„{}“ abgelegt – Texterkennung läuft.", payload["name"].as_str().unwrap_or(""))); on_change.call(next); }
+                                        Ok(_) => { toast(trf("„{0}“ abgelegt – Texterkennung läuft.", &[&(payload["name"].as_str().unwrap_or(""))])); on_change.call(next); }
                                         Err(e) => { toast_error(e); on_change.call(None); }
                                     }
                                 });
                             },
                             if busy() { icons::LoaderCircle { class: "size-4 animate-spin" } } else { icons::Check { class: "size-4" } }
-                            "Freigeben → ablegen"
+                            {tr("Freigeben → ablegen")}
                         }
-                        button { class: btn(BTN_OUTLINE), title: "KI neu lesen lassen",
+                        button { class: btn(BTN_OUTLINE), title: tr("KI neu lesen lassen"),
                             onclick: move |_| {
                                 let (b, payload) = (b_ai.clone(), body());
                                 spawn(async move {
@@ -308,7 +451,7 @@ fn Detail(org: String, item: InboxItem, list: InboxList, on_change: EventHandler
                                     }
                                 });
                             },
-                            icons::RefreshCw { class: "size-4" } "Neu analysieren"
+                            icons::RefreshCw { class: "size-4" } {tr("Neu analysieren")}
                         }
                     }
                 }
@@ -317,7 +460,7 @@ fn Detail(org: String, item: InboxItem, list: InboxList, on_change: EventHandler
                         onclick: move |_| {
                             let (b, done, n) = (b_del.clone(), item.status == "fertig", item.name.clone());
                             spawn(async move {
-                                if !done && !confirm(Ask::new("Verwerfen?", format!("„{n}“ wird nicht abgelegt und aus der Inbox gelöscht.")).confirm("Verwerfen").destructive()).await {
+                                if !done && !confirm(Ask::new(tr("Verwerfen?"), trf("„{0}“ wird nicht abgelegt und aus der Inbox gelöscht.", &[&(n)])).confirm(tr("Verwerfen")).destructive()).await {
                                     return;
                                 }
                                 match api::delete(&b).await {
@@ -327,7 +470,7 @@ fn Detail(org: String, item: InboxItem, list: InboxList, on_change: EventHandler
                             });
                         },
                         icons::Trash2 { class: "size-4" }
-                        if item.status == "fertig" { "Aus der Liste entfernen" } else { "Verwerfen" }
+                        if item.status == "fertig" { {tr("Aus der Liste entfernen")} } else { {tr("Verwerfen")} }
                     }
                 }
             }

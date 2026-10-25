@@ -18,7 +18,7 @@ async fn client() -> (tempfile::TempDir, Client) {
 
 /// Erstes Konto anlegen und eine Organisation erstellen; gibt deren ID zurück.
 async fn onboard(client: &Client) -> String {
-    assert_eq!(register(client, "nico", "geheim-123").await, Status::Created);
+    assert_eq!(register(client, "alice", "geheim-123").await, Status::Created);
     common::new_org(client, "Privat").await
 }
 
@@ -33,7 +33,7 @@ async fn first_start_leads_to_registration_and_first_user_is_admin() {
         let res = client
             .post("/api/v1/auth/register")
             .header(ContentType::JSON)
-            .body(json!({ "username": "nico", "password": "geheim-123" }).to_string())
+            .body(json!({ "username": "alice", "password": "geheim-123" }).to_string())
             .dispatch()
             .await;
         assert_eq!(res.status(), Status::Created);
@@ -48,7 +48,7 @@ async fn first_start_leads_to_registration_and_first_user_is_admin() {
 
         let (_, v) = call(&client, "GET", "/api/v1/auth/status", None).await;
         assert_eq!((v["needsSetup"].clone(), v["loggedIn"].clone()), (json!(false), json!(true)));
-        let user = users::by_username(pool(&client), "NICO")
+        let user = users::by_username(pool(&client), "ALICE")
             .await
             .unwrap()
             .unwrap();
@@ -69,7 +69,7 @@ async fn registration_is_closed_after_the_first_user() {
         assert_eq!(register(&client, "zweiter", "geheim-123").await, Status::Forbidden);
 
         // Ein Administrator kann sie öffnen
-        login(&client, "nico", "geheim-123").await;
+        login(&client, "alice", "geheim-123").await;
         let (s, _) = call(&client, "PUT", "/api/v1/settings/instance", Some(json!({ "registrationOpen": true }))).await;
         assert_eq!(s, Status::Ok);
         logout(&client).await;
@@ -120,13 +120,13 @@ async fn login_logout_and_protected_data() {
             &client,
             "POST",
             "/api/v1/auth/login",
-            Some(json!({ "username": "nico", "password": "falsch-falsch" })),
+            Some(json!({ "username": "alice", "password": "falsch-falsch" })),
         )
         .await;
         assert_eq!(s, Status::Unauthorized);
         assert!(start.elapsed().as_millis() >= 300, "Fehlversuche werden gebremst");
 
-        assert_eq!(login(&client, "NICO", "geheim-123").await, Status::Ok);
+        assert_eq!(login(&client, "ALICE", "geheim-123").await, Status::Ok);
         assert_eq!(call(&client, "GET", &url, None).await.0, Status::Ok);
     }
     client.terminate().await;
@@ -233,7 +233,7 @@ async fn api_requires_valid_key_with_permissions() {
     {
         onboard(&client).await;
         logout(&client).await;
-        let user = users::by_username(pool(&client), "nico")
+        let user = users::by_username(pool(&client), "alice")
             .await
             .unwrap()
             .unwrap();

@@ -26,7 +26,7 @@ pub async fn settings(pool: &SqlitePool, config: &Config, user: &str) -> AppResu
     }))
 }
 
-/// Scanner-Adresse: "192.168.0.70" → "http://192.168.0.70", ohne Schrägstrich am Ende.
+/// Scanner-Adresse: "192.168.1.50" → "http://192.168.1.50", ohne Schrägstrich am Ende.
 pub fn clean_scanner_url(url: &str) -> AppResult<String> {
     let url = url.trim();
     if url.is_empty() {
@@ -261,6 +261,7 @@ pub async fn finish(
         s.name.trim().is_empty(),
         "scan",
         "",
+        "",
         s.hint_tags.clone(),
         pdf,
         jpegs,
@@ -275,10 +276,10 @@ mod tests {
     #[test]
     fn scanner_urls() {
         let c = |u: &str| super::clean_scanner_url(u).ok();
-        assert_eq!(c("192.168.0.70").as_deref(), Some("http://192.168.0.70"));
+        assert_eq!(c("192.168.1.50").as_deref(), Some("http://192.168.1.50"));
         assert_eq!(
-            c("http://192.168.0.70/").as_deref(),
-            Some("http://192.168.0.70")
+            c("http://192.168.1.50/").as_deref(),
+            Some("http://192.168.1.50")
         );
         assert_eq!(
             c("https://scanner.local:8443").as_deref(),

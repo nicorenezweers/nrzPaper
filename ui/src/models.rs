@@ -64,6 +64,7 @@ pub struct Folder {
 pub struct Overview {
     pub role: String,
     pub review_count: i64,
+    pub reminders_due: i64,
     pub folders: Vec<Folder>,
     pub tags: Vec<Tag>,
     pub ai_available: bool,
@@ -105,13 +106,13 @@ impl Document {
         }
     }
 
-    pub fn type_label(&self) -> &'static str {
-        match self.kind() {
+    pub fn type_label(&self) -> String {
+        crate::i18n::tr(match self.kind() {
             "pdf" => "PDF",
             "image" => "Bild",
             "text" => "Text",
             _ => "Datei",
-        }
+        })
     }
 
     pub fn busy(&self) -> bool {
@@ -187,8 +188,8 @@ pub const PROPERTY_TYPES: &[(&str, &str)] = &[
     ("document_relation", "Dokument"),
 ];
 
-pub fn property_type_label(kind: &str) -> &'static str {
-    PROPERTY_TYPES.iter().find(|(k, _)| *k == kind).map(|(_, l)| *l).unwrap_or("?")
+pub fn property_type_label(kind: &str) -> String {
+    PROPERTY_TYPES.iter().find(|(k, _)| *k == kind).map(|(_, l)| crate::i18n::tr(l)).unwrap_or_else(|| "?".into())
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
@@ -240,6 +241,8 @@ pub struct InboxItem {
     pub created_at: i64,
     pub source: String,
     pub source_info: String,
+    /// "mail:<id>" oder "folder:<id>"
+    pub source_ref: String,
 }
 
 impl InboxItem {
@@ -351,19 +354,84 @@ pub struct Member {
     pub since: i64,
 }
 
+/// Erinnerung an ein Dokument (nur die eigenen).
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Reminder {
+    pub id: String,
+    pub organization_id: String,
+    pub document_id: String,
+    pub document_name: String,
+    pub due_at: i64,
+    pub note: String,
+    pub done_at: Option<i64>,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+#[serde(default)]
+pub struct Reminders {
+    pub reminders: Vec<Reminder>,
+}
+
+/// Offene Einladung in eine Organisation (aus Sicht der Organisation).
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Invitation {
+    pub id: String,
+    pub invitee: String,
+    pub role: String,
+    pub expires_at: i64,
+}
+
+/// Einladung an mich.
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct MyInvitation {
+    pub id: String,
+    pub organization_id: String,
+    pub organization_name: String,
+    pub role: String,
+    pub invited_by: Option<String>,
+    pub expires_at: i64,
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AiSettings {
     pub disabled: bool,
+    pub provider: String,
     pub model: String,
     pub fallbacks: Vec<String>,
+    pub text_only: bool,
+    pub language: String,
     pub effective_model: String,
+    pub effective_url: String,
     pub effective_fallbacks: Vec<String>,
     pub default_model: String,
     pub default_fallbacks: Vec<String>,
     pub key_source: String,
     pub key_hint: String,
     pub available: bool,
+    pub missing: Option<String>,
+    pub providers: Vec<AiProvider>,
+}
+
+/// Ein KI-Anbieter aus dem Katalog des Servers.
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct AiProvider {
+    pub id: String,
+    pub name: String,
+    pub protocol: String,
+    pub url: String,
+    pub key_optional: bool,
+    pub model: String,
+    pub pdf: bool,
+    pub keys_url: String,
+    pub has_key: bool,
+    pub key_hint: String,
+    pub custom_url: String,
 }
 
 pub const WEBHOOK_EVENTS: &[(&str, &str)] = &[
@@ -394,20 +462,20 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     ("custom-properties:delete", "Eigenschaften löschen"),
 ];
 
-pub fn role_label(role: &str) -> &'static str {
-    match role {
+pub fn role_label(role: &str) -> String {
+    crate::i18n::tr(match role {
         "owner" => "Besitzer",
         "admin" => "Admin",
         _ => "Mitglied",
-    }
+    })
 }
 
-pub fn ocr_label(status: &str) -> &'static str {
-    match status {
+pub fn ocr_label(status: &str) -> String {
+    crate::i18n::tr(match status {
         "pending" => "Wartet auf Texterkennung",
         "processing" => "Texterkennung läuft",
         "done" => "Text erkannt",
         "failed" => "Texterkennung fehlgeschlagen",
         _ => "Ohne Texterkennung",
-    }
+    })
 }

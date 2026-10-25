@@ -66,7 +66,7 @@ async fn search_syntax_against_the_database() {
     })
     .await
     .unwrap();
-    let user = users::create(&pool, "nico", "geheim-123", "")
+    let user = users::create(&pool, "alice", "geheim-123", "")
         .await
         .unwrap();
     let org = organizations::create(&pool, &user.id, "Privat")
@@ -250,7 +250,7 @@ async fn document_actions_as_the_app_does_them() {
         assert!(events.contains(&"renamed") && events.contains(&"tag_added"), "Verlauf fehlt: {events:?}");
         assert_eq!(list("tag:wohnen").await, ["Vertrag Bern"]);
         assert_eq!(call(&client, "DELETE", format!("{doc}/tags/{tag}"), None).await.0, Status::NoContent);
-        assert!(tags::for_documents(pool, &[pdf.clone()])
+        assert!(tags::for_documents(pool, std::slice::from_ref(&pdf))
             .await
             .unwrap()
             .is_empty());

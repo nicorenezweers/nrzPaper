@@ -6,7 +6,7 @@ pub fn datetime(ts: i64) -> String {
     let opts = js_sys::Object::new();
     let _ = js_sys::Reflect::set(&opts, &"dateStyle".into(), &"medium".into());
     let _ = js_sys::Reflect::set(&opts, &"timeStyle".into(), &"short".into());
-    d.to_locale_string("de-CH", &opts).into()
+    d.to_locale_string(crate::i18n::locale(), &opts).into()
 }
 
 /// Unix-Sekunden → "24.10.2026".
@@ -14,20 +14,31 @@ pub fn date(ts: i64) -> String {
     let d = js_sys::Date::new(&wasm_bindgen::JsValue::from_f64(ts as f64 * 1000.0));
     let opts = js_sys::Object::new();
     let _ = js_sys::Reflect::set(&opts, &"dateStyle".into(), &"medium".into());
-    d.to_locale_date_string("de-CH", &opts).into()
+    d.to_locale_date_string(crate::i18n::locale(), &opts).into()
 }
 
 pub fn now() -> i64 {
     (js_sys::Date::now() / 1000.0) as i64
 }
 
-/// 812 B, 14,2 KB, 3,1 MB
+/// 812 B, 14,2 KB, 3,1 MB (Dezimalzeichen der gewählten Sprache)
 pub fn size(bytes: i64) -> String {
     let b = bytes as f64;
+    let num = |x: f64| {
+        let opts = js_sys::Object::new();
+        let _ = js_sys::Reflect::set(&opts, &"minimumFractionDigits".into(), &1.into());
+        let _ = js_sys::Reflect::set(&opts, &"maximumFractionDigits".into(), &1.into());
+        js_sys::Intl::NumberFormat::new(&js_sys::Array::of1(&crate::i18n::locale().into()), &opts)
+            .format()
+            .call1(&wasm_bindgen::JsValue::NULL, &x.into())
+            .ok()
+            .and_then(|v| v.as_string())
+            .unwrap_or_else(|| format!("{x:.1}"))
+    };
     if b >= 1_048_576.0 {
-        format!("{:.1} MB", b / 1_048_576.0).replace('.', ",")
+        format!("{} MB", num(b / 1_048_576.0))
     } else if b >= 1024.0 {
-        format!("{:.1} KB", b / 1024.0).replace('.', ",")
+        format!("{} KB", num(b / 1024.0))
     } else {
         format!("{bytes} B")
     }

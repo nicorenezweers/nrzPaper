@@ -29,12 +29,12 @@ pub async fn empty() -> (tempfile::TempDir, Client) {
     empty_with(|f| f).await
 }
 
-/// Server mit angemeldetem Admin „nico“ (Passwort `geheim-123`) und Organisation „Privat“.
+/// Server mit angemeldetem Admin „alice“ (Passwort `geheim-123`) und Organisation „Privat“.
 pub async fn client_with(
     adjust: impl FnOnce(Figment) -> Figment,
 ) -> (tempfile::TempDir, Client, String) {
     let (dir, c) = empty_with(adjust).await;
-    assert_eq!(register(&c, "nico", "geheim-123").await, Status::Created);
+    assert_eq!(register(&c, "alice", "geheim-123").await, Status::Created);
     let org = new_org(&c, "Privat").await;
     (dir, c, org)
 }

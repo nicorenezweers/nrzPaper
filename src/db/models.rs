@@ -457,6 +457,8 @@ pub struct InboxItem {
     pub source: String,
     /// z. B. "E-Mail von … · Betreff"
     pub source_info: String,
+    /// "mail:<Postfach-ID>" oder "folder:<Ordner-ID>"; leer bei Scan und Upload
+    pub source_ref: String,
 }
 
 impl InboxItem {

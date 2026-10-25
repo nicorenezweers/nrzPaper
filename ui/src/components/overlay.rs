@@ -7,6 +7,7 @@ use futures_channel::oneshot;
 use std::cell::RefCell;
 use std::rc::Rc;
 use tw_merge::tw_merge;
+use crate::i18n::tr;
 
 // ------------------------------------------------------------------ Dialog
 
@@ -31,7 +32,17 @@ pub fn Modal(
         div {
             class: "fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px]",
             tabindex: "-1",
-            onmounted: move |e| async move { let _ = e.set_focus(true).await; },
+            // Erstes Eingabefeld des Dialogs fokussieren, sonst die Fläche selbst (für Escape)
+            onmounted: move |_| {
+                document::eval(
+                    r#"requestAnimationFrame(() => {
+                        const d = [...document.querySelectorAll('[role=dialog]')].pop();
+                        if (!d) return;
+                        const f = d.querySelector('[autofocus], input:not([type=hidden]):not([readonly]):not([disabled]), textarea:not([readonly]), select:not([disabled])');
+                        (f || d.parentElement).focus();
+                    })"#,
+                );
+            },
             onkeydown: move |e| if e.key() == Key::Escape && dismissible { open.set(false) },
             onclick: move |_| if dismissible { open.set(false) },
             div {
@@ -41,7 +52,7 @@ pub fn Modal(
                 onclick: move |e| e.stop_propagation(),
                 button {
                     class: "absolute top-4 right-4 rounded-sm p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring",
-                    title: "Schliessen",
+                    title: tr("Schliessen"),
                     onclick: move |_| open.set(false),
                     icons::X { class: "size-4" }
                 }
@@ -69,7 +80,7 @@ pub struct Ask {
 
 impl Ask {
     pub fn new(title: impl Into<String>, description: impl Into<String>) -> Self {
-        Ask { title: title.into(), description: description.into(), confirm: "Bestätigen".into(), destructive: false }
+        Ask { title: title.into(), description: description.into(), confirm: {tr("Bestätigen")}.into(), destructive: false }
     }
     pub fn confirm(mut self, label: impl Into<String>) -> Self {
         self.confirm = label.into();
@@ -139,7 +150,7 @@ pub fn ConfirmHost() -> Element {
                     button {
                         class: "inline-flex h-9 items-center justify-center rounded-md border bg-background px-4 text-sm font-medium shadow-xs hover:bg-accent dark:bg-input/30 dark:border-input",
                         onclick: move |_| answer(false),
-                        "Abbrechen"
+                        {tr("Abbrechen")}
                     }
                     button {
                         class: "inline-flex h-9 items-center justify-center rounded-md px-4 text-sm font-medium shadow-xs {action}",
@@ -159,10 +170,15 @@ struct Toast {
     id: u64,
     text: String,
     error: bool,
+    /// Wird gerade ausgeblendet (Animation läuft, danach entfernt)
+    leaving: bool,
 }
 
 static TOASTS: GlobalSignal<Vec<Toast>> = Signal::global(Vec::new);
 static NEXT: GlobalSignal<u64> = Signal::global(|| 0);
+
+/// Dauer der Ausblende-Animation (muss zu `toast-out` in tailwind.css passen).
+const LEAVE_MS: u32 = 220;
 
 fn push(text: String, error: bool) {
     let id = {
@@ -170,11 +186,26 @@ fn push(text: String, error: bool) {
         *n += 1;
         *n
     };
-    TOASTS.write().push(Toast { id, text, error });
+    TOASTS.write().push(Toast { id, text, error, leaving: false });
     spawn(async move {
         gloo_timers::future::TimeoutFuture::new(if error { 7000 } else { 3500 }).await;
-        TOASTS.write().retain(|t| t.id != id);
+        dismiss(id);
     });
+}
+
+/// Meldung sanft ausblenden und danach entfernen.
+fn dismiss(id: u64) {
+    let mut found = false;
+    for t in TOASTS.write().iter_mut().filter(|t| t.id == id && !t.leaving) {
+        t.leaving = true;
+        found = true;
+    }
+    if found {
+        spawn(async move {
+            gloo_timers::future::TimeoutFuture::new(LEAVE_MS).await;
+            TOASTS.write().retain(|t| t.id != id);
+        });
+    }
 }
 
 /// Kurze Meldung unten rechts.
@@ -190,15 +221,16 @@ pub fn toast_error(text: impl std::fmt::Display) {
 #[component]
 pub fn Toaster() -> Element {
     rsx! {
-        div { class: "pointer-events-none fixed bottom-4 right-4 z-[80] flex w-full max-w-sm flex-col gap-2",
+        div { class: "pointer-events-none fixed bottom-20 right-4 z-[80] flex w-full max-w-sm flex-col gap-2",
             for t in TOASTS.read().iter().cloned() {
                 div {
                     key: "{t.id}",
-                    class: if t.error {
-                        "pointer-events-auto flex items-start gap-3 rounded-xl border border-destructive/40 bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg animate-in"
-                    } else {
-                        "pointer-events-auto flex items-start gap-3 rounded-xl border bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg animate-in"
-                    },
+                    role: if t.error { "alert" } else { "status" },
+                    class: format!(
+                        "pointer-events-auto flex items-start gap-3 rounded-xl border bg-popover px-4 py-3 text-sm text-popover-foreground shadow-lg {} {}",
+                        if t.error { "border-destructive/40" } else { "" },
+                        if t.leaving { "animate-toast-out" } else { "animate-toast-in" },
+                    ),
                     if t.error {
                         icons::CircleAlert { class: "mt-0.5 size-4 shrink-0 text-destructive" }
                     } else {
@@ -207,7 +239,7 @@ pub fn Toaster() -> Element {
                     span { class: "flex-1", "{t.text}" }
                     button {
                         class: "text-muted-foreground hover:text-foreground",
-                        onclick: move |_| TOASTS.write().retain(|x| x.id != t.id),
+                        onclick: move |_| dismiss(t.id),
                         icons::X { class: "size-3.5" }
                     }
                 }

@@ -229,7 +229,7 @@ async fn check_constraints_guard_the_data() {
     let o = org(&pool, "A").await;
     let d = document(&pool, &o, "doc", "", "s").await.unwrap();
     let u = new_id();
-    sqlx::query("INSERT INTO users (id, username, password_hash, created_at, updated_at) VALUES (?, 'nico', 'x', ?, ?)")
+    sqlx::query("INSERT INTO users (id, username, password_hash, created_at, updated_at) VALUES (?, 'alice', 'x', ?, ?)")
         .bind(&u).bind(now()).bind(now()).execute(&pool).await.unwrap();
 
     // Unbekannte Rolle
@@ -273,7 +273,7 @@ async fn rows_load_into_models() {
     let o = org(&pool, "A").await;
     let d = document(&pool, &o, "Rechnung", "Text", "s").await.unwrap();
     let u = new_id();
-    sqlx::query("INSERT INTO users (id, username, password_hash, is_admin, created_at, updated_at) VALUES (?, 'Nico', 'hash', 1, 1, 2)")
+    sqlx::query("INSERT INTO users (id, username, password_hash, is_admin, created_at, updated_at) VALUES (?, 'Alice', 'hash', 1, 1, 2)")
         .bind(&u).execute(&pool).await.unwrap();
     sqlx::query("INSERT INTO organization_members VALUES (?, ?, 'admin', ?)")
         .bind(&o)
@@ -294,7 +294,7 @@ async fn rows_load_into_models() {
     assert_eq!(doc.source, DocumentSource::Web);
     assert!(doc.is_pdf() && !doc.in_trash());
 
-    let user: User = sqlx::query_as("SELECT * FROM users WHERE username = 'nico'")
+    let user: User = sqlx::query_as("SELECT * FROM users WHERE username = 'alice'")
         .fetch_one(&pool)
         .await
         .unwrap();

@@ -12,6 +12,7 @@ use crate::Route;
 use dioxus::prelude::*;
 use serde::Deserialize;
 use serde_json::json;
+use crate::i18n::{tr, trf};
 
 #[derive(Deserialize, Clone, PartialEq, Default)]
 pub struct ScannerStatus {
@@ -154,7 +155,7 @@ pub fn Scan(org: String) -> Element {
             match api::post::<ScanState, _>(&format!("{b}/page"), &json!({ "color": color(), "dpi": dpi() })).await {
                 Ok(s) => {
                     selected.set(s.session.pages.last().cloned());
-                    toast(format!("Seite {} gescannt.", s.session.pages.len()));
+                    toast(trf("Seite {0} gescannt.", &[&(s.session.pages.len())]));
                     data.set(s);
                 }
                 Err(e) => toast_error(e),
@@ -173,7 +174,7 @@ pub fn Scan(org: String) -> Element {
             let _ = api::put::<ScanState, _>(&format!("{b}/session"), &json!({ "name": name() })).await;
             match api::action::<serde_json::Value>(&format!("{b}/finish")).await {
                 Ok(v) => {
-                    toast("Gespeichert – die KI liest das Dokument …");
+                    toast(tr("Gespeichert – die KI liest das Dokument …"));
                     state::refresh();
                     nav.push(Route::Inbox { org, item: v["item"]["id"].as_str().unwrap_or_default().to_string() });
                 }
@@ -185,7 +186,7 @@ pub fn Scan(org: String) -> Element {
     let discard = move |_| {
         let b = b_clear.clone();
         spawn(async move {
-            if confirm(Ask::new(format!("Alle {n} Seiten verwerfen?"), "Die gescannten Seiten werden gelöscht.").confirm("Verwerfen").destructive()).await {
+            if confirm(Ask::new(trf("Alle {0} Seiten verwerfen?", &[&(n)]), tr("Die gescannten Seiten werden gelöscht.")).confirm(tr("Verwerfen")).destructive()).await {
                 match api::send::<ScanState, _>("DELETE", &format!("{b}/session"), &json!({})).await {
                     Ok(s) => {
                         name.set(String::new());
@@ -215,7 +216,7 @@ pub fn Scan(org: String) -> Element {
             match api::upload::<serde_json::Value>(&format!("/organizations/{org}/review/import"), &files).await {
                 Ok(v) => {
                     let first = v["items"][0]["id"].as_str().unwrap_or_default().to_string();
-                    toast("PDF zur Prüfung – die KI liest …");
+                    toast(tr("PDF zur Prüfung – die KI liest …"));
                     state::refresh();
                     nav.push(Route::Inbox { org, item: first });
                 }
@@ -231,17 +232,17 @@ pub fn Scan(org: String) -> Element {
 
     rsx! {
         div { class: "p-4 md:p-6",
-            PageHeader { title: "Scannen", description: format!("Ablage in {org_name} – die KI schlägt danach Name, Tags und Metadaten vor, du gibst frei."),
+            PageHeader { title: tr("Scannen"), description: trf("Ablage in {0} – die KI schlägt danach Name, Tags und Metadaten vor, du gibst frei.", &[&(org_name)]),
                 actions: rsx! {
                     Link { to: Route::Settings { org: org.clone(), section: "scanner".into() },
                         class: "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground hover:text-foreground",
                         span { class: if status().ok { "size-2 rounded-full bg-success" } else { "size-2 rounded-full bg-muted-foreground/40" } }
-                        if status().ok { "Scanner bereit ({status().state})" } else if status().state.is_empty() { "Scanner wird geprüft …" } else { "{status().state}" }
+                        if status().ok { {trf("Scanner bereit ({0})", &[&(status().state)])} } else if status().state.is_empty() { {tr("Scanner wird geprüft …")} } else { "{status().state}" }
                     }
                 }
             }
-            if !status().ok && status().state == "Kein Scanner eingestellt" {
-                div { class: "mb-4", Callout { text: "Noch kein Scanner eingestellt – im Profilmenü unter Scanner eintragen oder im Netz suchen. Fotos und PDFs gehen auch ohne Scanner." } }
+            if !status().ok && status().state == {tr("Kein Scanner eingestellt")} {
+                div { class: "mb-4", Callout { text: tr("Noch kein Scanner eingestellt – im Profilmenü unter Scanner eintragen oder im Netz suchen. Fotos und PDFs gehen auch ohne Scanner.") } }
             }
 
             div { class: "grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]",
@@ -252,13 +253,13 @@ pub fn Scan(org: String) -> Element {
                         }
                         div { class: "flex flex-wrap items-center justify-between gap-2 border-t px-4 py-2 text-sm",
                             span {
-                                span { class: "font-medium", "Seite {idx + 1} von {n}" }
-                                span { class: "text-muted-foreground", " · Lupe: Maus über die Seite · Reihenfolge: unten ziehen" }
+                                span { class: "font-medium", {trf("Seite {0} von {1}", &[&(idx + 1), &(n)])} }
+                                span { class: "text-muted-foreground", {tr(" · Lupe: Maus über die Seite · Reihenfolge: unten ziehen")} }
                             }
                             span { class: "flex gap-1",
-                                button { class: "{btn(BTN_GHOST)} {BTN_SM}", disabled: idx == 0, title: "Nach vorne", onclick: { let s = sel.clone(); move |_| move_page.call((s.clone(), idx.saturating_sub(1))) }, icons::ArrowLeft { class: "size-4" } }
-                                button { class: "{btn(BTN_GHOST)} {BTN_SM}", disabled: idx + 1 >= n, title: "Nach hinten", onclick: { let s = sel.clone(); move |_| move_page.call((s.clone(), idx + 1)) }, icons::ArrowRight { class: "size-4" } }
-                                button { class: "{btn(BTN_OUTLINE)} {BTN_SM}", onclick: { let s = sel.clone(); move |_| remove_page.call(s.clone()) }, icons::Trash2 { class: "size-4" } "Seite entfernen" }
+                                button { class: "{btn(BTN_GHOST)} {BTN_SM}", disabled: idx == 0, title: tr("Nach vorne"), onclick: { let s = sel.clone(); move |_| move_page.call((s.clone(), idx.saturating_sub(1))) }, icons::ArrowLeft { class: "size-4" } }
+                                button { class: "{btn(BTN_GHOST)} {BTN_SM}", disabled: idx + 1 >= n, title: tr("Nach hinten"), onclick: { let s = sel.clone(); move |_| move_page.call((s.clone(), idx + 1)) }, icons::ArrowRight { class: "size-4" } }
+                                button { class: "{btn(BTN_OUTLINE)} {BTN_SM}", onclick: { let s = sel.clone(); move |_| remove_page.call(s.clone()) }, icons::Trash2 { class: "size-4" } {tr("Seite entfernen")} }
                             }
                         }
                         div { class: "flex gap-3 overflow-x-auto border-t bg-card p-3",
@@ -290,11 +291,11 @@ pub fn Scan(org: String) -> Element {
                                     } },
                                     img { src: page_url(&p), alt: "", class: "pointer-events-none aspect-[3/4] w-full rounded object-cover" }
                                     button { class: "absolute right-1.5 top-1.5 hidden size-5 place-items-center rounded-full bg-background/90 text-xs group-hover:grid",
-                                        title: "Seite {i + 1} entfernen",
+                                        title: trf("Seite {0} entfernen", &[&(i + 1)]),
                                         onclick: { let p = p.clone(); move |e: MouseEvent| { e.stop_propagation(); remove_page.call(p.clone()); } },
                                         icons::X { class: "size-3" }
                                     }
-                                    span { class: "mt-1 block text-center text-[11px] text-muted-foreground", "Seite {i + 1}" }
+                                    span { class: "mt-1 block text-center text-[11px] text-muted-foreground", {trf("Seite {0}", &[&(i + 1)])} }
                                 }
                             }
                         }
@@ -302,8 +303,8 @@ pub fn Scan(org: String) -> Element {
                         div { class: "grid flex-1 place-items-center p-10 text-center",
                             div {
                                 div { class: "mx-auto grid size-14 place-items-center rounded-2xl bg-muted text-muted-foreground", icons::ScanLine { class: "size-7" } }
-                                p { class: "mt-4 text-lg font-medium", "Noch keine Seiten" }
-                                p { class: "mt-2 text-sm text-muted-foreground", "Blatt aufs Glas legen und auf „Scannen“ drücken." br {} "Mehrere Seiten einfach nacheinander scannen – alles wird ein PDF." }
+                                p { class: "mt-4 text-lg font-medium", {tr("Noch keine Seiten")} }
+                                p { class: "mt-2 text-sm text-muted-foreground", {tr("Blatt aufs Glas legen und auf „Scannen“ drücken.")} br {} {tr("Mehrere Seiten einfach nacheinander scannen – alles wird ein PDF.")} }
                             }
                         }
                     }
@@ -314,14 +315,14 @@ pub fn Scan(org: String) -> Element {
                         button { class: "flex w-full items-center justify-center gap-3 rounded-xl bg-primary px-4 py-5 text-lg font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 disabled:cursor-wait disabled:opacity-60",
                             disabled: scanning(), onclick: scan_now,
                             if scanning() {
-                                icons::LoaderCircle { class: "size-6 animate-spin" } "Scanne …"
+                                icons::LoaderCircle { class: "size-6 animate-spin" } {tr("Scanne …")}
                             } else {
                                 icons::ScanLine { class: "size-6" }
-                                if n > 0 { "Seite {n + 1} scannen" } else { "Scannen" }
+                                if n > 0 { {trf("Seite {0} scannen", &[&(n + 1)])} } else { {tr("Scannen")} }
                             }
                         }
-                        Field { label: "Name (optional)",
-                            input { class: INPUT, placeholder: "leer lassen – die KI schlägt einen vor", value: "{name}",
+                        Field { label: tr("Name (optional)"),
+                            input { class: INPUT, placeholder: tr("leer lassen – die KI schlägt einen vor"), value: "{name}",
                                 oninput: move |e| name.set(e.value()),
                                 onchange: move |e| update.call(json!({ "name": e.value() })),
                             }
@@ -329,15 +330,15 @@ pub fn Scan(org: String) -> Element {
                         if n > 0 {
                             button { class: "{btn(BTN_PRIMARY)} w-full", onclick: finish,
                                 icons::Check { class: "size-4" }
-                                if n == 1 { "1 Seite → zur Prüfung" } else { "{n} Seiten → zur Prüfung" }
+                                if n == 1 { {tr("1 Seite → zur Prüfung")} } else { {trf("{0} Seiten → zur Prüfung", &[&(n)])} }
                             }
-                            button { class: "{btn(BTN_OUTLINE)} w-full", onclick: discard, icons::Trash2 { class: "size-4" } "Alle Seiten verwerfen" }
+                            button { class: "{btn(BTN_OUTLINE)} w-full", onclick: discard, icons::Trash2 { class: "size-4" } {tr("Alle Seiten verwerfen")} }
                         }
                     }
                     div { class: "rounded-xl border bg-card p-4 shadow-sm",
-                        h2 { class: "mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground", "Tags vorgeben" }
+                        h2 { class: "mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground", {tr("Tags vorgeben")} }
                         if tags.is_empty() {
-                            p { class: "text-sm text-muted-foreground", "Noch keine Tags – unter " Link { class: "underline", to: Route::Tags { org: org.clone() }, "Tags" } " anlegen." }
+                            p { class: "text-sm text-muted-foreground", {tr("Noch keine Tags.")} " " Link { class: "underline", to: Route::Tags { org: org.clone() }, {tr("Tags anlegen")} } }
                         }
                         div { class: "flex flex-wrap gap-1.5",
                             for t in tags.iter().cloned() {
@@ -352,19 +353,19 @@ pub fn Scan(org: String) -> Element {
                         }
                     }
                     details { class: "rounded-xl border bg-card p-4 shadow-sm",
-                        summary { class: "cursor-pointer text-xs font-semibold uppercase tracking-wider text-muted-foreground", "Scan-Einstellungen & Import" }
+                        summary { class: "cursor-pointer text-xs font-semibold uppercase tracking-wider text-muted-foreground", {tr("Scan-Einstellungen & Import")} }
                         div { class: "mt-3 grid gap-3",
                             div { class: "grid grid-cols-2 rounded-md border p-0.5 text-sm",
-                                button { class: if color() { "rounded-sm bg-accent py-1.5" } else { "rounded-sm py-1.5 text-muted-foreground" }, onclick: move |_| { color.set(true); util::storage_set("nrz-scan-color", "true"); }, "Farbe" }
-                                button { class: if !color() { "rounded-sm bg-accent py-1.5" } else { "rounded-sm py-1.5 text-muted-foreground" }, onclick: move |_| { color.set(false); util::storage_set("nrz-scan-color", "false"); }, "Graustufen" }
+                                button { class: if color() { "rounded-sm bg-accent py-1.5" } else { "rounded-sm py-1.5 text-muted-foreground" }, onclick: move |_| { color.set(true); util::storage_set("nrz-scan-color", "true"); }, {tr("Farbe")} }
+                                button { class: if !color() { "rounded-sm bg-accent py-1.5" } else { "rounded-sm py-1.5 text-muted-foreground" }, onclick: move |_| { color.set(false); util::storage_set("nrz-scan-color", "false"); }, {tr("Graustufen")} }
                             }
                             select { class: SELECT, onchange: move |e| { if let Ok(v) = e.value().parse() { dpi.set(v); util::storage_set("nrz-scan-dpi", &e.value()); } },
                                 for d in [150i64, 300, 600] { option { value: "{d}", selected: dpi() == d, "{d} dpi" } }
                             }
-                            label { class: "{btn(BTN_OUTLINE)} cursor-pointer", icons::ImageUp { class: "size-4" } "Fotos als Seiten (JPG)"
+                            label { class: "{btn(BTN_OUTLINE)} cursor-pointer", icons::ImageUp { class: "size-4" } {tr("Fotos als Seiten (JPG)")}
                                 input { r#type: "file", accept: "image/jpeg", multiple: true, class: "hidden", onchange: add_photos }
                             }
-                            label { class: "{btn(BTN_OUTLINE)} cursor-pointer", icons::FileUp { class: "size-4" } "PDF prüfen lassen"
+                            label { class: "{btn(BTN_OUTLINE)} cursor-pointer", icons::FileUp { class: "size-4" } {tr("PDF prüfen lassen")}
                                 input { r#type: "file", accept: "application/pdf", multiple: true, class: "hidden", onchange: import_pdfs }
                             }
                         }

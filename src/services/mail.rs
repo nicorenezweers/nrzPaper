@@ -210,21 +210,6 @@ pub fn describe(raw: &[u8]) -> String {
     }
 }
 
-/// Bild → JPEG (JPEGs bleiben, wie sie sind).
-fn to_jpeg(data: &[u8]) -> Result<Vec<u8>, String> {
-    if crate::scan::is_jpeg(data) {
-        return Ok(data.to_vec());
-    }
-    let img = image::load_from_memory(data)
-        .map_err(|e| e.to_string())?
-        .to_rgb8();
-    let mut out = Vec::new();
-    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 90)
-        .encode_image(&img)
-        .map_err(|e| e.to_string())?;
-    Ok(out)
-}
-
 /// PDFs und Bilder aus den Anhängen (auch aus weitergeleiteten Mails). Kleine eingebettete
 /// Bilder (Logos, Signaturen) werden übersprungen.
 pub fn attachments(raw: &[u8]) -> Vec<Found> {
@@ -279,7 +264,7 @@ fn collect(msg: &mail_parser::Message<'_>, out: &mut Vec<Found>, depth: usize) {
             MIN_IMAGE_BYTES
         };
         if is_image && data.len() >= min {
-            if let Ok(jpeg) = to_jpeg(data) {
+            if let Ok(jpeg) = crate::scan::to_jpeg(data) {
                 if let Ok(pdf) = crate::scan::make_pdf(std::slice::from_ref(&jpeg)) {
                     out.push(Found {
                         name,
@@ -480,6 +465,7 @@ async fn session<T: AsyncRead + AsyncWrite + Unpin + std::fmt::Debug + Send>(
                 true,
                 "mail",
                 &info,
+                &format!("mail:{}", account.id),
                 account.tags.0.clone(),
                 f.pdf,
                 f.pages,
@@ -565,7 +551,7 @@ mod tests {
 
     fn mail(parts: &[(&str, &str, &[u8])]) -> Vec<u8> {
         use base64::Engine;
-        let mut m = String::from("From: Swisscom <rechnung@swisscom.ch>\r\nTo: nico@example.ch\r\nSubject: Ihre Rechnung Oktober\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"G\"\r\n\r\n--G\r\nContent-Type: text/plain\r\n\r\nHallo\r\n");
+        let mut m = String::from("From: Swisscom <rechnung@swisscom.ch>\r\nTo: alice@example.com\r\nSubject: Ihre Rechnung Oktober\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"G\"\r\n\r\n--G\r\nContent-Type: text/plain\r\n\r\nHallo\r\n");
         for (name, ctype, data) in parts {
             m.push_str(&format!(
                 "--G\r\nContent-Type: {ctype}; name=\"{name}\"\r\nContent-Disposition: attachment; filename=\"{name}\"\r\nContent-Transfer-Encoding: base64\r\n\r\n{}\r\n",

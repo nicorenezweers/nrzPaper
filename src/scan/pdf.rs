@@ -46,6 +46,21 @@ fn jpeg_info(data: &[u8]) -> Result<JpegInfo, String> {
     Err("JPEG-Grösse nicht gefunden.".into())
 }
 
+/// Bild → JPEG (JPEGs bleiben, wie sie sind).
+pub fn to_jpeg(data: &[u8]) -> Result<Vec<u8>, String> {
+    if is_jpeg(data) {
+        return Ok(data.to_vec());
+    }
+    let img = image::load_from_memory(data)
+        .map_err(|e| e.to_string())?
+        .to_rgb8();
+    let mut out = Vec::new();
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 90)
+        .encode_image(&img)
+        .map_err(|e| e.to_string())?;
+    Ok(out)
+}
+
 pub fn is_jpeg(data: &[u8]) -> bool {
     jpeg_info(data).is_ok()
 }

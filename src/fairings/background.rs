@@ -65,6 +65,9 @@ impl Fairing for Background {
         // E-Mail-Eingang: fällige Postfächer jede Minute abholen
         crate::services::mail::spawn(pool.clone(), config.clone(), rocket.shutdown());
 
+        // Ordner-Eingang: überwachte Ordner alle 20 Sekunden in die Inbox
+        crate::services::watch_folders::spawn(pool.clone(), config.clone(), rocket.shutdown());
+
         // Aufräumen: Sitzungen stündlich, Papierkorb einmal am Tag (bei jedem 24. Durchlauf)
         let mut shutdown = rocket.shutdown();
         tokio::spawn(async move {

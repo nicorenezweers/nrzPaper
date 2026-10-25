@@ -27,7 +27,7 @@ async fn setup() -> (tempfile::TempDir, SqlitePool, String) {
         ..Config::default()
     };
     let pool = db::connect(&config).await.unwrap();
-    let user = users::create(&pool, "nico", "geheim-123", "")
+    let user = users::create(&pool, "alice", "geheim-123", "")
         .await
         .unwrap();
     let org = organizations::create(&pool, &user.id, "Privat")
@@ -452,7 +452,7 @@ async fn api_document_lifecycle() {
     let (_d, client, org) = client().await;
     {
         let pool = client.rocket().state::<SqlitePool>().unwrap();
-        let user = users::by_username(pool, "nico").await.unwrap().unwrap();
+        let user = users::by_username(pool, "alice").await.unwrap().unwrap();
         common::logout(&client).await;
 
         let (_, read_only) =

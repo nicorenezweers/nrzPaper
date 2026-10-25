@@ -22,8 +22,12 @@ impl std::fmt::Display for ApiError {
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
+fn tr_f(text: &str, arg: &str) -> String {
+    crate::i18n::trf(text, &[&arg])
+}
+
 fn network(e: impl std::fmt::Display) -> ApiError {
-    ApiError { status: 0, message: format!("Keine Verbindung zum Server ({e}).") }
+    ApiError { status: 0, message: tr_f("Keine Verbindung zum Server ({0}).", &e.to_string()) }
 }
 
 async fn finish<T: DeserializeOwned>(res: Response) -> ApiResult<T> {
@@ -34,16 +38,17 @@ async fn finish<T: DeserializeOwned>(res: Response) -> ApiResult<T> {
     let text = res.text().await.map_err(network)?;
     if (200..300).contains(&status) {
         let value: Value = if text.trim().is_empty() { Value::Null } else { serde_json::from_str(&text).map_err(|e| ApiError { status, message: e.to_string() })? };
-        return serde_json::from_value(value).map_err(|e| ApiError { status, message: format!("Unerwartete Antwort: {e}") });
+        return serde_json::from_value(value).map_err(|e| ApiError { status, message: tr_f("Unerwartete Antwort: {0}", &e.to_string()) });
     }
     let message = serde_json::from_str::<Value>(&text)
         .ok()
-        .and_then(|v| v["error"]["message"].as_str().map(String::from))
+        // Meldungen des Servers sind deutsch – gibt es sie im Katalog, erscheinen sie übersetzt
+        .and_then(|v| v["error"]["message"].as_str().map(crate::i18n::tr))
         .unwrap_or_else(|| match status {
-            401 => "Bitte anmelden.".into(),
-            403 => "Keine Berechtigung.".into(),
-            404 => "Nicht gefunden.".into(),
-            _ => format!("Fehler {status}"),
+            401 => crate::i18n::tr("Bitte anmelden."),
+            403 => crate::i18n::tr("Keine Berechtigung."),
+            404 => crate::i18n::tr("Nicht gefunden."),
+            _ => tr_f("Fehler {0}", &status.to_string()),
         });
     if status == 401 {
         crate::state::on_unauthorized();

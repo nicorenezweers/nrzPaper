@@ -8,6 +8,7 @@ mod org;
 use crate::state::{ME, OVERVIEW};
 use crate::Route;
 use dioxus::prelude::*;
+use crate::i18n::tr;
 
 struct Item {
     key: &'static str,
@@ -24,21 +25,25 @@ const ITEMS: &[Item] = &[
     Item { key: "tagging-rules", label: "Tagging-Regeln", group: "Organisation" },
     Item { key: "properties", label: "Eigenschaften", group: "Organisation" },
     Item { key: "webhooks", label: "Webhooks", group: "Organisation" },
-    Item { key: "ai", label: "KI (OpenRouter)", group: "Instanz" },
+    Item { key: "ai", label: "KI & Modelle", group: "Instanz" },
     Item { key: "instance", label: "Registrierung & Benutzer", group: "Instanz" },
+    Item { key: "printers", label: "Drucker", group: "Instanz" },
+    Item { key: "watch-folders", label: "Ordner-Eingang", group: "Instanz" },
 ];
 
 fn icon(key: &str) -> Element {
     match key {
         "profile" => rsx! { icons::User {} },
         "api-keys" => rsx! { icons::Key {} },
-        "scanner" => rsx! { icons::Printer {} },
+        "scanner" => rsx! { icons::ScanLine {} },
         "mail" => rsx! { icons::Mail {} },
         "organization" => rsx! { icons::Building2 {} },
         "tagging-rules" => rsx! { icons::Wand {} },
         "properties" => rsx! { icons::SlidersHorizontal {} },
         "webhooks" => rsx! { icons::Webhook {} },
         "ai" => rsx! { icons::Sparkles {} },
+        "printers" => rsx! { icons::Printer {} },
+        "watch-folders" => rsx! { icons::FolderInput {} },
         _ => rsx! { icons::ShieldCheck {} },
     }
 }
@@ -50,7 +55,7 @@ pub fn Settings(org: String, section: String) -> Element {
     let manager = matches!(role.as_str(), "owner" | "admin");
     let visible: Vec<&Item> = ITEMS
         .iter()
-        .filter(|i| i.group != "Instanz" || admin)
+        .filter(|i| i.group != {tr("Instanz")} || admin)
         .filter(|i| i.key != "webhooks" || manager)
         .collect();
     let mut groups: Vec<&str> = Vec::new();
@@ -59,22 +64,22 @@ pub fn Settings(org: String, section: String) -> Element {
             groups.push(i.group);
         }
     }
-    let title = visible.iter().find(|i| i.key == section).map(|i| i.label).unwrap_or("Einstellungen");
+    let title = visible.iter().find(|i| i.key == section).map(|i| tr(i.label)).unwrap_or_else(|| tr("Einstellungen"));
     rsx! {
         div { class: "mx-auto max-w-6xl p-4 md:p-6",
             div { class: "mb-6",
-                h1 { class: "text-2xl font-semibold tracking-tight", "Einstellungen" }
+                h1 { class: "text-2xl font-semibold tracking-tight", {tr("Einstellungen")} }
                 p { class: "mt-1 text-sm text-muted-foreground", "{title}" }
             }
             div { class: "grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]",
                 nav { class: "flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible",
                     for g in groups.iter().copied() {
-                        p { class: "hidden px-2.5 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-muted-foreground first:pt-0 lg:block", "{g}" }
+                        p { class: "hidden px-2.5 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-muted-foreground first:pt-0 lg:block", {tr(g)} }
                         for i in visible.iter().filter(|i| i.group == g) {
                             Link { to: Route::Settings { org: org.clone(), section: i.key.to_string() },
                                 class: if i.key == section { "flex shrink-0 items-center gap-2.5 rounded-md bg-accent px-2.5 py-1.5 text-sm font-medium [&_svg]:size-4" } else { "flex shrink-0 items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground [&_svg]:size-4" },
                                 {icon(i.key)}
-                                "{i.label}"
+                                {tr(i.label)}
                             }
                         }
                     }
@@ -91,7 +96,9 @@ pub fn Settings(org: String, section: String) -> Element {
                         "webhooks" if manager => rsx! { org::Webhooks { org: org.clone() } },
                         "ai" if admin => rsx! { admin::Ai {} },
                         "instance" if admin => rsx! { admin::Instance {} },
-                        _ => rsx! { crate::components::common::Callout { text: "Diesen Bereich gibt es nicht oder er ist nur für Administratoren." } },
+                        "printers" if admin => rsx! { admin::PrintersSettings {} },
+                        "watch-folders" if admin => rsx! { admin::FoldersSettings { org: org.clone() } },
+                        _ => rsx! { crate::components::common::Callout { text: {tr("Diesen Bereich gibt es nicht oder er ist nur für Administratoren.")} } },
                     }
                 }
             }

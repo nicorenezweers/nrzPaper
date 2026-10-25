@@ -37,3 +37,42 @@ fn walk(dir: &str) -> Vec<std::path::PathBuf> {
     }
     out
 }
+
+/// Jede angebotene Sprache hat einen vollständigen Katalog mit denselben Platzhaltern.
+#[test]
+fn translations_are_complete() {
+    let strings: Vec<String> = serde_json::from_str(&std::fs::read_to_string("locales/strings.json").unwrap()).unwrap();
+    let ui = std::fs::read_to_string("ui/src/i18n.rs").unwrap();
+    let start = ui.find("pub const LANGUAGES").unwrap();
+    let block = &ui[start..start + ui[start..].find("];").unwrap()];
+    let codes: Vec<&str> = block.split("(\"").skip(1).map(|p| &p[..p.find('"').unwrap()]).collect();
+    assert!(codes.len() >= 7, "{codes:?}");
+    let holes = |s: &str| {
+        let mut v: Vec<String> = s.match_indices('{').filter_map(|(i, _)| {
+            let rest = &s[i + 1..];
+            let end = rest.find('}')?;
+            rest[..end].chars().all(|c| c.is_ascii_digit()).then(|| rest[..end].to_string())
+        }).collect();
+        v.sort();
+        v
+    };
+    for code in codes.iter().filter(|c| **c != "de") {
+        let cat: std::collections::HashMap<String, String> =
+            serde_json::from_str(&std::fs::read_to_string(format!("locales/{code}.json")).unwrap()).unwrap();
+        for s in &strings {
+            let t = cat.get(s).unwrap_or_else(|| panic!("{code}: fehlt „{s}“ – scripts/i18n_extract.py"));
+            assert!(!t.trim().is_empty() || s.trim().is_empty(), "{code}: leer „{s}“");
+            assert_eq!(holes(s), holes(t), "{code}: Platzhalter in „{s}“");
+        }
+    }
+}
+
+/// Die Liste der Texte passt zum Quelltext (sonst: scripts/i18n_extract.py ausführen).
+#[test]
+fn string_list_is_current() {
+    let out = std::process::Command::new("python3").args(["scripts/i18n_extract.py", "--check"]).output();
+    let Ok(out) = out else { return }; // ohne Python übersprungen
+    let strings: Vec<String> = serde_json::from_str(&std::fs::read_to_string("locales/strings.json").unwrap()).unwrap();
+    let report = String::from_utf8_lossy(&out.stdout);
+    assert!(report.starts_with(&format!("{} Texte", strings.len())), "locales/strings.json veraltet: {report}");
+}

@@ -1,8 +1,6 @@
 # syntax=docker/dockerfile:1.10
-# nrzPaper – Multi-Stage-Build für amd64 und arm64.
-#   Oberfläche zuerst: scripts/ui.sh (baut ui/ nach ui/dist/public, build.rs bettet ihn ein).
-#   Releases immer mit `--no-cache-filter build` und dem Secret bauen: BuildKit nimmt Secrets
-#   nicht in den Cache-Schlüssel – sonst kann ein alter Stand ohne KI-Schlüssel herauskommen.
+# nrzPaper – Multi-Stage-Build für amd64 und arm64: Oberfläche (Dioxus/WebAssembly), Programm
+# (Rust) und Texterkennung (Tesseract, Poppler). Braucht nur Docker – kein Rust auf dem Rechner.
 #   docker build -t nrzpaper .
 #   docker run -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 # Beide Architekturen (Rust wird quer-kompiliert, nicht emuliert):
@@ -12,8 +10,26 @@
 
 ARG DEBIAN=debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8
 
+ARG RUST=rust:1.98-bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+
+# ---------------------------------------------------------------- Oberfläche
+# WebAssembly ist überall gleich – einmal auf dem Build-Rechner bauen, für alle Architekturen.
+FROM --platform=$BUILDPLATFORM ${RUST} AS ui
+RUN rustup target add wasm32-unknown-unknown
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    cargo install dioxus-cli --version 0.7.10 --locked --root /opt/dx
+WORKDIR /src
+# Tailwind liest auch die Klassen aus static/viewer.js und static/preview.js
+COPY static static
+COPY ui ui
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/src/ui/target,id=nrzpaper-ui-target \
+    cd ui && rm -rf target/dx/nrzpaper-ui/release/web/public \
+ && PATH=/opt/dx/bin:$PATH dx bundle --web --release --out-dir /tmp/ui \
+ && mkdir -p /out && cp -r /tmp/ui/public /out/public && test -f /out/public/index.html
+
 # ---------------------------------------------------------------- Programm
-FROM --platform=$BUILDPLATFORM rust:1.98-bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e AS build
+FROM --platform=$BUILDPLATFORM ${RUST} AS build
 ARG TARGETARCH
 ARG BUILDARCH
 # Querübersetzer, wenn Ziel und Build-Rechner verschieden sind (SQLCipher und OpenSSL
@@ -40,12 +56,14 @@ COPY migrations migrations
 COPY src src
 COPY static static
 COPY assets assets
-# Fertige Oberfläche (Dioxus, ui/): vor dem Image-Bau mit scripts/ui.sh bauen. build.rs bettet den Ordner ins Programm
-# ein (Text und WebAssembly gzip) – der Server braucht dafür keine Dateien mehr.
-COPY ui/dist/public ui/dist/public
-# Der eingebaute OpenRouter-Schlüssel (KI beim Scannen) kommt als Build-Secret – nie in den
-# Quelltext oder die Image-Schichten. Ohne Secret: KI nur mit NRZPAPER_OPENROUTER_KEY.
-#   --secret id=openrouter,env=NRZ_OPENROUTER_KEY
+# Oberfläche aus der Stufe oben; build.rs bettet sie ins Programm ein (Text und WebAssembly
+# gzip) – der Server braucht dafür keine Dateien mehr.
+COPY --from=ui /out/public ui/dist/public
+COPY locales locales
+# Optional ein eingebauter OpenRouter-Schlüssel als Build-Secret – nie im Quelltext oder in den
+# Image-Schichten. Ohne Secret: KI-Anbieter und Schlüssel in den Einstellungen bzw. per Umgebung.
+#   --secret id=openrouter,env=NRZ_OPENROUTER_KEY   (Releases dann mit --no-cache-filter build:
+#   BuildKit nimmt Secrets nicht in den Cache-Schlüssel)
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/src/target,id=nrzpaper-target-$TARGETARCH \
     --mount=type=secret,id=openrouter,env=NRZ_OPENROUTER_KEY \

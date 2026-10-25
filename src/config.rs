@@ -25,7 +25,7 @@ pub struct Config {
     pub cookie_secure: bool,
     /// Hintergrundarbeiten (OCR, Eingangsordner, Aufräumen) starten. Tests schalten sie aus.
     pub background: bool,
-    /// Voreingestellter Scanner (eSCL/AirScan) für neue Benutzer, z. B. "http://192.168.0.70".
+    /// Voreingestellter Scanner (eSCL/AirScan) für neue Benutzer, z. B. "http://192.168.1.50".
     pub scanner_url: String,
     /// Netze, in denen "Scanner suchen" sucht (Komma-getrennt, je /24).
     pub scan_subnets: String,
@@ -36,6 +36,15 @@ pub struct Config {
     pub openrouter_url: String,
     /// So viele Tage bleiben nicht freigegebene Einträge der Prüfliste liegen.
     pub inbox_keep_days: u32,
+    /// KI-Anbieter aus der Umgebung (z. B. "openai", "anthropic", "ollama"; leer = OpenRouter).
+    /// In den Einstellungen der Oberfläche lässt sich jeder Anbieter wählen.
+    pub ai_provider: String,
+    /// Schlüssel für `ai_provider`
+    pub ai_key: Option<String>,
+    /// Eigene Adresse der API (leer = Vorgabe des Anbieters)
+    pub ai_url: String,
+    /// Modell (leer = Vorgabe des Anbieters)
+    pub ai_model: String,
 }
 
 impl Default for Config {
@@ -55,6 +64,10 @@ impl Default for Config {
             openrouter_model: "openrouter/free".into(),
             openrouter_url: "https://openrouter.ai/api/v1".into(),
             inbox_keep_days: 7,
+            ai_provider: String::new(),
+            ai_key: None,
+            ai_url: String::new(),
+            ai_model: String::new(),
         }
     }
 }

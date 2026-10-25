@@ -227,7 +227,7 @@ async fn api_tags_search_statistics_activity() {
         .collect();
     assert_eq!(events, ["deleted", "tag_added", "created"]);
     assert_eq!(v["activities"][1]["data"]["tag"], "Steuern 2026");
-    assert_eq!(v["activities"][1]["username"], "nico");
+    assert_eq!(v["activities"][1]["username"], "alice");
 
     // Tag entfernen und löschen
     let (s, _) = api(
@@ -689,7 +689,7 @@ async fn password_change_ends_other_sessions() {
             .unwrap()
     };
     // Zweite Anmeldung (anderes Gerät)
-    assert_eq!(common::login(&client, "nico", "geheim-123").await, Status::Ok);
+    assert_eq!(common::login(&client, "alice", "geheim-123").await, Status::Ok);
     assert_eq!(sessions().await, 2);
 
     let change = |current: &str, new: &str, confirm: &str| {
@@ -710,10 +710,10 @@ async fn password_change_ends_other_sessions() {
 
     common::logout(&client).await;
     assert_eq!(
-        common::login(&client, "nico", "geheim-123").await,
+        common::login(&client, "alice", "geheim-123").await,
         Status::Unauthorized,
         "altes Passwort gilt nicht mehr"
     );
-    assert_eq!(common::login(&client, "nico", "neues-pass-1").await, Status::Ok);
+    assert_eq!(common::login(&client, "alice", "neues-pass-1").await, Status::Ok);
     client.terminate().await;
 }

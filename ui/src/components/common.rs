@@ -4,6 +4,7 @@
 use crate::models::Tag;
 use dioxus::prelude::*;
 use tw_merge::tw_merge;
+use crate::i18n::tr;
 
 pub const INPUT: &str = "flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30";
 pub const TEXTAREA: &str = "flex min-h-16 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30";
@@ -46,7 +47,7 @@ pub fn TagBadge(tag: Tag, #[props(default)] small: bool, #[props(optional)] onre
             if let Some(h) = onremove {
                 button {
                     class: "-mr-1 grid size-4 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground",
-                    title: "Entfernen",
+                    title: tr("Entfernen"),
                     onclick: move |e| {
                         e.stop_propagation();
                         h.call(());
@@ -120,7 +121,7 @@ pub fn EmptyState(#[props(into)] title: String, #[props(into, optional)] descrip
 
 #[component]
 pub fn Loading(#[props(into, optional)] text: Option<String>) -> Element {
-    let text = text.unwrap_or_else(|| "Lade …".into());
+    let text = text.unwrap_or_else(|| {tr("Lade …")}.into());
     rsx! {
         div { class: "flex items-center gap-2 py-10 text-sm text-muted-foreground justify-center",
             icons::LoaderCircle { class: "size-4 animate-spin" }
@@ -202,10 +203,10 @@ pub fn Checkbox(checked: bool, onchange: EventHandler<bool>, #[props(into)] labe
                     icons::Check { class: "size-3.5" }
                 }
             }
-            span {
-                "{label}"
+            span { class: "grid gap-0.5",
+                span { "{label}" }
                 if let Some(h) = hint {
-                    span { class: "ml-1.5 font-mono text-[11px] text-muted-foreground", "{h}" }
+                    span { class: "text-xs text-muted-foreground", "{h}" }
                 }
             }
         }

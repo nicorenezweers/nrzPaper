@@ -8,6 +8,7 @@ pub mod error;
 pub mod fairings;
 pub mod ingestion;
 pub mod ocr;
+pub mod print;
 pub mod routes;
 pub mod scan;
 pub mod search;

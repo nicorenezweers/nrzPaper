@@ -1,11 +1,14 @@
 pub mod auth;
 pub mod document;
+pub mod document_extras;
 pub mod documents;
 pub mod home;
 pub mod inbox;
 pub mod layout;
 pub mod scan;
 pub mod settings;
+pub mod reminders;
 pub mod share;
 pub mod tags;
+pub mod timeline;
 pub mod trash;

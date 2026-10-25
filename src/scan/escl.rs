@@ -152,8 +152,8 @@ pub struct Found {
     pub model: String,
 }
 
-/// Wandelt "192.168.0.0/24", "192.168.0" oder "192.168.0.70" in die drei ersten Oktette.
-pub(crate) fn prefix(subnet: &str) -> Option<String> {
+/// Wandelt "192.168.0.0/24", "192.168.0" oder "192.168.1.50" in die drei ersten Oktette.
+pub fn prefix(subnet: &str) -> Option<String> {
     let ip = subnet.trim().split('/').next()?.trim();
     let parts: Vec<&str> = ip.split('.').filter(|p| !p.is_empty()).collect();
     if parts.len() < 3 || !parts[..3].iter().all(|p| p.parse::<u8>().is_ok()) {

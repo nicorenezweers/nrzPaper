@@ -28,6 +28,7 @@ Az nrzPaper egyetlen program külső adatbázis nélkül. Minden egyetlen SQLCip
 | **AI, bármely szolgáltató** | OpenRouter (beépített ingyenes modellek), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** vagy bármely OpenAI-kompatibilis URL. A csak szöveges modellek a képek helyett az OCR-szöveget kapják. |
 | **Dieter** | Chatasszisztens (jobb alul): *„Mi a biztosítási számom?”*, *„Minden bérjegyzék a Fabrikamtól 2026-ban”*. Keres, elolvassa a megfelelő részeket, és hivatkozásokkal válaszol a dokumentumokra. |
 | **Csapatok** | Több szervezet, **több fiók szervezetenként** (meghívás, szerepkörök: tulajdonos, admin, tag; tulajdonjog átadása), jogosultságokkal rendelkező API-kulcsok, webhookok (Standard Webhooks aláírások), nyilvános megosztási linkek |
+| **Nyelvek** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (további nyelvek hamarosan) |
 | **Alapból biztonságos** | Egy titkosított fájl, Argon2-jelszavak, CSP inline szkriptek nélkül, CSRF-védelem, fájlok csak az API-n keresztül |
 
 ## Képernyőképek

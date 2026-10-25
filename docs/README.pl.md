@@ -28,7 +28,7 @@ nrzPaper to jeden program bez zewnętrznej bazy danych. Wszystko znajduje się w
 | **AI, dowolny dostawca** | OpenRouter (wbudowane darmowe modele), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** lub dowolny URL zgodny z OpenAI. Modele tekstowe otrzymują rozpoznany tekst zamiast obrazów. |
 | **Dieter** | Asystent czatu (w prawym dolnym rogu): *„Jaki jest mój numer ubezpieczenia?”*, *„Wszystkie odcinki wypłat od Fabrikam w 2026”*. Wyszukuje, czyta pasujące fragmenty i odpowiada z linkami do dokumentów. |
 | **Zespoły** | Wiele organizacji, **wiele kont na organizację** (zaproszenie, role: właściciel, administrator, członek; przekazanie własności), klucze API z uprawnieniami, webhooki (podpisy Standard Webhooks), publiczne linki do udostępniania |
-| **Języki** | English, Deutsch, Français, Italiano, Español, Português, Nederlands, 中文, 日本語, Polski, Русский, العربية, 한국어, Türkçe, Bahasa Indonesia, हिन्दी, Tiếng Việt, ไทย, Українська, Čeština, Română, Magyar, Ελληνικά, Svenska, Norsk, Dansk, Suomi, עברית, বাংলা, فارسی (więcej przez `locales/<code>.json`) |
+| **Języki** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (więcej języków wkrótce) |
 | **Domyślnie bezpieczne** | Jeden zaszyfrowany plik, hasła Argon2, CSP bez skryptów inline, ochrona CSRF, pliki tylko przez API |
 
 ## Zrzuty ekranu

@@ -28,6 +28,7 @@ nrzPaper là một chương trình duy nhất không có cơ sở dữ liệu b�
 | **AI, mọi nhà cung cấp** | OpenRouter (mô hình miễn phí tích hợp), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** hoặc bất kỳ URL tương thích OpenAI. Mô hình chỉ văn bản nhận văn bản OCR thay vì hình ảnh. |
 | **Dieter** | Trợ lý trò chuyện (góc dưới bên phải): *"Số bảo hiểm của tôi là gì?"*, *"Tất cả phiếu lương từ Fabrikam năm 2026"*. Anh ấy tìm kiếm, đọc các đoạn phù hợp và trả lời kèm liên kết đến tài liệu. |
 | **Nhóm** | Nhiều tổ chức, **nhiều tài khoản mỗi tổ chức** (mời, vai trò: chủ sở hữu, quản trị viên, thành viên; chuyển quyền sở hữu), khóa API có quyền, webhook (chữ ký Standard Webhooks), liên kết chia sẻ công khai |
+| **Ngôn ngữ** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (các ngôn ngữ khác sắp ra mắt) |
 | **An toàn mặc định** | Một tệp mã hóa, mật khẩu Argon2, CSP không có script nội tuyến, bảo vệ CSRF, tệp chỉ qua API |
 
 ## Ảnh chụp màn hình

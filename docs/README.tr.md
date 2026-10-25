@@ -28,6 +28,7 @@ nrzPaper, harici veritabanı olmayan tek bir programdır. Dosyaların kendisi da
 | **YZ, her sağlayıcı** | OpenRouter (ücretsiz modeller yerleşik), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** veya OpenAI uyumlu herhangi bir URL. Yalnızca metin modelleri görüntü yerine OCR metnini alır. |
 | **Dieter** | Sohbet asistanı (sağ altta): *"Sigorta numaram nedir?"*, *"2026'daki tüm Fabrikam bordroları"*. Arar, eşleşen bölümleri okur ve belgelere bağlantılarla yanıtlar. |
 | **Ekipler** | Birden çok kuruluş, **kuruluş başına birden çok hesap** (davet, roller: sahip, yönetici, üye; sahiplik devri), izinli API anahtarları, web kancaları (Standard Webhooks imzaları), genel paylaşım bağlantıları |
+| **Diller** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (diğer diller yakında) |
 | **Varsayılan olarak güvenli** | Tek şifreli dosya, Argon2 parolalar, satır içi betiksiz CSP, CSRF koruması, dosyalar yalnızca API üzerinden |
 
 ## Ekran görüntüleri

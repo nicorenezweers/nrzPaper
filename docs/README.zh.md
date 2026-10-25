@@ -28,7 +28,7 @@ nrzPaper 是一个无需外部数据库的单一程序。所有内容都存放�
 | **AI，任何提供商** | OpenRouter（内置免费模型）、OpenAI、Anthropic、Google Gemini、Mistral、Groq、xAI、DeepSeek、Together、Fireworks、Perplexity、Cohere、NVIDIA、Hugging Face、Qwen、Azure OpenAI、**Ollama、LM Studio、vLLM/LocalAI** 或任何兼容 OpenAI 的 URL。纯文本模型接收 OCR 文本而非图像。 |
 | **Dieter** | 聊天助手（右下角）：*“我的保险号是多少？”*、*“2026 年 Fabrikam 的所有工资单”*。他会搜索、阅读匹配段落并用文档链接回答。 |
 | **团队** | 多个组织、**每个组织多个账户**（邀请、角色：所有者、管理员、成员；转移所有权）、带权限的 API 密钥、Webhook（Standard Webhooks 签名）、公开分享链接 |
-| **语言** | English、Deutsch、Français、Italiano、Español、Português、Nederlands、中文、日本語、Polski、Русский、العربية、한국어、Türkçe、Bahasa Indonesia、हिन्दी、Tiếng Việt、ไทย、Українська、Čeština、Română、Magyar、Ελληνικά、Svenska、Norsk、Dansk、Suomi、עברית、বাংলা、فارسی（更多见 `locales/<code>.json`） |
+| **语言** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (其他语言即将推出) |
 | **默认安全** | 一个加密文件、Argon2 密码、无内联脚本的 CSP、CSRF 防护、文件仅通过 API 访问 |
 
 ## 截图

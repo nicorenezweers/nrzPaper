@@ -28,7 +28,7 @@ nrzPaper は外部データベースを使わない単一のプログラムで�
 | **AI、あらゆるプロバイダー** | OpenRouter（無料モデル内蔵）、OpenAI、Anthropic、Google Gemini、Mistral、Groq、xAI、DeepSeek、Together、Fireworks、Perplexity、Cohere、NVIDIA、Hugging Face、Qwen、Azure OpenAI、**Ollama、LM Studio、vLLM/LocalAI**、または任意の OpenAI 互換 URL。テキスト専用モデルには画像ではなく OCR テキストが渡されます。 |
 | **Dieter** | チャットアシスタント（右下）：*「私の保険番号は？」*、*「2026 年の Fabrikam の給与明細すべて」*。検索し、該当箇所を読み、文書へのリンク付きで答えます。 |
 | **チーム** | 複数の組織、**組織ごとに複数アカウント**（招待、役割：オーナー、管理者、メンバー、所有権の移譲）、権限付き API キー、Webhook（Standard Webhooks 署名）、公開共有リンク |
-| **言語** | English、Deutsch、Français、Italiano、Español、Português、Nederlands、中文、日本語、Polski、Русский、العربية、한국어、Türkçe、Bahasa Indonesia、हिन्दी、Tiếng Việt、ไทย、Українська、Čeština、Română、Magyar、Ελληνικά、Svenska、Norsk、Dansk、Suomi、עברית、বাংলা、فارسی（その他は `locales/<code>.json`） |
+| **言語** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (その他の言語は近日公開) |
 | **デフォルトで安全** | 1 つの暗号化ファイル、Argon2 パスワード、インラインスクリプトなしの CSP、CSRF 対策、ファイルは API 経由のみ |
 
 ## スクリーンショット

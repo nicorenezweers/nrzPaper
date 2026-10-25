@@ -28,7 +28,7 @@ nrzPaper — це одна програма без зовнішньої бази
 | **ШІ, будь-який постачальник** | OpenRouter (вбудовані безкоштовні моделі), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** або будь-яка сумісна з OpenAI URL-адреса. Текстові моделі отримують розпізнаний текст замість зображень. |
 | **Dieter** | Чат-помічник (унизу праворуч): *«Який у мене номер страхування?»*, *«Усі розрахункові листки від Fabrikam за 2026 рік»*. Він шукає, читає відповідні фрагменти й відповідає з посиланнями на документи. |
 | **Команди** | Кілька організацій, **кілька облікових записів на організацію** (запрошення, ролі: власник, адміністратор, учасник; передавання володіння), API-ключі з правами, вебхуки (підписи Standard Webhooks), публічні посилання для спільного доступу |
-| **Мови** | English, Deutsch, Français, Italiano, Español, Português, Nederlands, 中文, 日本語, Polski, Русский, العربية, 한국어, Türkçe, Bahasa Indonesia, हिन्दी, Tiếng Việt, ไทย, Українська, Čeština, Română, Magyar, Ελληνικά, Svenska, Norsk, Dansk, Suomi, עברית, বাংলা, فارسی (більше через `locales/<code>.json`) |
+| **Мови** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (інші мови незабаром) |
 | **Безпечно за замовчуванням** | Один зашифрований файл, паролі Argon2, CSP без вбудованих скриптів, захист від CSRF, файли лише через API |
 
 ## Скриншоти

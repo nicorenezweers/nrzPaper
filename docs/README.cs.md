@@ -28,6 +28,7 @@ nrzPaper je jediný program bez externí databáze. Vše je v jednom souboru SQL
 | **AI, jakýkoli poskytovatel** | OpenRouter (vestavěné bezplatné modely), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** nebo jakákoli adresa kompatibilní s OpenAI. Textové modely dostanou rozpoznaný text místo obrázků. |
 | **Dieter** | Chatový asistent (vpravo dole): *„Jaké je moje číslo pojištění?“*, *„Všechny výplatní pásky od Fabrikam v roce 2026“*. Vyhledá, přečte odpovídající pasáže a odpoví s odkazy na dokumenty. |
 | **Týmy** | Několik organizací, **několik účtů na organizaci** (pozvánka, role: vlastník, správce, člen; převod vlastnictví), API klíče s oprávněními, webhooky (podpisy Standard Webhooks), veřejné odkazy ke sdílení |
+| **Jazyky** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (další jazyky brzy) |
 | **Ve výchozím nastavení bezpečné** | Jeden šifrovaný soubor, hesla Argon2, CSP bez inline skriptů, ochrana CSRF, soubory pouze přes API |
 
 ## Snímky obrazovky

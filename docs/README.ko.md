@@ -28,7 +28,7 @@ nrzPaper는 외부 데이터베이스가 없는 단일 프로그램입니다. �
 | **AI, 모든 제공업체** | OpenRouter(무료 모델 내장), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** 또는 모든 OpenAI 호환 URL. 텍스트 전용 모델에는 이미지 대신 OCR 텍스트가 전달됩니다. |
 | **Dieter** | 채팅 도우미(오른쪽 아래): *"내 보험 번호는?"*, *"2026년 Fabrikam의 모든 급여 명세서"*. 검색하고 일치하는 구절을 읽고 문서 링크와 함께 답합니다. |
 | **팀** | 여러 조직, **조직당 여러 계정**(초대, 역할: 소유자, 관리자, 구성원, 소유권 이전), 권한이 있는 API 키, 웹훅(Standard Webhooks 서명), 공개 공유 링크 |
-| **언어** | English, Deutsch, Français, Italiano, Español, Português, Nederlands, 中文, 日本語, Polski, Русский, العربية, 한국어, Türkçe, Bahasa Indonesia, हिन्दी, Tiếng Việt, ไทย, Українська, Čeština, Română, Magyar, Ελληνικά, Svenska, Norsk, Dansk, Suomi, עברית, বাংলা, فارسی (더 많은 언어는 `locales/<code>.json`) |
+| **언어** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (다른 언어는 곧 제공될 예정) |
 | **기본 보안** | 하나의 암호화된 파일, Argon2 비밀번호, 인라인 스크립트 없는 CSP, CSRF 보호, 파일은 API를 통해서만 접근 |
 
 ## 스크린샷

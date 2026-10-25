@@ -28,6 +28,7 @@ nrzPaper adalah satu program tanpa basis data eksternal. Semua tersimpan dalam s
 | **AI, penyedia apa pun** | OpenRouter (model gratis bawaan), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI**, atau URL apa pun yang kompatibel dengan OpenAI. Model khusus teks menerima teks OCR alih-alih gambar. |
 | **Dieter** | Asisten obrolan (kanan bawah): *"Berapa nomor asuransi saya?"*, *"Semua slip gaji dari Fabrikam tahun 2026"*. Ia mencari, membaca bagian yang cocok, dan menjawab dengan tautan ke dokumen. |
 | **Tim** | Beberapa organisasi, **beberapa akun per organisasi** (undangan, peran: pemilik, admin, anggota; alihkan kepemilikan), kunci API dengan izin, webhook (tanda tangan Standard Webhooks), tautan berbagi publik |
+| **Bahasa** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (bahasa lain segera hadir) |
 | **Aman secara bawaan** | Satu berkas terenkripsi, kata sandi Argon2, CSP tanpa skrip inline, perlindungan CSRF, berkas hanya melalui API |
 
 ## Tangkapan layar

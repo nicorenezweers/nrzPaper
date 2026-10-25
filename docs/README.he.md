@@ -28,6 +28,7 @@ nrzPaper הוא תוכנית אחת בלי מסד נתונים חיצוני. ה�
 | **AI, כל ספק** | OpenRouter (מודלים חינמיים מובנים), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** או כל כתובת תואמת OpenAI. מודלים טקסטואליים מקבלים את הטקסט שזוהה במקום תמונות. |
 | **Dieter** | עוזר צ'אט (למטה מימין): *"מה מספר הביטוח שלי?"*, *"כל תלושי השכר מ-Fabrikam ב-2026"*. הוא מחפש, קורא את הקטעים המתאימים ועונה עם קישורים למסמכים. |
 | **צוותים** | כמה ארגונים, **כמה חשבונות לכל ארגון** (הזמנה, תפקידים: בעלים, מנהל, חבר; העברת בעלות), מפתחות API עם הרשאות, webhooks (חתימות Standard Webhooks), קישורי שיתוף ציבוריים |
+| **שפות** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (שפות נוספות בקרוב) |
 | **מאובטח כברירת מחדל** | קובץ מוצפן אחד, סיסמאות Argon2, CSP בלי סקריפטים מוטמעים, הגנת CSRF, קבצים רק דרך ה-API |
 
 ## צילומי מסך

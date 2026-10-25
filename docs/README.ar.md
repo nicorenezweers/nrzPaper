@@ -28,6 +28,7 @@ nrzPaper برنامج واحد بدون قاعدة بيانات خارجية. ك
 | **الذكاء الاصطناعي، أي مزوّد** | OpenRouter (نماذج مجانية مدمجة)، OpenAI، Anthropic، Google Gemini، Mistral، Groq، xAI، DeepSeek، Together، Fireworks، Perplexity، Cohere، NVIDIA، Hugging Face، Qwen، Azure OpenAI، **Ollama وLM Studio وvLLM/LocalAI** أو أي عنوان متوافق مع OpenAI. تحصل النماذج النصية على النص المتعرَّف عليه بدلًا من الصور. |
 | **Dieter** | مساعد محادثة (أسفل اليمين): *«ما رقم تأميني؟»*، *«كل كشوف الرواتب من Fabrikam في 2026»*. يبحث ويقرأ المقاطع المطابقة ويجيب مع روابط للمستندات. |
 | **الفرق** | عدة مؤسسات، **عدة حسابات لكل مؤسسة** (دعوة، أدوار: مالك، مسؤول، عضو؛ نقل الملكية)، مفاتيح API بصلاحيات، ويب هوكس (توقيعات Standard Webhooks)، روابط مشاركة عامة |
+| **اللغات** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (المزيد من اللغات قريبًا) |
 | **آمن افتراضيًا** | ملف مشفّر واحد، كلمات مرور Argon2، CSP بدون سكربتات مضمّنة، حماية CSRF، الملفات عبر API فقط |
 
 ## لقطات الشاشة

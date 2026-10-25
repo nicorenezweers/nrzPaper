@@ -28,7 +28,7 @@ nrzPaper is één programma zonder externe database. Alles staat in één met SQ
 | **AI, elke aanbieder** | OpenRouter (gratis modellen ingebouwd), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** of elke OpenAI-compatibele URL. Modellen die alleen tekst lezen krijgen de herkende tekst. |
 | **Dieter** | Chatassistent rechtsonder: *„Wat is mijn verzekeringsnummer?”*, *„Alle loonstroken van Fabrikam uit 2026”*. Hij zoekt, leest de relevante passages en antwoordt met links naar de documenten. |
 | **Teams** | Meerdere organisaties, **meerdere accounts per organisatie** (uitnodigingen, rollen eigenaar/beheerder/lid, eigendom overdragen), API-sleutels met rechten, webhooks (Standard Webhooks-handtekeningen), openbare deellinks |
-| **Talen** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (meer via `locales/<code>.json`) |
+| **Talen** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (meer talen komen binnenkort) |
 | **Veilig** | Eén versleuteld bestand, Argon2-wachtwoorden, CSP zonder inline scripts, CSRF-bescherming, bestanden alleen via de API |
 
 ## Schermafbeeldingen

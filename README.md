@@ -28,7 +28,7 @@ nrzPaper is a single program with no external database. Everything lives in one 
 | **AI, any provider** | OpenRouter (free models built in), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** or any OpenAI-compatible URL. Text-only models get the OCR text instead of images. |
 | **Dieter** | Chat assistant (bottom right): *“What is my insurance number?”*, *“All payslips from Fabrikam in 2026”*. He searches, reads the matching passages and answers with links to the documents. |
 | **Teams** | Several organizations, **several accounts per organization** (invite, roles: owner, admin, member; transfer ownership), API keys with permissions, webhooks (Standard Webhooks signatures), public share links |
-| **Languages** | English, Deutsch, Français, Italiano, Español, Português, Nederlands, 中文 (Chinese), 日本語 (Japanese), Polski, Русский, العربية (Arabic), 한국어 (Korean), Türkçe, Bahasa Indonesia, Hindi (हिन्दी), Vietnamese (Tiếng Việt), Thai (ไทย), Українська (Ukrainian), Čeština (Czech), Română (Romanian), Magyar (Hungarian), Ελληνικά (Greek), Svenska (Swedish), Norsk (Norwegian), Dansk (Danish), Suomi (Finnish), עברית (Hebrew), বাংলা (Bengali), فارسی (Persian) (more via `locales/<code>.json`) |
+| **Languages** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (more languages coming soon) |
 | **Safe by default** | One encrypted file, Argon2 passwords, CSP without inline scripts, CSRF protection, files only through the API |
 
 ## Screenshots

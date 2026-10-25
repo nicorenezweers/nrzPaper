@@ -28,7 +28,7 @@ nrzPaper est un programme unique, sans base de données externe. Tout est stock�
 | **IA, tout fournisseur** | OpenRouter (modèles gratuits intégrés), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** ou toute URL compatible OpenAI. Les modèles texte seul reçoivent le texte reconnu. |
 | **Dieter** | Assistant de discussion en bas à droite : *« Quel est mon numéro d’assurance ? »*, *« Toutes les fiches de paie de Fabrikam en 2026 »*. Il cherche, lit les passages pertinents et répond avec des liens vers les documents. |
 | **Équipes** | Plusieurs organisations, **plusieurs comptes par organisation** (invitations, rôles propriétaire/admin/membre, transfert de propriété), clés API avec droits, webhooks (signatures Standard Webhooks), liens de partage publics |
-| **Langues** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (d’autres via `locales/<code>.json`) |
+| **Langues** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (d'autres langues bientôt disponibles) |
 | **Sûr** | Un fichier chiffré, mots de passe Argon2, CSP sans scripts inline, protection CSRF, fichiers uniquement via l’API |
 
 ## Captures d’écran

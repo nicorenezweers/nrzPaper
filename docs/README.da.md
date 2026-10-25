@@ -28,6 +28,7 @@ nrzPaper er ét program uden ekstern database. Alt ligger i én SQLCipher-krypte
 | **AI, enhver udbyder** | OpenRouter (gratis modeller indbygget), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** eller en hvilken som helst OpenAI-kompatibel URL. Tekstbaserede modeller får OCR-teksten i stedet for billeder. |
 | **Dieter** | Chatassistent (nederst til højre): *"Hvad er mit forsikringsnummer?"*, *"Alle lønsedler fra Fabrikam i 2026"*. Han søger, læser de matchende afsnit og svarer med links til dokumenterne. |
 | **Teams** | Flere organisationer, **flere konti pr. organisation** (invitation, roller: ejer, administrator, medlem; overfør ejerskab), API-nøgler med tilladelser, webhooks (Standard Webhooks-signaturer), offentlige delelinks |
+| **Sprog** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (flere sprog kommer snart) |
 | **Sikkert som standard** | Én krypteret fil, Argon2-adgangskoder, CSP uden inline-scripts, CSRF-beskyttelse, filer kun via API |
 
 ## Skærmbilleder

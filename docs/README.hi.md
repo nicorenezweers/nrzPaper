@@ -28,6 +28,7 @@ nrzPaper बिना किसी बाहरी डेटाबेस के 
 | **AI, कोई भी प्रदाता** | OpenRouter (अंतर्निहित मुफ़्त मॉडल), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** या कोई भी OpenAI-संगत URL। केवल-पाठ मॉडल को छवियों के बजाय OCR पाठ मिलता है। |
 | **Dieter** | चैट सहायक (नीचे दाएँ): *"मेरा बीमा नंबर क्या है?"*, *"2026 में Fabrikam के सभी वेतन पर्चियाँ"*। वह खोजता है, मेल खाते अंश पढ़ता है और दस्तावेज़ों के लिंक के साथ उत्तर देता है। |
 | **टीमें** | कई संगठन, **प्रति संगठन कई खाते** (आमंत्रण, भूमिकाएँ: स्वामी, व्यवस्थापक, सदस्य; स्वामित्व हस्तांतरण), अनुमतियों वाली API कुंजियाँ, वेबहुक (Standard Webhooks हस्ताक्षर), सार्वजनिक साझा लिंक |
+| **भाषाएँ** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (अन्य भाषाएँ जल्द आ रही हैं) |
 | **डिफ़ॉल्ट रूप से सुरक्षित** | एक एन्क्रिप्टेड फ़ाइल, Argon2 पासवर्ड, इनलाइन स्क्रिप्ट रहित CSP, CSRF सुरक्षा, फ़ाइलें केवल API के माध्यम से |
 
 ## स्क्रीनशॉट

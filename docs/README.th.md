@@ -28,6 +28,7 @@ nrzPaper เป็นโปรแกรมเดียวที่ไม่ม�
 | **AI ผู้ให้บริการใดก็ได้** | OpenRouter (มีโมเดลฟรีในตัว), OpenAI, Anthropic, Google Gemini, Mistral, Groq, xAI, DeepSeek, Together, Fireworks, Perplexity, Cohere, NVIDIA, Hugging Face, Qwen, Azure OpenAI, **Ollama, LM Studio, vLLM/LocalAI** หรือ URL ใดก็ตามที่เข้ากันได้กับ OpenAI โมเดลข้อความล้วนจะได้รับข้อความ OCR แทนรูปภาพ |
 | **Dieter** | ผู้ช่วยแชท (มุมขวาล่าง): *"หมายเลขประกันของฉันคืออะไร?"*, *"สลิปเงินเดือนทั้งหมดจาก Fabrikam ในปี 2026"* เขาค้นหา อ่านข้อความที่ตรงกัน และตอบพร้อมลิงก์ไปยังเอกสาร |
 | **ทีม** | หลายองค์กร **หลายบัญชีต่อองค์กร** (เชิญ บทบาท: เจ้าของ ผู้ดูแล สมาชิก; โอนความเป็นเจ้าของ) คีย์ API พร้อมสิทธิ์ เว็บฮุก (ลายเซ็น Standard Webhooks) ลิงก์แชร์สาธารณะ |
+| **ภาษา** | English, Deutsch, Français, Italiano, Español, Português, Nederlands (ภาษาอื่น ๆ เร็ว ๆ นี้) |
 | **ปลอดภัยโดยค่าเริ่มต้น** | ไฟล์เข้ารหัสเดียว รหัสผ่าน Argon2 CSP โดยไม่มีสคริปต์ในบรรทัด การป้องกัน CSRF ไฟล์เข้าถึงได้เฉพาะผ่าน API |
 
 ## ภาพหน้าจอ

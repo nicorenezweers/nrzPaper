@@ -1,4 +1,6 @@
-/* Viewer von nrzPaper – nur Grautöne.
+//! Stile des PDF-Viewers, unter `/static/viewer.css` ausgeliefert.
+
+pub const SRC: &str = r#"/* Viewer von nrzPaper – nur Grautöne.
    Die .textLayer-Regeln stammen aus PDF.js (pdfjs-dist 4.10.38, Apache-2.0, siehe static/vendor/pdfjs/LICENSE);
    die Markierungsfarben sind auf Grau umgestellt. */
 
@@ -78,3 +80,4 @@
 .textLayer .hit { background: rgb(24 24 27 / 0.22); border-radius: 2px; }
 .textLayer .hit.current { background: rgb(24 24 27 / 0.55); }
 .textLayer ::selection { background: rgb(63 63 70 / 0.35); }
+"#;

@@ -24,7 +24,7 @@ pub fn FolderView(org: String, folder: String, q: String) -> Element {
     rsx! { DocList { org, q, folder: Some(folder) } }
 }
 
-/// Grosses Vorschau-Fenster (static/preview.js) für ein Dokument.
+/// Grosses Vorschau-Fenster (`/static/preview.js`) für ein Dokument.
 pub fn open_preview(org: &str, doc: &Document) {
     let args = serde_json::json!({
         "url": format!("/api/v1/organizations/{org}/documents/{}/file", doc.id),

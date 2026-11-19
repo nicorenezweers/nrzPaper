@@ -6,6 +6,8 @@ use rocket::response::{self, Responder, Response};
 use rocket::{get, routes, Request, Route};
 use std::io::Cursor;
 
+mod web;
+
 pub fn routes() -> Vec<Route> {
     routes![asset, favicon, manifest, service_worker, share_target]
 }
@@ -42,44 +44,40 @@ struct Asset {
 fn lookup(path: &str) -> Option<Asset> {
     let js = ContentType::JavaScript;
     let (body, content_type, immutable): (&'static [u8], ContentType, bool) = match path {
-        "preview.js" => (include_bytes!("../../static/preview.js"), js, false),
-        "viewer.js" => (include_bytes!("../../static/viewer.js"), js, false),
-        "viewer.css" => (
-            include_bytes!("../../static/viewer.css"),
-            ContentType::CSS,
-            false,
-        ),
+        "preview.js" => (web::preview::SRC.as_bytes(), js, false),
+        "viewer.js" => (web::viewer::SRC.as_bytes(), js, false),
+        "viewer.css" => (web::viewer_css::SRC.as_bytes(), ContentType::CSS, false),
         "vendor/pdfjs/pdf.min.mjs" => (
-            include_bytes!("../../static/vendor/pdfjs/pdf.min.mjs"),
+            include_bytes!("../../../static/vendor/pdfjs/pdf.min.mjs"),
             js,
             true,
         ),
         "vendor/pdfjs/pdf.worker.min.mjs" => (
-            include_bytes!("../../static/vendor/pdfjs/pdf.worker.min.mjs"),
+            include_bytes!("../../../static/vendor/pdfjs/pdf.worker.min.mjs"),
             js,
             true,
         ),
         "fonts/inter-latin.woff2" => (
-            include_bytes!("../../static/fonts/inter-latin.woff2"),
+            include_bytes!("../../../static/fonts/inter-latin.woff2"),
             ContentType::WOFF2,
             true,
         ),
         "fonts/inter-latin-ext.woff2" => (
-            include_bytes!("../../static/fonts/inter-latin-ext.woff2"),
+            include_bytes!("../../../static/fonts/inter-latin-ext.woff2"),
             ContentType::WOFF2,
             true,
         ),
         "icon.png" => (
-            include_bytes!("../../static/icon.png"),
+            include_bytes!("../../../static/icon.png"),
             ContentType::PNG,
             false,
         ),
-        "icon-180.png" => (include_bytes!("../../static/icon-180.png"), ContentType::PNG, false),
-        "icon-192.png" => (include_bytes!("../../static/icon-192.png"), ContentType::PNG, false),
-        "icon-512.png" => (include_bytes!("../../static/icon-512.png"), ContentType::PNG, false),
-        "mobile.js" => (include_bytes!("../../static/mobile.js"), js, false),
+        "icon-180.png" => (include_bytes!("../../../static/icon-180.png"), ContentType::PNG, false),
+        "icon-192.png" => (include_bytes!("../../../static/icon-192.png"), ContentType::PNG, false),
+        "icon-512.png" => (include_bytes!("../../../static/icon-512.png"), ContentType::PNG, false),
+        "mobile.js" => (web::mobile::SRC.as_bytes(), js, false),
         "favicon-32.png" => (
-            include_bytes!("../../static/favicon-32.png"),
+            include_bytes!("../../../static/favicon-32.png"),
             ContentType::PNG,
             false,
         ),
@@ -125,7 +123,7 @@ fn favicon() -> Option<Asset> {
 #[get("/manifest.webmanifest")]
 fn manifest() -> NoCache {
     NoCache {
-        body: include_str!("../../static/manifest.webmanifest"),
+        body: web::manifest::SRC,
         content_type: ContentType::new("application", "manifest+json"),
         cache: Header::new("Cache-Control", "no-cache"),
     }
@@ -143,7 +141,7 @@ struct NoCache {
 #[get("/sw.js")]
 fn service_worker() -> NoCache {
     NoCache {
-        body: include_str!("../../static/sw.js"),
+        body: web::service_worker::SRC,
         content_type: ContentType::JavaScript,
         cache: Header::new("Cache-Control", "no-cache"),
     }

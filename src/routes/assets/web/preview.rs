@@ -1,4 +1,6 @@
-// nrzPaper – grosses Vorschau-Fenster mit Zoom (PDF.js), als ES-Modul für die Dioxus-Oberfläche.
+//! Vorschau-Fenster (JavaScript), unter `/static/preview.js` ausgeliefert.
+
+pub const SRC: &str = r#"// nrzPaper – grosses Vorschau-Fenster mit Zoom (PDF.js), als ES-Modul für die Dioxus-Oberfläche.
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -85,3 +87,4 @@ export async function openPreview({ url, kind, name = "", docUrl = "" }) {
     pagesEl.innerHTML = `<p class="py-20 text-zinc-400">Vorschau nicht möglich: ${e.message}</p>`;
   }
 }
+"#;

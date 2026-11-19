@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+//! Seitenrahmen der Oberfläche (`ui/index.html`), wird vor dem Bauen geschrieben.
+
+pub const INDEX_HTML: &str = r##"<!DOCTYPE html>
 <html lang="de">
     <head>
         <title>{app_title}</title>
@@ -21,3 +23,4 @@
         <div id="main"></div>
     </body>
 </html>
+"##;

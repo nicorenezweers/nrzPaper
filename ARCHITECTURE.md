@@ -31,7 +31,7 @@ nrzPaper is one Rust program. It serves the API, the web interface (a Dioxus/Web
 | Search | SQLite **FTS5** with prefix matching, umlaut folding and a small query language (`tag:`, `-tag:`, `name:`, `content:`, `type:`, `has:tags`, `created:`, `status:`) | No extra service |
 | OCR | Tesseract + Poppler as external programs, a queue with workers | Text layer first (`pdftotext`), page images only for scans |
 | Interface | **Dioxus 0.7** (Rust → WebAssembly) with components adapted from **rust-ui**; built with `dx bundle` and embedded by `build.rs` (gzip) | One binary, no CDN, works offline; UI talks only to `/api/v1` |
-| PDF viewer | PDF.js 4 embedded under `/static/vendor`, loaded by `static/viewer.js` | Thumbnails, zoom, rotate, full-text search inside the PDF, range requests |
+| PDF viewer | PDF.js 4 embedded under `/static/vendor`, loaded by `/static/viewer.js` | Thumbnails, zoom, rotate, full-text search inside the PDF, range requests |
 | AI | `ai.rs`: provider catalog, OpenAI chat protocol + Anthropic Messages protocol | Works with cloud and local models; PDF → images for providers without PDF input, OCR text for text-only models |
 | Printing | Minimal IPP client (`print/ipp.rs`) | Every network printer speaks IPP; JPEG fallback for printers without PDF |
 | i18n | German source strings as keys (`tr("…")`, `trf("… {0}", …)`), catalogs in `locales/<lang>.json` loaded on demand | Readable code; server messages translate on the client too |

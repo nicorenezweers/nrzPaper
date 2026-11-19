@@ -1,4 +1,6 @@
--- Erinnerungen an Dokumente, Herkunft der Inbox-Einträge, Eingangsordner zur Prüfung, Drucker.
+//! Migration 4: reminders folders printers.
+
+pub const SRC: &str = r#"-- Erinnerungen an Dokumente, Herkunft der Inbox-Einträge, Eingangsordner zur Prüfung, Drucker.
 
 -- „Erinnere mich in 10 Tagen“: je Benutzer und Dokument, erledigt oder offen.
 CREATE TABLE reminders (
@@ -48,3 +50,4 @@ CREATE TABLE printers (
     make        TEXT    NOT NULL DEFAULT '',
     created_at  INTEGER NOT NULL
 ) STRICT;
+"#;

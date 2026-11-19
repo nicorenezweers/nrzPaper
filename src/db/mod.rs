@@ -1,6 +1,7 @@
 //! Die eine Datenbank: SQLite mit SQLCipher, AES-256 auf Seitenebene. Alles liegt darin –
 //! Benutzer, Dokument-Inhalte, OCR-Text, Volltextindex.
 
+mod migrations;
 pub mod models;
 
 use crate::config::Config;
@@ -125,10 +126,10 @@ pub async fn open(config: &Config) -> Result<SqlitePool, AppError> {
     Ok(pool)
 }
 
-/// Schema auf den neuesten Stand bringen. Die Migrationen (`migrations/`) sind ins Programm
-/// eingebettet; sqlx merkt sich in `_sqlx_migrations`, was schon gelaufen ist.
+/// Schema auf den neuesten Stand bringen. Die Migrationen (`db/migrations/`) sind ins
+/// Programm eingebettet; sqlx merkt sich in `_sqlx_migrations`, was schon gelaufen ist.
 pub async fn migrate(pool: &SqlitePool) -> Result<(), AppError> {
-    sqlx::migrate!("./migrations")
+    migrations::migrator()
         .run(pool)
         .await
         .map_err(|e| AppError::Config(format!("Migration fehlgeschlagen: {e}")))

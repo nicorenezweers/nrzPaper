@@ -1,4 +1,4 @@
-//! Datenmodelle – eine Struktur je Tabelle aus `migrations/0001_init.sql`.
+//! Datenmodelle – eine Struktur je Tabelle aus `db/migrations/m0001_init.rs`.
 //! Abfragen laufen zur Laufzeit (`query_as`), da die Makros zur Übersetzungszeit eine
 //! unverschlüsselte Datenbank bräuchten.
 

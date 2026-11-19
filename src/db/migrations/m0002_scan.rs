@@ -1,4 +1,6 @@
--- Scannen und Prüfen (übernommen aus nrzDocsScanner): Scanner-Einstellungen je Benutzer,
+//! Migration 2: scan.
+
+pub const SRC: &str = r#"-- Scannen und Prüfen (übernommen aus nrzDocsScanner): Scanner-Einstellungen je Benutzer,
 -- laufende Scan-Sitzung je Benutzer und Organisation, Prüfliste vor der Ablage.
 -- Seiten und PDFs liegen als BLOB in der (verschlüsselten) Datenbank – keine Dateien daneben.
 
@@ -62,3 +64,4 @@ CREATE TABLE inbox_files (
     data     BLOB    NOT NULL,
     PRIMARY KEY (inbox_id, kind, position)
 ) STRICT;
+"#;

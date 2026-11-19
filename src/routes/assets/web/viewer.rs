@@ -1,4 +1,6 @@
-// nrzPaper – Dokument-Vorschau. PDF über PDF.js (lokal, Range-Anfragen auf die verschlüsselte
+//! PDF-Viewer (JavaScript, nutzt pdf.js), unter `/static/viewer.js` ausgeliefert.
+
+pub const SRC: &str = r#"// nrzPaper – Dokument-Vorschau. PDF über PDF.js (lokal, Range-Anfragen auf die verschlüsselte
 // Datenbank), Bilder mit Zoom/Drehen, Text als Text. Erwartet ein Element mit data-viewer.
 import * as pdfjsLib from "/static/vendor/pdfjs/pdf.min.mjs";
 
@@ -348,3 +350,4 @@ function imageViewer(root) {
   $("[data-fullscreen]", root).onclick = () => root.classList.toggle("viewer-full");
   apply();
 }
+"#;

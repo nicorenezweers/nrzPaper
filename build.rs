@@ -1,6 +1,4 @@
-// Migrationen sind ins Programm eingebettet (sqlx::migrate!) – bei Änderungen neu übersetzen.
-//
-// Die Oberfläche (Dioxus, `ui/`) wird mit `scripts/ui.sh` nach `ui/dist/public` gebaut und hier
+// Die Oberfläche (Dioxus, `ui/`) wird mit `cargo xtask ui` nach `ui/dist/public` gebaut und hier
 // ins Programm eingebettet: Für jede Datei entsteht ein Eintrag in `$OUT_DIR/spa.rs`, Text und
 // WebAssembly zusätzlich gzip-komprimiert. Fehlt der Ordner, bleibt die Liste leer und der Server
 // zeigt einen Hinweis statt der Oberfläche.
@@ -8,7 +6,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 fn main() {
-    println!("cargo:rerun-if-changed=migrations");
     println!("cargo:rerun-if-changed=ui/dist/public");
     println!("cargo:rerun-if-changed=locales");
 

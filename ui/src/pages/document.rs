@@ -1,4 +1,4 @@
-//! Dokumentseite: grosse Vorschau (PDF.js-Viewer aus static/viewer.js) und daneben Name, Tags,
+//! Dokumentseite: grosse Vorschau (PDF.js-Viewer unter /static/viewer.js) und daneben Name, Tags,
 //! Eigenschaften, erkannter Text, Angaben, Freigabelinks und Verlauf. Die Angaben lassen sich
 //! ausblenden – die Vorschau nutzt dann die ganze Breite.
 
@@ -150,7 +150,7 @@ fn ShareFileButton(url: String, doc: Document) -> Element {
     }
 }
 
-/// PDF-Viewer bzw. Bild/Text. Der PDF-Viewer ist das bewährte static/viewer.js (PDF.js).
+/// PDF-Viewer bzw. Bild/Text. Der PDF-Viewer ist das bewährte /static/viewer.js (PDF.js).
 #[component]
 pub fn Viewer(url: String, doc: Document) -> Element {
     let id = format!("viewer-{}", doc.id);

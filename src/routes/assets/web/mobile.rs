@@ -1,4 +1,6 @@
-// nrzPaper – Handy-Helfer für die Oberfläche (per import() aus der Dioxus-App geladen).
+//! Handy-Web-App: Kamera-Scan und Teilen, unter `/static/mobile.js` ausgeliefert.
+
+pub const SRC: &str = r#"// nrzPaper – Handy-Helfer für die Oberfläche (per import() aus der Dioxus-App geladen).
 //
 // registerServiceWorker(): Service Worker für das Teilen-Ziel (Android) anmelden.
 // takeShared(org):         geteilte Dateien aus dem Cache in die Inbox laden.
@@ -124,3 +126,4 @@ export async function shareFile(title) {
     return e && e.name === 'AbortError' ? 'abgebrochen' : String(e && e.message || e);
   }
 }
+"#;

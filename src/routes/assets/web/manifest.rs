@@ -1,4 +1,6 @@
-{
+//! Web-App-Manifest, unter `/manifest.webmanifest` ausgeliefert.
+
+pub const SRC: &str = r##"{
   "id": "/",
   "name": "nrzPaper",
   "short_name": "nrzPaper",
@@ -26,3 +28,4 @@
     }
   }
 }
+"##;

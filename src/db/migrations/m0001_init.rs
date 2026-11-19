@@ -1,4 +1,6 @@
--- nrzPaper – Grundschema.
+//! Migration 1: init.
+
+pub const SRC: &str = r#"-- nrzPaper – Grundschema.
 -- Alles liegt in dieser einen, mit SQLCipher verschlüsselten Datenbank.
 -- Konventionen:
 --   * IDs sind UUIDv7 als TEXT (zeitlich sortierbar).
@@ -296,3 +298,4 @@ CREATE TABLE app_settings (
     value      TEXT    NOT NULL CHECK (json_valid(value)),
     updated_at INTEGER NOT NULL
 ) STRICT;
+"#;

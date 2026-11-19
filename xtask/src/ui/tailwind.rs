@@ -1,11 +1,13 @@
-/* nrzPaper – Oberfläche auf Basis von rust-ui (https://github.com/rust-ui/ui, MIT).
+//! Eingabe für Tailwind (`ui/tailwind.css`), wird vor dem Bauen der Oberfläche geschrieben.
+
+pub const TAILWIND_CSS: &str = r#"/* nrzPaper – Oberfläche auf Basis von rust-ui (https://github.com/rust-ui/ui, MIT).
    Nur Grautöne: das dunkle Theme von rust-ui, Akzente grau statt blau. */
 @import "tailwindcss";
 
 @source "./src/**/*.rs";
 /* Klassen aus Vorschau-Fenster und PDF-Viewer (vom Server ausgeliefert) */
-@source "../static/preview.js";
-@source "../static/viewer.js";
+@source "../src/routes/assets/web/preview.rs";
+@source "../src/routes/assets/web/viewer.rs";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -126,3 +128,4 @@
     background-repeat: no-repeat; background-color: oklch(0.15 0 0); pointer-events: none; z-index: 10;
   }
 }
+"#;

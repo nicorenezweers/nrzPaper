@@ -1,4 +1,6 @@
-// nrzPaper – Service Worker. Einzige Aufgabe: Dateien entgegennehmen, die auf Android über
+//! Service Worker (Teilen-Ziel), unter `/sw.js` ausgeliefert.
+
+pub const SRC: &str = r#"// nrzPaper – Service Worker. Einzige Aufgabe: Dateien entgegennehmen, die auf Android über
 // „Teilen → nrzPaper“ kommen (Web Share Target). Sie landen kurz im Cache „nrz-share“; die
 // App holt sie nach dem Öffnen ab und legt sie in die Inbox (static/mobile.js, takeShared).
 // Alles andere geht unverändert ans Netz – nichts wird offline zwischengespeichert.
@@ -32,3 +34,4 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+"#;

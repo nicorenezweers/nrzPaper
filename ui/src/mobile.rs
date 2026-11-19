@@ -1,5 +1,5 @@
 //! Handy & Web-App: Service Worker (Teilen-Ziel auf Android), geteilte Dateien abholen und
-//! Fotos von der Kamera hochladen. Die eigentliche Arbeit macht `static/mobile.js`
+//! Fotos von der Kamera hochladen. Die eigentliche Arbeit macht `src/routes/assets/web/mobile.rs` (`/static/mobile.js`)
 //! (Canvas, Cache-API) – hier nur die Anbindung über `document::eval`.
 
 use dioxus::prelude::*;

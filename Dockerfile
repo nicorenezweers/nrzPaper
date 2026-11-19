@@ -19,12 +19,15 @@ RUN rustup target add wasm32-unknown-unknown
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     cargo install dioxus-cli --version 0.7.10 --locked --root /opt/dx
 WORKDIR /src
-# Tailwind liest auch die Klassen aus static/viewer.js und static/preview.js
-COPY static static
+# Tailwind liest auch die Klassen aus PDF-Viewer und Vorschau (src/routes/assets/web)
+COPY .cargo .cargo
+COPY xtask xtask
+COPY src/routes/assets/web src/routes/assets/web
 COPY ui ui
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/src/ui/target,id=nrzpaper-ui-target \
-    cd ui && rm -rf target/dx/nrzpaper-ui/release/web/public \
+    cargo xtask ui-files \
+ && cd ui && rm -rf target/dx/nrzpaper-ui/release/web/public \
  && PATH=/opt/dx/bin:$PATH dx bundle --web --release --out-dir /tmp/ui \
  && mkdir -p /out && cp -r /tmp/ui/public /out/public && test -f /out/public/index.html
 
@@ -52,7 +55,6 @@ RUN set -eu; \
     fi
 WORKDIR /src
 COPY Cargo.toml Cargo.lock build.rs ./
-COPY migrations migrations
 COPY src src
 COPY static static
 COPY assets assets

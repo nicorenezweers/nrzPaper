@@ -14,7 +14,7 @@
 **Missing for 25:** 18 more languages
 
 ### Backlog
-- [ ] Document localization workflow (`scripts/i18n_extract.py`)
+- [ ] Document localization workflow (`cargo xtask i18n`)
 - [ ] Secure placeholder checks (`{0}`, `{1}`) in all translations
 - [ ] Check RTL support (Arabic, Hebrew) in UI CSS
 
@@ -170,7 +170,7 @@
 ### Done
 - [x] Dockerfile + docker-compose.yml
 - [x] `cargo run` / `cargo test` work
-- [x] `scripts/ui.sh` builds the web UI
+- [x] `cargo xtask ui` builds the web UI
 
 ---
 

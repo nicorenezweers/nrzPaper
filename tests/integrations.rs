@@ -556,7 +556,7 @@ async fn share_links_are_public_until_revoked() {
 
     // Abmelden: Freigabe funktioniert ohne Konto
     common::logout(&client).await;
-    // Die Seite gibt es nur, wenn die Oberfläche eingebettet ist (scripts/ui.sh vor dem Build).
+    // Die Seite gibt es nur, wenn die Oberfläche eingebettet ist (cargo xtask ui vor dem Build).
     if std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/ui/dist/public/index.html")).is_file() {
         let res = client.get(format!("/share/{token}")).dispatch().await;
         assert_eq!(res.status(), Status::Ok, "Seite der Oberfläche");

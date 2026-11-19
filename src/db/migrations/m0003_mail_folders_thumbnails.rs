@@ -1,4 +1,6 @@
--- Vorschaubilder, Ordner aus Tags und E-Mail-Eingang.
+//! Migration 3: mail folders thumbnails.
+
+pub const SRC: &str = r#"-- Vorschaubilder, Ordner aus Tags und E-Mail-Eingang.
 
 -- Kleines JPEG der ersten Seite (Kachelansicht); entsteht beim ersten Abruf.
 CREATE TABLE document_thumbnails (
@@ -61,3 +63,4 @@ CREATE TABLE mail_seen (
 -- Herkunft eines Eintrags der Prüfliste (Scan, Import, E-Mail) für die Anzeige.
 ALTER TABLE inbox_items ADD COLUMN source TEXT NOT NULL DEFAULT 'scan' CHECK (source IN ('scan', 'import', 'mail'));
 ALTER TABLE inbox_items ADD COLUMN source_info TEXT NOT NULL DEFAULT '';
+"#;

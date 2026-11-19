@@ -21,7 +21,7 @@ pub fn routes() -> Vec<Route> {
     routes![index, fallback]
 }
 
-/// Ist die Oberfläche eingebettet? (Ohne `scripts/ui.sh` vor dem Übersetzen nicht.)
+/// Ist die Oberfläche eingebettet? (Ohne `cargo xtask ui` vor dem Übersetzen nicht.)
 pub fn available() -> bool {
     FILES.iter().any(|f| f.path == "index.html")
 }
@@ -60,7 +60,7 @@ impl<'r> Responder<'r, 'static> for Reply {
             Reply::Missing => {
                 let body = "<!doctype html><meta charset=utf-8><title>nrzPaper</title>\
                     <p style=\"font-family:sans-serif\">Die Oberfläche ist nicht eingebaut – vor dem \
-                    Übersetzen <code>scripts/ui.sh</code> ausführen. Die API unter /api/v1 läuft.</p>";
+                    Übersetzen <code>cargo xtask ui</code> ausführen. Die API unter /api/v1 läuft.</p>";
                 return Response::build()
                     .status(Status::ServiceUnavailable)
                     .header(ContentType::HTML)

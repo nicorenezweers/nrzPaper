@@ -1,3 +1,6 @@
 target
 assets/tailwind.css
 dist
+# von `cargo xtask ui` geschrieben
+/tailwind.css
+/index.html

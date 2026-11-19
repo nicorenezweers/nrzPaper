@@ -3,7 +3,7 @@
 /// Die Stil-Quelle der App bindet nur die eingebettete Schrift ein, nichts von außen.
 #[test]
 fn styles_use_only_local_fonts() {
-    let css = std::fs::read_to_string("ui/tailwind.css").unwrap();
+    let css = std::fs::read_to_string("xtask/src/ui/tailwind.rs").unwrap();
     assert!(css.contains("/static/fonts/inter-latin.woff2"));
     assert!(!css.contains("url(http"), "keine fremden Quellen");
     for line in css.lines().filter(|l| l.trim_start().starts_with("@import")) {
@@ -60,18 +60,20 @@ fn translations_are_complete() {
         let cat: std::collections::HashMap<String, String> =
             serde_json::from_str(&std::fs::read_to_string(format!("locales/{code}.json")).unwrap()).unwrap();
         for s in &strings {
-            let t = cat.get(s).unwrap_or_else(|| panic!("{code}: fehlt „{s}“ – scripts/i18n_extract.py"));
+            let t = cat.get(s).unwrap_or_else(|| panic!("{code}: fehlt „{s}“ – cargo xtask i18n"));
             assert!(!t.trim().is_empty() || s.trim().is_empty(), "{code}: leer „{s}“");
             assert_eq!(holes(s), holes(t), "{code}: Platzhalter in „{s}“");
         }
     }
 }
 
-/// Die Liste der Texte passt zum Quelltext (sonst: scripts/i18n_extract.py ausführen).
+/// Die Liste der Texte passt zum Quelltext (sonst: cargo xtask i18n ausführen).
 #[test]
 fn string_list_is_current() {
-    let out = std::process::Command::new("python3").args(["scripts/i18n_extract.py", "--check"]).output();
-    let Ok(out) = out else { return }; // ohne Python übersprungen
+    let out = std::process::Command::new(env!("CARGO"))
+        .args(["run", "--quiet", "--manifest-path", "xtask/Cargo.toml", "--", "i18n", "--check"])
+        .output()
+        .unwrap();
     let strings: Vec<String> = serde_json::from_str(&std::fs::read_to_string("locales/strings.json").unwrap()).unwrap();
     let report = String::from_utf8_lossy(&out.stdout);
     assert!(report.starts_with(&format!("{} Texte", strings.len())), "locales/strings.json veraltet: {report}");

@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1.10
 # nrzPaper – Multi-Stage-Build für amd64 und arm64: Oberfläche (Dioxus/WebAssembly), Programm
 # (Rust) und Texterkennung (Tesseract, Poppler). Braucht nur Docker – kein Rust auf dem Rechner.
-#   docker build -t nrzpaper .
+#   docker build -f build/Dockerfile -t nrzpaper .
 #   docker run -p 8320:8320 -v nrzpaper-data:/data nrzpaper
 # Beide Architekturen (Rust wird quer-kompiliert, nicht emuliert):
-#   docker buildx build --platform linux/amd64,linux/arm64 -t <registry>/nrzpaper:<version> --push .
+#   docker buildx build -f build/Dockerfile --platform linux/amd64,linux/arm64 -t <registry>/nrzpaper:<version> --push .
 # Für den Umbrel-Store nur Programm und OCR-Paket (landen in dist/linux_<arch>/):
-#   docker buildx build --platform linux/amd64,linux/arm64 --target umbrel --output type=local,dest=dist .
+#   docker buildx build -f build/Dockerfile --platform linux/amd64,linux/arm64 --target umbrel --output type=local,dest=dist .
 
 ARG DEBIAN=debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8
 

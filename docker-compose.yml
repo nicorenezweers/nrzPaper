@@ -2,7 +2,9 @@
 # Den Datenbank-Schlüssel sicher aufbewahren: ohne ihn ist die Datenbank nicht lesbar.
 services:
   nrzpaper:
-    build: .
+    build:
+      context: .
+      dockerfile: build/Dockerfile
     image: nrzpaper:latest
     restart: unless-stopped
     ports:

@@ -53,7 +53,7 @@ nrzPaper is one Rust program. It serves the API, the web interface (a Dioxus/Web
 
 ## Build
 
-`Dockerfile` stages:
+`build/Dockerfile` stages:
 
 1. `ui`: installs `dioxus-cli` and builds the WebAssembly interface (`dx bundle --release`)
 2. `build`: Rust release build (cross-compiled for amd64/arm64), embeds the interface and `locales/`
@@ -66,7 +66,7 @@ nrzPaper is one Rust program. It serves the API, the web interface (a Dioxus/Web
 The store app `nrz-paper` runs in a pinned `debian:bookworm-slim`; its `hooks/pre-start` loads the program and the OCR package from the public package repo `nicorenezweers/nrzPaper-umbrel` (tag `umbrel-<version>`, plain HTTP from nrzGit on the device, no login – the nrzGit registry cannot be pulled anonymously by Docker). For a release:
 
 1. Bump the version in `Cargo.toml` and `ui/Cargo.toml`, then build the files:
-   `docker buildx build --platform linux/amd64,linux/arm64 --target umbrel --output type=local,dest=dist .`
+   `docker buildx build -f build/Dockerfile --platform linux/amd64,linux/arm64 --target umbrel --output type=local,dest=dist .`
 2. In `nrzPaper-umbrel`: replace `nrzpaper-<arch>.gz` (`gzip -9 -n`) and `ocr-<arch>.tar.gz` (`tar --no-xattrs -czf … ocr`), rewrite `SHA256SUMS`, commit, and push an annotated tag `umbrel-<version>` (its message becomes the release notes).
 3. `nrzStore.json` in that repo makes nrzGit update `RELEASE`, version and the store version in the nrzStore by itself.
 
